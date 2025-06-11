@@ -23,9 +23,6 @@ const ServicesModal: React.FC<ServicesModalProps> = ({ isOpen, onClose }) => {
           <p>
             Our expertise spans from full-stack development to complex data analytics, but what sets us apart is our commitment to system-wide optimization. We analyze your entire business ecosystem to identify inefficiencies and implement cost-saving solutions across all departments. Whether it's custom web scrapers, automated workflows, API integrations, or AI agents, we focus on creating solutions that deliver real business value and measurable ROI.
           </p>
-          <p>
-            Starting at just $500 for a beta version of your custom system, we provide comprehensive solutions including custom dashboards, data visualization, and specialized accounting tools that give you unprecedented insights into your operations. Our rapid development cycles mean you can start seeing results in days, not weeks, while our cost-effective approach helps you eliminate expensive legacy enterprise software and reduce operational overhead.
-          </p>
         </div>
       </div>
     </div>

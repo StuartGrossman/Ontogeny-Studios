@@ -18,10 +18,8 @@ interface WindowStates {
 
 // Add a comment to trigger deployment
 function App() {
-  const [code1, setCode1] = useState('')
   const [code2, setCode2] = useState('')
   const [scraperOutput, setScraperOutput] = useState('')
-  const [serverStatus, setServerStatus] = useState('checking...')
   const [isContactModalOpen, setIsContactModalOpen] = useState(false)
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false)
   const [isServicesModalOpen, setIsServicesModalOpen] = useState(false)
@@ -84,42 +82,6 @@ class ServiceDelivery {
       metric === 'Competitive' || 
       metric === 'Expert'
     );
-  }
-}`
-
-const modernCode = `// Core Services & Features
-class ModernSolutions {
-  private services = {
-    customSoftware: 'Full-stack development',
-    dataAnalytics: 'Business intelligence',
-    automation: 'Process optimization',
-    integration: 'API & system integration'
-  };
-
-  public async deliverSolution(): Promise<void> {
-    console.log('Rapid development cycles');
-    console.log('Custom-tailored solutions');
-    console.log('Seamless integration');
-  }
-
-  public optimizeBusiness(): void {
-    console.log('Reduce operational overhead');
-    console.log('Enhance workflow efficiency');
-    console.log('Implement cost-effective solutions');
-  }
-}
-
-class BusinessIntelligence {
-  public async analyzeData(): Promise<void> {
-    console.log('Custom analytics dashboards');
-    console.log('Real-time business insights');
-    console.log('Predictive analytics');
-  }
-
-  public generateReports(): void {
-    console.log('Comprehensive business metrics');
-    console.log('Custom financial reporting');
-    console.log('Performance analytics');
   }
 }`
 
@@ -223,19 +185,6 @@ const generateAnalysis = () => {
   return analyses[Math.floor(Math.random() * analyses.length)];
 };
 
-const scraperOutputs = [
-  'Analyzing business requirements...',
-  'Designing custom solution architecture...',
-  'Implementing rapid development cycles...',
-  'Integrating modern technologies...',
-  'Optimizing operational efficiency...',
-  'Deploying cost-effective solutions...',
-  'Configuring analytics dashboards...',
-  'Setting up automated workflows...',
-  'Implementing API integrations...',
-  'Finalizing custom features...'
-];
-
 const keyMetrics = [
   { value: '60%', label: 'Cost Reduction' },
   { value: '5 Days', label: 'Average Delivery' },
@@ -282,15 +231,13 @@ useEffect(() => {
   const checkServer = async () => {
     try {
       const response = await fetch('http://localhost:5000/api/health')
-      const data = await response.json()
-      setServerStatus(data.message)
+      await response.json()
     } catch (error) {
-      setServerStatus('Server is not running')
+      // do nothing
     }
   }
 
-  typeCode(legacyCode, setCode1)
-  typeCode(modernCode, setCode2)
+  typeCode(legacyCode, setCode2)
   runScraper()
   checkServer()
 }, [])
@@ -335,21 +282,8 @@ return (
           </div>
         </div>
         <div className="terminal-content">
-          <div className="typing">
-            {code1.split('\n').map((line, i) => {
-              if (line.startsWith('*')) return <span key={i} className="comment">{line}</span>
-              if (line.startsWith('interface')) return <span key={i} className="type">{line}</span>
-              if (line.startsWith('class')) return <span key={i} className="type">{line}</span>
-              if (line.includes('async')) return <span key={i} className="keyword">{line}</span>
-              if (line.includes('private')) return <span key={i} className="keyword">{line}</span>
-              if (line.includes('constructor')) return <span key={i} className="function">{line}</span>
-              if (line.includes('get')) return <span key={i} className="function">{line}</span>
-              if (line.includes('//')) return <span key={i} className="comment">{line}</span>
-              if (line.match(/\d+/)) return <span key={i} className="number">{line}</span>
-              if (line.match(/['"`].*['"`]/)) return <span key={i} className="string">{line}</span>
-              return <span key={i}>{line}</span>
-            })}
-          </div>
+          <p>Welcome to Ontogeny Labs</p>
+          <p>We specialize in custom software solutions and system architecture.</p>
         </div>
       </div>
     )}
