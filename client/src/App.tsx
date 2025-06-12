@@ -3,6 +3,11 @@ import './App.css'
 import ContactModal from './components/ContactModal'
 import AboutModal from './components/AboutModal'
 import ServicesModal from './components/ServicesModal'
+import UserManagementModal from './components/UserManagementModal'
+import ProjectCreationModal from './components/ProjectCreationModal'
+import { auth, db } from './firebase'
+import { GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth'
+import { doc, setDoc, getDoc } from 'firebase/firestore'
 
 type WindowName = 'businessProfile' | 'coreServices' | 'systemAnalysis' | 'keyMetrics';
 
@@ -18,6 +23,10 @@ interface WindowStates {
 
 // Add a comment to trigger deployment
 function App() {
+  const [user, setUser] = useState<User | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [showUserManagement, setShowUserManagement] = useState(false)
+  const [showProjectCreation, setShowProjectCreation] = useState(false)
   const [code2, setCode2] = useState('')
   const [scraperOutput, setScraperOutput] = useState('')
   const [isContactModalOpen, setIsContactModalOpen] = useState(false)
@@ -192,6 +201,61 @@ const keyMetrics = [
   { value: '99.9%', label: 'Uptime' }
 ];
 
+const handleGoogleLogin = async () => {
+  try {
+    const provider = new GoogleAuthProvider()
+    const result = await signInWithPopup(auth, provider)
+    setUser(result.user)
+    
+    // Create or update user document
+    const userRef = doc(db, 'users', result.user.uid)
+    const userDoc = await getDoc(userRef)
+    
+    if (!userDoc.exists()) {
+      // New user - create document
+      await setDoc(userRef, {
+        email: result.user.email,
+        displayName: result.user.displayName,
+        photoURL: result.user.photoURL,
+        isAdmin: false,
+        createdAt: new Date().toISOString()
+      })
+    }
+  } catch (error) {
+    console.error('Error signing in with Google:', error)
+  }
+}
+
+const makeAdmin = async () => {
+  if (!user) return
+  
+  try {
+    const userRef = doc(db, 'users', user.uid)
+    await setDoc(userRef, { isAdmin: true }, { merge: true })
+    setIsAdmin(true)
+    alert('You are now an admin!')
+  } catch (error) {
+    console.error('Error making user admin:', error)
+  }
+}
+
+useEffect(() => {
+  const unsubscribe = auth.onAuthStateChanged(async (user) => {
+    setUser(user)
+    if (user) {
+      // Check if user is admin
+      const userRef = doc(db, 'users', user.uid)
+      const userDoc = await getDoc(userRef)
+      if (userDoc.exists()) {
+        setIsAdmin(userDoc.data().isAdmin || false)
+      }
+    } else {
+      setIsAdmin(false)
+    }
+  })
+  return () => unsubscribe()
+}, [])
+
 useEffect(() => {
   const typeCode = async (code: string, setCode: React.Dispatch<React.SetStateAction<string>>) => {
     let currentCode = '';
@@ -284,6 +348,71 @@ return (
         <div className="terminal-content">
           <p>Welcome to Ontogeny Labs</p>
           <p>We specialize in custom software solutions and system architecture.</p>
+          {!user ? ( 
+            <button 
+              onClick={handleGoogleLogin} 
+              style={{ marginTop: 10, padding: 5, background: "var(--terminal-header)", border: "1px solid var(--terminal-border)", color: "var(--terminal-text)" }}
+            >
+              One-Click Firebase Login (Google)
+            </button>
+          ) : ( 
+            <>
+              <p>Welcome, {user.displayName}!</p>
+              {isAdmin && (
+                <>
+                  <p style={{ color: 'green' }}>Admin Status: Active</p>
+                  <div style={{ 
+                    marginTop: '20px', 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(2, 1fr)', 
+                    gap: '15px',
+                    padding: '15px',
+                    background: 'var(--terminal-bg)',
+                    border: '1px solid var(--terminal-border)',
+                    borderRadius: '4px'
+                  }}>
+                    <div 
+                      onClick={() => setShowUserManagement(true)}
+                      style={{
+                        cursor: 'pointer',
+                        padding: '15px',
+                        background: 'var(--terminal-header)',
+                        border: '1px solid var(--terminal-border)',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <span style={{ fontSize: '24px' }}>👥</span>
+                      <span>User Management</span>
+                      <span style={{ fontSize: '12px', opacity: 0.7 }}>View & manage active users</span>
+                    </div>
+                    
+                    <div 
+                      onClick={() => setShowProjectCreation(true)}
+                      style={{
+                        cursor: 'pointer',
+                        padding: '15px',
+                        background: 'var(--terminal-header)',
+                        border: '1px solid var(--terminal-border)',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <span style={{ fontSize: '24px' }}>📁</span>
+                      <span>Create Project</span>
+                      <span style={{ fontSize: '12px', opacity: 0.7 }}>Create new user projects</span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </>
+          )}
         </div>
       </div>
     )}
@@ -399,6 +528,16 @@ return (
     <ServicesModal 
       isOpen={isServicesModalOpen} 
       onClose={() => setIsServicesModalOpen(false)} 
+    />
+
+    <UserManagementModal 
+      isOpen={showUserManagement} 
+      onClose={() => setShowUserManagement(false)} 
+    />
+    
+    <ProjectCreationModal 
+      isOpen={showProjectCreation} 
+      onClose={() => setShowProjectCreation(false)} 
     />
   </div>
 )

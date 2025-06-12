@@ -1,0 +1,124 @@
+.project-creation-modal {
+  max-width: 600px;
+  width: 90%;
+  background: var(--terminal-bg);
+  border: 1px solid var(--terminal-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: var(--terminal-header);
+  border-bottom: 1px solid var(--terminal-border);
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: var(--terminal-text);
+  font-size: 1.2em;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: var(--terminal-text);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0 5px;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: var(--terminal-text);
+}
+
+.project-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  color: var(--terminal-text);
+  font-size: 0.9em;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 8px 12px;
+  border: 1px solid var(--terminal-border);
+  background: var(--terminal-bg);
+  color: var(--terminal-text);
+  border-radius: 4px;
+  font-size: 1em;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #2c5282;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.cancel-button,
+.submit-button {
+  padding: 8px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: all 0.2s ease;
+}
+
+.cancel-button {
+  background: none;
+  border: 1px solid var(--terminal-border);
+  color: var(--terminal-text);
+}
+
+.cancel-button:hover {
+  background: var(--terminal-header);
+}
+
+.submit-button {
+  background: #2c5282;
+  border: 1px solid #2c5282;
+  color: white;
+}
+
+.submit-button:hover {
+  background: #2b6cb0;
+}
+
+.cancel-button:disabled,
+.submit-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+} 

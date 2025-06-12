@@ -1,0 +1,120 @@
+.user-management-modal {
+  max-width: 800px;
+  width: 90%;
+  max-height: 80vh;
+  background: var(--terminal-bg);
+  border: 1px solid var(--terminal-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: var(--terminal-header);
+  border-bottom: 1px solid var(--terminal-border);
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: var(--terminal-text);
+  font-size: 1.2em;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: var(--terminal-text);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0 5px;
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  max-height: calc(80vh - 60px);
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: var(--terminal-text);
+}
+
+.users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.user-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: var(--terminal-header);
+  border: 1px solid var(--terminal-border);
+  border-radius: 4px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-details h3 {
+  margin: 0 0 5px 0;
+  color: var(--terminal-text);
+}
+
+.user-details p {
+  margin: 0;
+  color: var(--terminal-text);
+  opacity: 0.8;
+  font-size: 0.9em;
+}
+
+.user-date {
+  font-size: 0.8em !important;
+  opacity: 0.6 !important;
+}
+
+.user-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.admin-toggle {
+  padding: 8px 15px;
+  border: 1px solid var(--terminal-border);
+  background: var(--terminal-bg);
+  color: var(--terminal-text);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-toggle:hover {
+  background: var(--terminal-header);
+}
+
+.admin-toggle.is-admin {
+  background: #2c5282;
+  color: white;
+  border-color: #2c5282;
+}
+
+.admin-toggle.is-admin:hover {
+  background: #2b6cb0;
+} 
