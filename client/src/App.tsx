@@ -1,546 +1,122 @@
-import { useState, useEffect } from 'react'
-import './App.css'
-import ContactModal from './components/ContactModal'
-import AboutModal from './components/AboutModal'
-import ServicesModal from './components/ServicesModal'
-import UserManagementModal from './components/UserManagementModal'
-import ProjectCreationModal from './components/ProjectCreationModal'
-import { auth, db } from './firebase'
-import { GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth'
-import { doc, setDoc, getDoc } from 'firebase/firestore'
+import React, { useEffect, useRef } from 'react';
+import './App.css';
 
-type WindowName = 'businessProfile' | 'coreServices' | 'systemAnalysis' | 'keyMetrics';
+const App: React.FC = () => {
+  const codeContentRef = useRef<HTMLDivElement>(null);
 
-interface WindowState {
-  isOpen: boolean;
-  isMinimized: boolean;
-  isMaximized: boolean;
-}
-
-interface WindowStates {
-  [key: string]: WindowState;
-}
-
-// Add a comment to trigger deployment
-function App() {
-  const [user, setUser] = useState<User | null>(null)
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [showUserManagement, setShowUserManagement] = useState(false)
-  const [showProjectCreation, setShowProjectCreation] = useState(false)
-  const [code2, setCode2] = useState('')
-  const [scraperOutput, setScraperOutput] = useState('')
-  const [isContactModalOpen, setIsContactModalOpen] = useState(false)
-  const [isAboutModalOpen, setIsAboutModalOpen] = useState(false)
-  const [isServicesModalOpen, setIsServicesModalOpen] = useState(false)
-  const [windowStates, setWindowStates] = useState<WindowStates>({
-    businessProfile: { isOpen: true, isMinimized: false, isMaximized: false },
-    coreServices: { isOpen: true, isMinimized: false, isMaximized: false },
-    systemAnalysis: { isOpen: true, isMinimized: false, isMaximized: false },
-    keyMetrics: { isOpen: true, isMinimized: false, isMaximized: false }
-  })
-
-  const toggleWindow = (windowName: WindowName, action: 'close' | 'minimize' | 'maximize') => {
-    setWindowStates(prev => ({
-      ...prev,
-      [windowName]: {
-        ...prev[windowName],
-        isOpen: action === 'close' ? false : prev[windowName].isOpen,
-        isMinimized: action === 'minimize' ? !prev[windowName].isMinimized : prev[windowName].isMinimized,
-        isMaximized: action === 'maximize' ? !prev[windowName].isMaximized : prev[windowName].isMaximized
-      }
-    }))
-  }
-
-  const legacyCode = `// Business Profile & Metrics
-interface BusinessMetrics {
-  developmentSpeed: 'Rapid' | 'Efficient';
-  costEfficiency: 'Competitive' | 'Optimized';
-  teamExpertise: 'Expert' | 'Specialized';
-}
-
-class ServiceOfferings {
-  private metrics: BusinessMetrics = {
-    developmentSpeed: 'Rapid',
-    costEfficiency: 'Competitive',
-    teamExpertise: 'Expert'
-  };
-
-  public deliverProject(requirements: string): void {
-    console.log('Delivering solutions in days, not weeks');
-    console.log('Transforming requirements into systems');
-  }
-
-  public optimizeCosts(currentExpenses: number): number {
-    return currentExpenses * 0.4; // 60% cost reduction
-  }
-}
-
-class ServiceDelivery {
-  public async analyzeNeeds(
-    context: string
-  ): Promise<void> {
-    console.log('Deep analysis of requirements');
-    console.log('Custom architecture design');
-  }
-
-  public validateQuality(
-    metrics: BusinessMetrics
-  ): boolean {
-    return Object.values(metrics).every(metric => 
-      metric === 'Rapid' || 
-      metric === 'Competitive' || 
-      metric === 'Expert'
-    );
-  }
-}`
-
-const generatePattern = (width: number, height: number) => {
-  const patterns = [
-    // Matrix-style rain
-    () => {
-      let pattern = '';
-      for (let i = 0; i < height; i++) {
-        for (let j = 0; j < width; j++) {
-          pattern += Math.random() > 0.95 ? '█' : '░';
+  useEffect(() => {
+    const codeContent = codeContentRef.current;
+    if (codeContent) {
+      // Auto-scroll to a certain point and back to top
+      const scrollInterval = setInterval(() => {
+        const { scrollTop, scrollHeight, clientHeight } = codeContent;
+        if (scrollTop < scrollHeight - clientHeight) {
+          codeContent.scrollTop += 1; // Scroll down by 1 pixel for smoother effect
+        } else {
+          codeContent.scrollTop = 0; // Reset to top when reaching bottom
         }
-        pattern += '\n';
-      }
-      return pattern;
-    },
-    // Binary pattern
-    () => {
-      let pattern = '';
-      for (let i = 0; i < height; i++) {
-        for (let j = 0; j < width; j++) {
-          pattern += Math.random() > 0.5 ? '1' : '0';
-        }
-        pattern += '\n';
-      }
-      return pattern;
-    },
-    // Circuit board pattern
-    () => {
-      let pattern = '';
-      for (let i = 0; i < height; i++) {
-        for (let j = 0; j < width; j++) {
-          if (Math.random() > 0.9) {
-            pattern += '┼';
-          } else if (Math.random() > 0.8) {
-            pattern += '─';
-          } else if (Math.random() > 0.7) {
-            pattern += '│';
-          } else {
-            pattern += ' ';
-          }
-        }
-        pattern += '\n';
-      }
-      return pattern;
-    },
-    // DNA helix
-    () => {
-      let pattern = '';
-      for (let i = 0; i < height; i++) {
-        for (let j = 0; j < width; j++) {
-          const x = Math.sin(i * 0.5) * 5 + j;
-          pattern += Math.abs(x - j) < 1 ? '█' : '░';
-        }
-        pattern += '\n';
-      }
-      return pattern;
+      }, 20); // Faster interval for smoother scrolling
+
+      return () => clearInterval(scrollInterval);
     }
-  ];
-  return patterns[Math.floor(Math.random() * patterns.length)]();
-};
+  }, []);
 
-const generateMetrics = () => {
-  const metrics = [
-    `CPU Usage: ${Math.floor(Math.random() * 100)}% [${generateProgressBar(Math.random() * 100)}]`,
-    `Memory: ${Math.floor(Math.random() * 1000)}MB / 2048MB [${generateProgressBar(Math.random() * 100)}]`,
-    `Network: ${Math.floor(Math.random() * 1000)}KB/s [${generateProgressBar(Math.random() * 100)}]`,
-    `Disk I/O: ${Math.floor(Math.random() * 500)}MB/s [${generateProgressBar(Math.random() * 100)}]`,
-    `Active Users: ${Math.floor(Math.random() * 1000)} [${generateProgressBar(Math.random() * 100)}]`,
-    `Response Time: ${Math.floor(Math.random() * 100)}ms [${generateProgressBar(Math.random() * 100)}]`,
-    `Error Rate: ${(Math.random() * 0.1).toFixed(2)}% [${generateProgressBar(Math.random() * 100)}]`,
-    `Cache Hit: ${Math.floor(Math.random() * 100)}% [${generateProgressBar(Math.random() * 100)}]`
-  ];
-  return metrics.join('\n');
-};
+  return (
+    <div className="app">
+      <div className="split-screen">
+        {/* Left side - Brand */}
+        <div className="brand-section">
+          <h1 className="brand-title">
+            <span className="gradient-text">Ontogeny</span>
+            <span className="brand-subtitle">Labs</span>
+          </h1>
+          <p className="brand-description">
+            Building the future of software development
+          </p>
+        </div>
 
-const generateProgressBar = (percentage: number) => {
-  const width = 20;
-  const filled = Math.floor(percentage * width / 100);
-  return '[' + '█'.repeat(filled) + '░'.repeat(width - filled) + ']';
-};
-
-const generateAnalysis = () => {
-  const analyses = [
-    'Analyzing system performance...',
-    'Calculating resource utilization...',
-    'Monitoring network traffic...',
-    'Evaluating database queries...',
-    'Processing user requests...',
-    'Optimizing cache efficiency...',
-    'Balancing load distribution...',
-    'Measuring response times...',
-    'Tracking error patterns...',
-    'Generating performance reports...',
-    'Scanning security protocols...',
-    'Updating system metrics...',
-    'Compiling analytics data...',
-    'Running diagnostics...',
-    'Checking system health...'
-  ];
-  return analyses[Math.floor(Math.random() * analyses.length)];
-};
-
-const keyMetrics = [
-  { value: '60%', label: 'Cost Reduction' },
-  { value: '5 Days', label: 'Average Delivery' },
-  { value: '15+', label: 'Years Experience' },
-  { value: '99.9%', label: 'Uptime' }
-];
-
-const handleGoogleLogin = async () => {
-  try {
-    const provider = new GoogleAuthProvider()
-    const result = await signInWithPopup(auth, provider)
-    setUser(result.user)
-    
-    // Create or update user document
-    const userRef = doc(db, 'users', result.user.uid)
-    const userDoc = await getDoc(userRef)
-    
-    if (!userDoc.exists()) {
-      // New user - create document
-      await setDoc(userRef, {
-        email: result.user.email,
-        displayName: result.user.displayName,
-        photoURL: result.user.photoURL,
-        isAdmin: false,
-        createdAt: new Date().toISOString()
-      })
-    }
-  } catch (error) {
-    console.error('Error signing in with Google:', error)
-  }
-}
-
-const makeAdmin = async () => {
-  if (!user) return
-  
-  try {
-    const userRef = doc(db, 'users', user.uid)
-    await setDoc(userRef, { isAdmin: true }, { merge: true })
-    setIsAdmin(true)
-    alert('You are now an admin!')
-  } catch (error) {
-    console.error('Error making user admin:', error)
-  }
-}
-
-useEffect(() => {
-  const unsubscribe = auth.onAuthStateChanged(async (user) => {
-    setUser(user)
-    if (user) {
-      // Check if user is admin
-      const userRef = doc(db, 'users', user.uid)
-      const userDoc = await getDoc(userRef)
-      if (userDoc.exists()) {
-        setIsAdmin(userDoc.data().isAdmin || false)
-      }
-    } else {
-      setIsAdmin(false)
-    }
-  })
-  return () => unsubscribe()
-}, [])
-
-useEffect(() => {
-  const typeCode = async (code: string, setCode: React.Dispatch<React.SetStateAction<string>>) => {
-    let currentCode = '';
-    for (let i = 0; i < code.length; i++) {
-      currentCode += code[i];
-      setCode(currentCode);
-      await new Promise(resolve => setTimeout(resolve, 20));
-    }
-  }
-
-  const runScraper = async () => {
-    let currentOutput = '';
-    let patternCount = 0;
-    
-    const updateScraper = () => {
-      if (patternCount % 3 === 0) {
-        currentOutput = generatePattern(40, 5) + '\n';
-      } else if (patternCount % 3 === 1) {
-        currentOutput = generateMetrics() + '\n';
-      } else {
-        currentOutput = generateAnalysis() + '\n';
-      }
-      setScraperOutput(currentOutput);
-      patternCount++;
-    };
-
-    // Initial update
-    updateScraper();
-
-    // Set up interval for continuous updates
-    const interval = setInterval(updateScraper, 1500); // Faster updates
-
-    // Cleanup interval on component unmount
-    return () => clearInterval(interval);
-  }
-
-  const checkServer = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/api/health')
-      await response.json()
-    } catch (error) {
-      // do nothing
-    }
-  }
-
-  typeCode(legacyCode, setCode2)
-  runScraper()
-  checkServer()
-}, [])
-
-return (
-  <div className="app">
-    <div className="title-bar">
-      <h1 className="company-name">Ontogeny Studios</h1>
-      <nav className="nav-links">
-        <a href="#" className="nav-link" onClick={(e) => {
-          e.preventDefault();
-          setIsAboutModalOpen(true);
-        }}>About</a>
-        <a href="#" className="nav-link" onClick={(e) => {
-          e.preventDefault();
-          setIsServicesModalOpen(true);
-        }}>Services</a>
-        <a href="#" className="nav-link" onClick={(e) => {
-          e.preventDefault();
-          setIsContactModalOpen(true);
-        }}>Contact</a>
-      </nav>
+        {/* Right side - Code Window */}
+        <div className="code-box">
+          <div className="code-header">
+            <div className="code-dot red"></div>
+            <div className="code-dot yellow"></div>
+            <div className="code-dot green"></div>
+            <span className="code-title">server.js</span>
+          </div>
+          <div className="code-content" ref={codeContentRef}>
+            <pre>
+              <code dangerouslySetInnerHTML={{ __html: `
+                import <span style="color: #ff79c6; font-weight: bold; background-color: red;">React</span>, { <span style="color: #ff79c6; font-weight: bold;">useState</span>, <span style="color: #ff79c6; font-weight: bold;">useEffect</span> } 
+                from <span style="color: #f1fa8c;">'react'</span>;
+                
+                <span style="color: #6272a4; font-style: italic;">// LinkedInProfile Component</span>
+                const <span style="color: #ff79c6; font-weight: bold;">LinkedInProfile</span>: <span style="color: #8be9fd; font-weight: bold;">React.FC</span> = () => {
+                  const [<span style="color: #f8f8f2;">profileData</span>, <span style="color: #50fa7b; font-weight: 500;">setProfileData</span>] = 
+                    <span style="color: #50fa7b; font-weight: 500;">useState</span>&lt;<span style="color: #ff79c6; font-weight: bold;">any</span>&gt;(<span style="color: #ff79c6; font-weight: bold;">null</span>);
+                  const [<span style="color: #f8f8f2;">isLoading</span>, <span style="color: #50fa7b; font-weight: 500;">setIsLoading</span>] = 
+                    <span style="color: #50fa7b; font-weight: 500;">useState</span>&lt;<span style="color: #ff79c6; font-weight: bold;">boolean</span>&gt;(<span style="color: #ff79c6; font-weight: bold;">true</span>);
+                
+                  <span style="color: #6272a4; font-style: italic;">// Fetch LinkedIn profile data</span>
+                  <span style="color: #50fa7b; font-weight: 500;">useEffect</span>(() => {
+                    const <span style="color: #f8f8f2;">fetchProfile</span> = 
+                      <span style="color: #ff79c6; font-weight: bold;">async</span> () => {
+                        <span style="color: #ff79c6; font-weight: bold;">try</span> {
+                          <span style="color: #50fa7b; font-weight: 500;">setIsLoading</span>(<span style="color: #ff79c6; font-weight: bold;">true</span>);
+                          const <span style="color: #f8f8f2;">response</span> = 
+                            <span style="color: #ff79c6; font-weight: bold;">await</span> 
+                            <span style="color: #50fa7b; font-weight: 500;">linkedInApiCall</span>();
+                          <span style="color: #50fa7b; font-weight: 500;">setProfileData</span>(<span style="color: #f8f8f2;">response</span>.<span style="color: #f8f8f2;">data</span>);
+                        } <span style="color: #ff79c6; font-weight: bold;">catch</span> (<span style="color: #f8f8f2;">error</span>) {
+                          <span style="color: #8be9fd; font-weight: 500;">console</span>.<span style="color: #50fa7b; font-weight: 500;">error</span>(
+                            <span style="color: #f1fa8c;">'Error fetching profile'</span>, 
+                            <span style="color: #f8f8f2;">error</span>
+                          );
+                        } <span style="color: #ff79c6; font-weight: bold;">finally</span> {
+                          <span style="color: #50fa7b; font-weight: 500;">setIsLoading</span>(<span style="color: #ff79c6; font-weight: bold;">false</span>);
+                        }
+                      };
+                    <span style="color: #50fa7b; font-weight: 500;">fetchProfile</span>();
+                  }, []);
+                
+                  <span style="color: #6272a4; font-style: italic;">// Fake LinkedIn API call</span>
+                  const <span style="color: #f8f8f2;">linkedInApiCall</span> = 
+                    <span style="color: #ff79c6; font-weight: bold;">async</span> () => {
+                      <span style="color: #ff79c6; font-weight: bold;">return</span> {
+                        <span style="color: #f8f8f2;">data</span>: {
+                          <span style="color: #f8f8f2;">userId</span>: <span style="color: #f1fa8c;">'linkedin123'</span>,
+                          <span style="color: #f8f8f2;">fullName</span>: 
+                            <span style="color: #f1fa8c;">'Jane Smith'</span>,
+                          <span style="color: #f8f8f2;">headline</span>: 
+                            <span style="color: #f1fa8c;">'Senior Developer at TechCorp'</span>,
+                          <span style="color: #f8f8f2;">connections</span>: <span style="color: #bd93f9;">850</span>
+                        }
+                      };
+                    };
+                
+                  <span style="color: #ff79c6; font-weight: bold;">if</span> (<span style="color: #f8f8f2;">isLoading</span>) {
+                    <span style="color: #ff79c6; font-weight: bold;">return</span> (
+                      <div>Fetching profile...</div>
+                    );
+                  }
+                
+                  <span style="color: #ff79c6; font-weight: bold;">return</span> (
+                    <div className="profile-card">
+                      <h2>{<span style="color: #f8f8f2;">profileData</span>.<span style="color: #f8f8f2;">fullName</span>}</h2>
+                      <p>{<span style="color: #f8f8f2;">profileData</span>.<span style="color: #f8f8f2;">headline</span>}</p>
+                      <p>Connections: 
+                        {<span style="color: #f8f8f2;">profileData</span>.<span style="color: #f8f8f2;">connections</span>}</p>
+                    </div>
+                  );
+                };
+                
+                export <span style="color: #ff79c6; font-weight: bold;">default</span> <span style="color: #ff79c6; font-weight: bold;">LinkedInProfile</span>;
+              ` }} />
+            </pre>
+          </div>
+        </div>
+      </div>
     </div>
+  );
+};
 
-    {windowStates.businessProfile.isOpen && (
-      <div className={`terminal-window ${windowStates.businessProfile.isMinimized ? 'minimized' : ''}`}>
-        <div className="terminal-header">
-          <span className="terminal-title">Business Profile</span>
-          <div className="terminal-controls">
-            <div 
-              className="terminal-control minimize" 
-              onClick={() => toggleWindow('businessProfile', 'minimize')}
-            />
-            <div 
-              className="terminal-control maximize" 
-              onClick={() => toggleWindow('businessProfile', 'maximize')}
-            />
-            <div 
-              className="terminal-control close" 
-              onClick={() => toggleWindow('businessProfile', 'close')}
-            />
-          </div>
-        </div>
-        <div className="terminal-content">
-          <p>Welcome to Ontogeny Labs</p>
-          <p>We specialize in custom software solutions and system architecture.</p>
-          {!user ? ( 
-            <button 
-              onClick={handleGoogleLogin} 
-              style={{ marginTop: 10, padding: 5, background: "var(--terminal-header)", border: "1px solid var(--terminal-border)", color: "var(--terminal-text)" }}
-            >
-              One-Click Firebase Login (Google)
-            </button>
-          ) : ( 
-            <>
-              <p>Welcome, {user.displayName}!</p>
-              {isAdmin && (
-                <>
-                  <p style={{ color: 'green' }}>Admin Status: Active</p>
-                  <div style={{ 
-                    marginTop: '20px', 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(2, 1fr)', 
-                    gap: '15px',
-                    padding: '15px',
-                    background: 'var(--terminal-bg)',
-                    border: '1px solid var(--terminal-border)',
-                    borderRadius: '4px'
-                  }}>
-                    <div 
-                      onClick={() => setShowUserManagement(true)}
-                      style={{
-                        cursor: 'pointer',
-                        padding: '15px',
-                        background: 'var(--terminal-header)',
-                        border: '1px solid var(--terminal-border)',
-                        borderRadius: '4px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '8px'
-                      }}
-                    >
-                      <span style={{ fontSize: '24px' }}>👥</span>
-                      <span>User Management</span>
-                      <span style={{ fontSize: '12px', opacity: 0.7 }}>View & manage active users</span>
-                    </div>
-                    
-                    <div 
-                      onClick={() => setShowProjectCreation(true)}
-                      style={{
-                        cursor: 'pointer',
-                        padding: '15px',
-                        background: 'var(--terminal-header)',
-                        border: '1px solid var(--terminal-border)',
-                        borderRadius: '4px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '8px'
-                      }}
-                    >
-                      <span style={{ fontSize: '24px' }}>📁</span>
-                      <span>Create Project</span>
-                      <span style={{ fontSize: '12px', opacity: 0.7 }}>Create new user projects</span>
-                    </div>
-                  </div>
-                </>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-    )}
-
-    {windowStates.coreServices.isOpen && (
-      <div className={`terminal-window ${windowStates.coreServices.isMinimized ? 'minimized' : ''}`}>
-        <div className="terminal-header">
-          <span className="terminal-title">Core Services</span>
-          <div className="terminal-controls">
-            <div 
-              className="terminal-control minimize" 
-              onClick={() => toggleWindow('coreServices', 'minimize')}
-            />
-            <div 
-              className="terminal-control maximize" 
-              onClick={() => toggleWindow('coreServices', 'maximize')}
-            />
-            <div 
-              className="terminal-control close" 
-              onClick={() => toggleWindow('coreServices', 'close')}
-            />
-          </div>
-        </div>
-        <div className="terminal-content">
-          <div className="typing">
-            {code2.split('\n').map((line, i) => {
-              if (line.startsWith('*')) return <span key={i} className="comment">{line}</span>
-              if (line.startsWith('interface')) return <span key={i} className="type">{line}</span>
-              if (line.startsWith('class')) return <span key={i} className="type">{line}</span>
-              if (line.includes('async')) return <span key={i} className="keyword">{line}</span>
-              if (line.includes('private')) return <span key={i} className="keyword">{line}</span>
-              if (line.includes('constructor')) return <span key={i} className="function">{line}</span>
-              if (line.includes('deliver')) return <span key={i} className="function">{line}</span>
-              if (line.includes('//')) return <span key={i} className="comment">{line}</span>
-              if (line.match(/\d+/)) return <span key={i} className="number">{line}</span>
-              if (line.match(/['"`].*['"`]/)) return <span key={i} className="string">{line}</span>
-              return <span key={i}>{line}</span>
-            })}
-          </div>
-        </div>
-      </div>
-    )}
-
-    {windowStates.keyMetrics.isOpen && (
-      <div className={`key-metrics ${windowStates.keyMetrics.isMinimized ? 'minimized' : ''}`}>
-        <div className="key-metrics-header">
-          <div className="key-metrics-title">Business Impact Analysis</div>
-          <div className="terminal-controls">
-            <div 
-              className="terminal-control minimize" 
-              onClick={() => toggleWindow('keyMetrics', 'minimize')}
-            />
-            <div 
-              className="terminal-control maximize" 
-              onClick={() => toggleWindow('keyMetrics', 'maximize')}
-            />
-            <div 
-              className="terminal-control close" 
-              onClick={() => toggleWindow('keyMetrics', 'close')}
-            />
-          </div>
-        </div>
-        <div className="key-metrics-content">
-          <div className="key-metrics-grid">
-            {keyMetrics.map((metric, index) => (
-              <div key={index} className="metric-card">
-                <div className="metric-value">{metric.value}</div>
-                <div className="metric-label">{metric.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    )}
-
-    {windowStates.systemAnalysis.isOpen && (
-      <div className={`terminal-window scraper-window ${windowStates.systemAnalysis.isMinimized ? 'minimized' : ''}`}>
-        <div className="terminal-header">
-          <span className="terminal-title">System Analysis</span>
-          <div className="terminal-controls">
-            <div 
-              className="terminal-control minimize" 
-              onClick={() => toggleWindow('systemAnalysis', 'minimize')}
-            />
-            <div 
-              className="terminal-control maximize" 
-              onClick={() => toggleWindow('systemAnalysis', 'maximize')}
-            />
-            <div 
-              className="terminal-control close" 
-              onClick={() => toggleWindow('systemAnalysis', 'close')}
-            />
-          </div>
-        </div>
-        <div className="terminal-content">
-          <pre className="typing">
-            {scraperOutput}
-          </pre>
-        </div>
-      </div>
-    )}
-
-    <ContactModal 
-      isOpen={isContactModalOpen} 
-      onClose={() => setIsContactModalOpen(false)} 
-    />
-
-    <AboutModal 
-      isOpen={isAboutModalOpen} 
-      onClose={() => setIsAboutModalOpen(false)} 
-    />
-
-    <ServicesModal 
-      isOpen={isServicesModalOpen} 
-      onClose={() => setIsServicesModalOpen(false)} 
-    />
-
-    <UserManagementModal 
-      isOpen={showUserManagement} 
-      onClose={() => setShowUserManagement(false)} 
-    />
-    
-    <ProjectCreationModal 
-      isOpen={showProjectCreation} 
-      onClose={() => setShowProjectCreation(false)} 
-    />
-  </div>
-)
-}
-
-export default App
+export default App;
