@@ -377,61 +377,6 @@ const Examples: React.FC = () => {
     <>
       <Navbar />
       <div className="examples-page">
-        <header className="examples-header">
-          <div className="header-content">
-            <h1>Enterprise Solutions</h1>
-            <div className="cta-banner">
-              <h2>Ready to Transform Your Business?</h2>
-              <p>Let's discuss how our custom software solutions can help you achieve your goals</p>
-              <div className="header-actions">
-                <a href="/schedule" className="header-button primary-button">Schedule a Demo</a>
-                <a href="/contact" className="header-button secondary-button">Contact Sales</a>
-              </div>
-            </div>
-            <p className="header-tagline">Discover how our custom software solutions are transforming businesses across industries</p>
-            
-            <div className="search-filter-container">
-              <div className="search-box">
-                <input
-                  type="text"
-                  placeholder="Search solutions..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="search-input"
-                />
-                <span className="search-icon">🔍</span>
-              </div>
-              
-              <div className="category-filter">
-                {categories.map(category => (
-                  <button
-                    key={category}
-                    className={`category-button ${selectedCategory === category ? 'active' : ''}`}
-                    onClick={() => setSelectedCategory(category)}
-                  >
-                    {category}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="header-stats">
-              <div className="stat-item">
-                <span className="stat-number">50+</span>
-                <span className="stat-label">Enterprise Clients</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-number">98%</span>
-                <span className="stat-label">Client Satisfaction</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-number">24/7</span>
-                <span className="stat-label">Support</span>
-              </div>
-            </div>
-          </div>
-        </header>
-
         {filteredProjects.length === 0 ? (
           <div className="no-results">
             <h2>No solutions found</h2>
@@ -439,25 +384,6 @@ const Examples: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* Carousel controls ABOVE the demo */}
-            <div className="carousel-controls top">
-              <button className="carousel-button prev" onClick={prevSlide}>
-                ←
-              </button>
-              <div className="carousel-dots">
-                {filteredProjects.map((_, index) => (
-                  <button
-                    key={index}
-                    className={`dot ${index === currentIndex ? 'active' : ''}`}
-                    onClick={() => setCurrentIndex(index)}
-                  />
-                ))}
-              </div>
-              <button className="carousel-button next" onClick={nextSlide}>
-                →
-              </button>
-            </div>
-
             <div className="examples-grid">
               {filteredProjects.map((project, index) => (
                 <div
