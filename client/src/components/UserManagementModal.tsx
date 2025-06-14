@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { collection, query, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
 import './UserManagementModal.css';
 
 interface User {
@@ -13,37 +13,34 @@ interface User {
 }
 
 interface UserManagementModalProps {
-  isOpen: boolean;
   onClose: () => void;
 }
 
-const UserManagementModal = ({ isOpen, onClose }: UserManagementModalProps) => {
+const UserManagementModal: React.FC<UserManagementModalProps> = ({ onClose }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      if (!isOpen) return;
-      
-      try {
-        const usersCollection = collection(db, 'users');
-        const usersSnapshot = await getDocs(usersCollection);
-        const usersList = usersSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as User));
-        setUsers(usersList);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
-  }, [isOpen]);
+  }, []);
 
-  const toggleAdmin = async (userId: string, currentStatus: boolean) => {
+  const fetchUsers = async () => {
+    try {
+      const usersQuery = query(collection(db, 'users'));
+      const querySnapshot = await getDocs(usersQuery);
+      const usersData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as User));
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleAdminStatus = async (userId: string, currentStatus: boolean) => {
     try {
       const userRef = doc(db, 'users', userId);
       await updateDoc(userRef, { isAdmin: !currentStatus });
@@ -55,41 +52,35 @@ const UserManagementModal = ({ isOpen, onClose }: UserManagementModalProps) => {
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="modal-overlay">
-      <div className="modal-content user-management-modal">
-        <div className="modal-header">
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <div className="card-header">
           <h2>User Management</h2>
-          <button className="close-button" onClick={onClose}>×</button>
+          <button onClick={onClose} className="button button-icon">×</button>
         </div>
-        
-        <div className="modal-body">
+        <div className="card-body">
           {loading ? (
-            <div className="loading">Loading users...</div>
+            <div className="text-center">Loading users...</div>
           ) : (
-            <div className="users-list">
+            <div className="user-list">
               {users.map(user => (
                 <div key={user.id} className="user-card">
                   <div className="user-info">
                     {user.photoURL && (
                       <img src={user.photoURL} alt={user.displayName} className="user-avatar" />
                     )}
-                    <div className="user-details">
-                      <h3>{user.displayName}</h3>
-                      <p>{user.email}</p>
-                      <p className="user-date">Joined: {new Date(user.createdAt).toLocaleDateString()}</p>
+                    <div>
+                      <h3 className="user-name">{user.displayName}</h3>
+                      <p className="user-email">{user.email}</p>
                     </div>
                   </div>
-                  <div className="user-actions">
-                    <button
-                      className={`admin-toggle ${user.isAdmin ? 'is-admin' : ''}`}
-                      onClick={() => toggleAdmin(user.id, user.isAdmin)}
-                    >
-                      {user.isAdmin ? 'Remove Admin' : 'Make Admin'}
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => toggleAdminStatus(user.id, user.isAdmin)}
+                    className={`button ${user.isAdmin ? 'button-secondary' : 'button-primary'}`}
+                  >
+                    {user.isAdmin ? 'Remove Admin' : 'Make Admin'}
+                  </button>
                 </div>
               ))}
             </div>

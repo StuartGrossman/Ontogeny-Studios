@@ -1,8 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Examples from './pages/Examples';
 import './App.css';
 
 const App: React.FC = () => {
   const codeContentRef = useRef<HTMLDivElement>(null);
+  const [codeBoxOpacity, setCodeBoxOpacity] = useState(1);
+  const [isHoveringRightSide, setIsHoveringRightSide] = useState(false);
 
   useEffect(() => {
     const codeContent = codeContentRef.current;
@@ -21,7 +26,45 @@ const App: React.FC = () => {
     }
   }, []);
 
+  useEffect(() => {
+    console.log('Component mounted, setting up scroll listener');
+    const handleScroll = () => {
+      console.log('Scroll detected, position:', window.scrollY, 'Hovering right side:', isHoveringRightSide);
+      if (isHoveringRightSide) {
+        const scrollPosition = window.scrollY;
+        const maxScroll = 300; // Adjust this value to control when the fade completes
+        const newOpacity = Math.max(0, 1 - scrollPosition / maxScroll);
+        console.log('Setting opacity to:', newOpacity);
+        setCodeBoxOpacity(newOpacity);
+      } else {
+        console.log('Not hovering, resetting opacity to 1');
+        setCodeBoxOpacity(1); // Reset opacity if not hovering
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    console.log('Scroll listener added');
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      console.log('Scroll listener removed');
+    };
+  }, [isHoveringRightSide]);
+
+  const handleMouseEnter = () => {
+    console.log('Mouse entered right side');
+    setIsHoveringRightSide(true);
+  };
+  const handleMouseLeave = () => {
+    console.log('Mouse left right side');
+    setIsHoveringRightSide(false);
+  };
+
   return (
+    <Router>
+      <Routes>
+        <Route path="/" element={
+          <>
+            <Navbar />
     <div className="app">
       <div className="split-screen">
         {/* Left side - Brand */}
@@ -31,12 +74,26 @@ const App: React.FC = () => {
             <span className="brand-subtitle">Labs</span>
           </h1>
           <p className="brand-description">
-            Building the future of software development
-          </p>
+                    Custom software for your business
+                  </p>
+                  <div className="button-container">
+                    <button 
+                      className="login-button"
+                      onClick={() => console.log('Login clicked')}
+                    >
+                      Login
+                    </button>
+                    <button 
+                      className="examples-button"
+                      onClick={() => window.location.href = '/examples'}
+                    >
+                      Examples
+                    </button>
+                  </div>
         </div>
 
         {/* Right side - Code Window */}
-        <div className="code-box">
+                <div className="code-box" style={{ opacity: codeBoxOpacity, zIndex: 0 }}>
           <div className="code-header">
             <div className="code-dot red"></div>
             <div className="code-dot yellow"></div>
@@ -45,77 +102,108 @@ const App: React.FC = () => {
           </div>
           <div className="code-content" ref={codeContentRef}>
             <pre>
-              <code dangerouslySetInnerHTML={{ __html: `
-                import <span style="color: #ff79c6; font-weight: bold; background-color: red;">React</span>, { <span style="color: #ff79c6; font-weight: bold;">useState</span>, <span style="color: #ff79c6; font-weight: bold;">useEffect</span> } 
-                from <span style="color: #f1fa8c;">'react'</span>;
-                
-                <span style="color: #6272a4; font-style: italic;">// LinkedInProfile Component</span>
-                const <span style="color: #ff79c6; font-weight: bold;">LinkedInProfile</span>: <span style="color: #8be9fd; font-weight: bold;">React.FC</span> = () => {
-                  const [<span style="color: #f8f8f2;">profileData</span>, <span style="color: #50fa7b; font-weight: 500;">setProfileData</span>] = 
-                    <span style="color: #50fa7b; font-weight: 500;">useState</span>&lt;<span style="color: #ff79c6; font-weight: bold;">any</span>&gt;(<span style="color: #ff79c6; font-weight: bold;">null</span>);
-                  const [<span style="color: #f8f8f2;">isLoading</span>, <span style="color: #50fa7b; font-weight: 500;">setIsLoading</span>] = 
-                    <span style="color: #50fa7b; font-weight: 500;">useState</span>&lt;<span style="color: #ff79c6; font-weight: bold;">boolean</span>&gt;(<span style="color: #ff79c6; font-weight: bold;">true</span>);
-                
-                  <span style="color: #6272a4; font-style: italic;">// Fetch LinkedIn profile data</span>
-                  <span style="color: #50fa7b; font-weight: 500;">useEffect</span>(() => {
-                    const <span style="color: #f8f8f2;">fetchProfile</span> = 
-                      <span style="color: #ff79c6; font-weight: bold;">async</span> () => {
-                        <span style="color: #ff79c6; font-weight: bold;">try</span> {
-                          <span style="color: #50fa7b; font-weight: 500;">setIsLoading</span>(<span style="color: #ff79c6; font-weight: bold;">true</span>);
-                          const <span style="color: #f8f8f2;">response</span> = 
-                            <span style="color: #ff79c6; font-weight: bold;">await</span> 
-                            <span style="color: #50fa7b; font-weight: 500;">linkedInApiCall</span>();
-                          <span style="color: #50fa7b; font-weight: 500;">setProfileData</span>(<span style="color: #f8f8f2;">response</span>.<span style="color: #f8f8f2;">data</span>);
-                        } <span style="color: #ff79c6; font-weight: bold;">catch</span> (<span style="color: #f8f8f2;">error</span>) {
-                          <span style="color: #8be9fd; font-weight: 500;">console</span>.<span style="color: #50fa7b; font-weight: 500;">error</span>(
-                            <span style="color: #f1fa8c;">'Error fetching profile'</span>, 
-                            <span style="color: #f8f8f2;">error</span>
-                          );
-                        } <span style="color: #ff79c6; font-weight: bold;">finally</span> {
-                          <span style="color: #50fa7b; font-weight: 500;">setIsLoading</span>(<span style="color: #ff79c6; font-weight: bold;">false</span>);
-                        }
-                      };
-                    <span style="color: #50fa7b; font-weight: 500;">fetchProfile</span>();
-                  }, []);
-                
-                  <span style="color: #6272a4; font-style: italic;">// Fake LinkedIn API call</span>
-                  const <span style="color: #f8f8f2;">linkedInApiCall</span> = 
-                    <span style="color: #ff79c6; font-weight: bold;">async</span> () => {
-                      <span style="color: #ff79c6; font-weight: bold;">return</span> {
-                        <span style="color: #f8f8f2;">data</span>: {
-                          <span style="color: #f8f8f2;">userId</span>: <span style="color: #f1fa8c;">'linkedin123'</span>,
-                          <span style="color: #f8f8f2;">fullName</span>: 
-                            <span style="color: #f1fa8c;">'Jane Smith'</span>,
-                          <span style="color: #f8f8f2;">headline</span>: 
-                            <span style="color: #f1fa8c;">'Senior Developer at TechCorp'</span>,
-                          <span style="color: #f8f8f2;">connections</span>: <span style="color: #bd93f9;">850</span>
-                        }
-                      };
-                    };
-                
-                  <span style="color: #ff79c6; font-weight: bold;">if</span> (<span style="color: #f8f8f2;">isLoading</span>) {
-                    <span style="color: #ff79c6; font-weight: bold;">return</span> (
-                      <div>Fetching profile...</div>
-                    );
-                  }
-                
-                  <span style="color: #ff79c6; font-weight: bold;">return</span> (
-                    <div className="profile-card">
-                      <h2>{<span style="color: #f8f8f2;">profileData</span>.<span style="color: #f8f8f2;">fullName</span>}</h2>
-                      <p>{<span style="color: #f8f8f2;">profileData</span>.<span style="color: #f8f8f2;">headline</span>}</p>
-                      <p>Connections: 
-                        {<span style="color: #f8f8f2;">profileData</span>.<span style="color: #f8f8f2;">connections</span>}</p>
-                    </div>
-                  );
-                };
-                
-                export <span style="color: #ff79c6; font-weight: bold;">default</span> <span style="color: #ff79c6; font-weight: bold;">LinkedInProfile</span>;
-              ` }} />
+                      <code dangerouslySetInnerHTML={{ __html: `
+<span style="color: #6272a4; font-style: italic;">// React + TypeScript + GraphQL API Integration</span>
+<span style="color: #ff79c6; font-weight: bold;">import</span> { <span style="color: #50fa7b;">useState</span>, <span style="color: #50fa7b;">useEffect</span>, <span style="color: #50fa7b;">useCallback</span> } <span style="color: #ff79c6; font-weight: bold;">from</span> <span style="color: #f1fa8c; font-style: italic;">'react'</span>;
+<span style="color: #ff79c6; font-weight: bold;">import</span> { <span style="color: #8be9fd;">gql</span>, <span style="color: #50fa7b;">useQuery</span>, <span style="color: #50fa7b;">useMutation</span> } <span style="color: #ff79c6; font-weight: bold;">from</span> <span style="color: #f1fa8c; font-style: italic;">'@apollo/client'</span>;
+<span style="color: #ff79c6; font-weight: bold;">import</span> { <span style="color: #50fa7b;">useAuth</span> } <span style="color: #ff79c6; font-weight: bold;">from</span> <span style="color: #f1fa8c; font-style: italic;">'@/hooks/useAuth'</span>;
+<span style="color: #ff79c6; font-weight: bold;">import</span> <span style="color: #ff79c6; font-weight: bold;">type</span> { <span style="color: #8be9fd;">User</span>, <span style="color: #8be9fd;">Post</span>, <span style="color: #8be9fd;">Comment</span> } <span style="color: #ff79c6; font-weight: bold;">from</span> <span style="color: #f1fa8c; font-style: italic;">'@/types'</span>;
+
+<span style="color: #6272a4; font-style: italic;">// GraphQL Queries & Mutations</span>
+<span style="color: #ff79c6; font-weight: bold;">const</span> <span style="color: #8be9fd; font-weight: bold;">GET_USER_PROFILE</span> = <span style="color: #8be9fd;">gql</span>\`
+  <span style="color: #ff79c6; font-weight: bold;">query</span> <span style="color: #8be9fd;">GetUserProfile</span>($<span style="color: #8be9fd;">id</span>: <span style="color: #8be9fd;">ID!</span>) {
+    <span style="color: #50fa7b;">user</span>(id: $id) {
+      <span style="color: #8be9fd;">id</span> <span style="color: #8be9fd;">name</span> <span style="color: #8be9fd;">email</span> 
+      <span style="color: #50fa7b;">posts</span> { <span style="color: #8be9fd;">id</span> <span style="color: #8be9fd;">title</span> <span style="color: #8be9fd;">content</span> }
+      <span style="color: #50fa7b;">comments</span> { <span style="color: #8be9fd;">id</span> <span style="color: #8be9fd;">content</span> <span style="color: #50fa7b;">post</span> { <span style="color: #8be9fd;">id</span> <span style="color: #8be9fd;">title</span> } }
+      <span style="color: #50fa7b;">followers</span> { <span style="color: #8be9fd;">id</span> <span style="color: #8be9fd;">name</span> } 
+      <span style="color: #50fa7b;">following</span> { <span style="color: #8be9fd;">id</span> <span style="color: #8be9fd;">name</span> }
+    }
+  }
+\`;
+
+<span style="color: #ff79c6; font-weight: bold;">const</span> <span style="color: #8be9fd; font-weight: bold;">CREATE_POST</span> = <span style="color: #8be9fd;">gql</span>\`
+  <span style="color: #ff79c6; font-weight: bold;">mutation</span> <span style="color: #8be9fd;">CreatePost</span>($<span style="color: #8be9fd;">input</span>: <span style="color: #8be9fd;">PostInput!</span>) {
+    <span style="color: #50fa7b;">createPost</span>(input: $input) {
+      <span style="color: #8be9fd;">id</span> <span style="color: #8be9fd;">title</span> <span style="color: #8be9fd;">content</span> <span style="color: #8be9fd;">createdAt</span>
+      <span style="color: #50fa7b;">author</span> { <span style="color: #8be9fd;">id</span> <span style="color: #8be9fd;">name</span> } 
+      <span style="color: #50fa7b;">comments</span> { <span style="color: #8be9fd;">id</span> <span style="color: #8be9fd;">content</span> }
+    }
+  }
+\`;
+
+<span style="color: #6272a4; font-style: italic;">// Custom Hook for Data Fetching</span>
+<span style="color: #ff79c6; font-weight: bold;">const</span> <span style="color: #50fa7b;">useUserData</span> = (<span style="color: #8be9fd;">userId</span>: <span style="color: #8be9fd; font-weight: bold;">string</span>) => {
+  <span style="color: #ff79c6; font-weight: bold;">const</span> { <span style="color: #8be9fd;">data</span>, <span style="color: #8be9fd;">loading</span>, <span style="color: #8be9fd;">error</span>, <span style="color: #50fa7b;">refetch</span> } = <span style="color: #50fa7b;">useQuery</span>(<span style="color: #8be9fd; font-weight: bold;">GET_USER_PROFILE</span>, {
+    <span style="color: #8be9fd;">variables</span>: { <span style="color: #8be9fd;">id</span>: userId },
+    <span style="color: #8be9fd;">fetchPolicy</span>: <span style="color: #f1fa8c; font-style: italic;">'cache-and-network'</span>
+  });
+  <span style="color: #ff79c6; font-weight: bold;">return</span> { <span style="color: #8be9fd;">user</span>: data?.user, <span style="color: #8be9fd;">loading</span>, <span style="color: #8be9fd;">error</span>, <span style="color: #50fa7b;">refetch</span> };
+};
+
+<span style="color: #6272a4; font-style: italic;">// Main Component</span>
+<span style="color: #ff79c6; font-weight: bold;">const</span> <span style="color: #8be9fd; font-weight: bold;">UserProfile</span>: <span style="color: #8be9fd;">React.FC</span>&lt;{ <span style="color: #8be9fd;">userId</span>: <span style="color: #8be9fd; font-weight: bold;">string</span> }&gt; = ({ <span style="color: #8be9fd;">userId</span> }) => {
+  <span style="color: #ff79c6; font-weight: bold;">const</span> { <span style="color: #8be9fd;">user</span>, <span style="color: #8be9fd;">loading</span>, <span style="color: #8be9fd;">error</span>, <span style="color: #50fa7b;">refetch</span> } = <span style="color: #50fa7b;">useUserData</span>(userId);
+  <span style="color: #ff79c6; font-weight: bold;">const</span> { <span style="color: #8be9fd;">user</span>: <span style="color: #8be9fd;">authUser</span> } = <span style="color: #50fa7b;">useAuth</span>();
+  <span style="color: #ff79c6; font-weight: bold;">const</span> [<span style="color: #50fa7b;">createPost</span>] = <span style="color: #50fa7b;">useMutation</span>(<span style="color: #8be9fd; font-weight: bold;">CREATE_POST</span>);
+  <span style="color: #ff79c6; font-weight: bold;">const</span> [<span style="color: #8be9fd;">newPost</span>, <span style="color: #50fa7b;">setNewPost</span>] = <span style="color: #50fa7b;">useState</span>({ <span style="color: #8be9fd;">title</span>: <span style="color: #f1fa8c; font-style: italic;">''</span>, <span style="color: #8be9fd;">content</span>: <span style="color: #f1fa8c; font-style: italic;">''</span> });
+  <span style="color: #ff79c6; font-weight: bold;">const</span> [<span style="color: #8be9fd;">isSubmitting</span>, <span style="color: #50fa7b;">setIsSubmitting</span>] = <span style="color: #50fa7b;">useState</span>(<span style="color: #ff79c6; font-weight: bold;">false</span>);
+
+  <span style="color: #6272a4; font-style: italic;">// Memoized Handlers</span>
+  <span style="color: #ff79c6; font-weight: bold;">const</span> <span style="color: #50fa7b;">handleSubmit</span> = <span style="color: #50fa7b;">useCallback</span>(<span style="color: #ff79c6; font-weight: bold;">async</span> (<span style="color: #8be9fd;">e</span>: <span style="color: #8be9fd;">React.FormEvent</span>) => {
+    e.preventDefault();
+    <span style="color: #ff79c6; font-weight: bold;">if</span> (!newPost.title.trim() || !newPost.content.trim()) <span style="color: #ff79c6; font-weight: bold;">return</span>;
+    
+    <span style="color: #50fa7b;">setIsSubmitting</span>(<span style="color: #ff79c6; font-weight: bold;">true</span>);
+    <span style="color: #ff79c6; font-weight: bold;">try</span> {
+      <span style="color: #ff79c6; font-weight: bold;">await</span> <span style="color: #50fa7b;">createPost</span>({
+        <span style="color: #8be9fd;">variables</span>: { <span style="color: #8be9fd;">input</span>: { ...newPost, <span style="color: #8be9fd;">authorId</span>: userId } },
+        <span style="color: #50fa7b;">update</span>: (<span style="color: #8be9fd;">cache</span>, { <span style="color: #8be9fd;">data</span> }) => {
+          <span style="color: #ff79c6; font-weight: bold;">const</span> <span style="color: #8be9fd;">existing</span> = cache.readQuery({ 
+            <span style="color: #8be9fd;">query</span>: <span style="color: #8be9fd; font-weight: bold;">GET_USER_PROFILE</span>, 
+            <span style="color: #8be9fd;">variables</span>: { <span style="color: #8be9fd;">id</span>: userId } 
+          });
+          cache.writeQuery({
+            <span style="color: #8be9fd;">query</span>: <span style="color: #8be9fd; font-weight: bold;">GET_USER_PROFILE</span>,
+            <span style="color: #8be9fd;">variables</span>: { <span style="color: #8be9fd;">id</span>: userId },
+            <span style="color: #8be9fd;">data</span>: {
+              <span style="color: #8be9fd;">user</span>: {
+                ...existing.user,
+                <span style="color: #50fa7b;">posts</span>: [...existing.user.posts, data.createPost]
+              }
+            }
+          });
+        }
+      });
+      <span style="color: #50fa7b;">setNewPost</span>({ <span style="color: #8be9fd;">title</span>: <span style="color: #f1fa8c; font-style: italic;">''</span>, <span style="color: #8be9fd;">content</span>: <span style="color: #f1fa8c; font-style: italic;">''</span> });
+    } <span style="color: #ff79c6; font-weight: bold;">catch</span> (<span style="color: #8be9fd;">err</span>) {
+      console.error(<span style="color: #f1fa8c; font-style: italic;">'Error creating post:'</span>, err);
+    } <span style="color: #ff79c6; font-weight: bold;">finally</span> {
+      <span style="color: #50fa7b;">setIsSubmitting</span>(<span style="color: #ff79c6; font-weight: bold;">false</span>);
+    }
+  }, [newPost, userId, createPost]);
+
+  <span style="color: #ff79c6; font-weight: bold;">if</span> (loading) <span style="color: #ff79c6; font-weight: bold;">return</span> <span style="color: #ff79c6; font-weight: bold;">null</span>;
+  <span style="color: #ff79c6; font-weight: bold;">if</span> (error) <span style="color: #ff79c6; font-weight: bold;">return</span> <span style="color: #ff79c6; font-weight: bold;">null</span>;
+  <span style="color: #ff79c6; font-weight: bold;">return</span> <span style="color: #ff79c6; font-weight: bold;">null</span>;
+};
+
+<span style="color: #ff79c6; font-weight: bold;">export</span> <span style="color: #ff79c6; font-weight: bold;">default</span> <span style="color: #8be9fd; font-weight: bold;">UserProfile</span>;
+                      ` }} />
             </pre>
           </div>
         </div>
       </div>
+              <div className="static-text" style={{ opacity: 1 - codeBoxOpacity, position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', zIndex: 0 }}>
+                <h2>Discover More</h2>
+                <p>Scroll down to explore additional content and insights.</p>
+              </div>
     </div>
+          </>
+        } />
+        <Route path="/examples" element={<Examples />} />
+      </Routes>
+    </Router>
   );
 };
 

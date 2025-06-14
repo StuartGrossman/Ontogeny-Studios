@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { collection, query, getDocs, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { collection, getDocs, addDoc, doc, updateDoc } from 'firebase/firestore';
 import './ProjectCreationModal.css';
 
 interface User {
@@ -10,103 +10,94 @@ interface User {
 }
 
 interface Project {
+  userId: string;
   name: string;
   description: string;
-  userId: string;
-  status: 'active' | 'completed' | 'on-hold';
+  status: 'pending' | 'in-progress' | 'completed';
   createdAt: string;
 }
 
 interface ProjectCreationModalProps {
-  isOpen: boolean;
   onClose: () => void;
 }
 
-const ProjectCreationModal = ({ isOpen, onClose }: ProjectCreationModalProps) => {
+const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({ onClose }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState('');
   const [projectName, setProjectName] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
-  const [projectStatus, setProjectStatus] = useState<'active' | 'completed' | 'on-hold'>('active');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [projectStatus, setProjectStatus] = useState<Project['status']>('pending');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      if (!isOpen) return;
-      
-      try {
-        const usersCollection = collection(db, 'users');
-        const usersSnapshot = await getDocs(usersCollection);
-        const usersList = usersSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as User));
-        setUsers(usersList);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
-  }, [isOpen]);
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const usersQuery = query(collection(db, 'users'));
+      const querySnapshot = await getDocs(usersQuery);
+      const usersData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as User));
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser || !projectName) return;
 
-    setIsSubmitting(true);
+    setSubmitting(true);
     try {
-      const project: Omit<Project, 'id'> = {
+      await addDoc(collection(db, 'projects'), {
+        userId: selectedUser,
         name: projectName,
         description: projectDescription,
-        userId: selectedUser,
         status: projectStatus,
         createdAt: new Date().toISOString()
-      };
-
-      const projectsCollection = collection(db, 'projects');
-      await addDoc(projectsCollection, project);
+      });
 
       // Reset form
+      setSelectedUser('');
       setProjectName('');
       setProjectDescription('');
-      setSelectedUser('');
-      setProjectStatus('active');
+      setProjectStatus('pending');
       onClose();
     } catch (error) {
       console.error('Error creating project:', error);
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="modal-overlay">
-      <div className="modal-content project-creation-modal">
-        <div className="modal-header">
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <div className="card-header">
           <h2>Create New Project</h2>
-          <button className="close-button" onClick={onClose}>×</button>
+          <button onClick={onClose} className="button button-icon">×</button>
         </div>
-        
-        <div className="modal-body">
+        <div className="card-body">
           {loading ? (
-            <div className="loading">Loading users...</div>
+            <div className="text-center">Loading users...</div>
           ) : (
-            <form onSubmit={handleSubmit} className="project-form">
+            <form onSubmit={handleSubmit}>
               <div className="form-group">
-                <label htmlFor="user">Select User</label>
+                <label className="form-label">Select User</label>
                 <select
-                  id="user"
+                  className="form-input"
                   value={selectedUser}
                   onChange={(e) => setSelectedUser(e.target.value)}
                   required
                 >
-                  <option value="">Select a user...</option>
+                  <option value="">Choose a user...</option>
                   {users.map(user => (
                     <option key={user.id} value={user.id}>
                       {user.displayName} ({user.email})
@@ -116,10 +107,10 @@ const ProjectCreationModal = ({ isOpen, onClose }: ProjectCreationModalProps) =>
               </div>
 
               <div className="form-group">
-                <label htmlFor="projectName">Project Name</label>
+                <label className="form-label">Project Name</label>
                 <input
-                  id="projectName"
                   type="text"
+                  className="form-input"
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
                   required
@@ -128,9 +119,9 @@ const ProjectCreationModal = ({ isOpen, onClose }: ProjectCreationModalProps) =>
               </div>
 
               <div className="form-group">
-                <label htmlFor="projectDescription">Description</label>
+                <label className="form-label">Description</label>
                 <textarea
-                  id="projectDescription"
+                  className="form-input"
                   value={projectDescription}
                   onChange={(e) => setProjectDescription(e.target.value)}
                   placeholder="Enter project description"
@@ -139,33 +130,25 @@ const ProjectCreationModal = ({ isOpen, onClose }: ProjectCreationModalProps) =>
               </div>
 
               <div className="form-group">
-                <label htmlFor="projectStatus">Status</label>
+                <label className="form-label">Status</label>
                 <select
-                  id="projectStatus"
+                  className="form-input"
                   value={projectStatus}
                   onChange={(e) => setProjectStatus(e.target.value as Project['status'])}
                 >
-                  <option value="active">Active</option>
-                  <option value="on-hold">On Hold</option>
+                  <option value="pending">Pending</option>
+                  <option value="in-progress">In Progress</option>
                   <option value="completed">Completed</option>
                 </select>
               </div>
 
-              <div className="form-actions">
-                <button
-                  type="button"
-                  className="cancel-button"
-                  onClick={onClose}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </button>
+              <div className="mt-6">
                 <button
                   type="submit"
-                  className="submit-button"
-                  disabled={isSubmitting}
+                  className="button button-primary"
+                  disabled={submitting}
                 >
-                  {isSubmitting ? 'Creating...' : 'Create Project'}
+                  {submitting ? 'Creating...' : 'Create Project'}
                 </button>
               </div>
             </form>
