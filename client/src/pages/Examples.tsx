@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import Navbar from '../components/Navbar';
 import LogisticsDashboard from '../components/LogisticsDashboard';
 import '../styles/Examples.css';
 
@@ -375,7 +374,6 @@ const Examples: React.FC = () => {
 
   return (
     <>
-      <Navbar />
       <div className="examples-page">
         {filteredProjects.length === 0 ? (
           <div className="no-results">
@@ -397,7 +395,41 @@ const Examples: React.FC = () => {
                       <span className="category">{project.category}</span>
                     </div>
                   </div>
-                  
+
+                  <div className="ui-mockup-section">
+                    <div className="ui-mockup-header">
+                      <h3>User Interface</h3>
+                      <div className="view-toggle">
+                        <button 
+                          className={`view-toggle-button ${selectedView === 'desktop' ? 'active' : ''}`}
+                          onClick={() => setSelectedView('desktop')}
+                        >
+                          Desktop
+                        </button>
+                        <button 
+                          className={`view-toggle-button ${selectedView === 'mobile' ? 'active' : ''}`}
+                          onClick={() => setSelectedView('mobile')}
+                        >
+                          Mobile
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="ui-mockup-container">
+                      <div className={`ui-mockup-frame ${selectedView}`}>
+                        {project.uiMockup.component ? (
+                          <project.uiMockup.component />
+                        ) : (
+                          <img 
+                            src={selectedView === 'desktop' ? project.uiMockup.image! : project.uiMockup.mobileImage || project.uiMockup.image!}
+                            alt="UI Mockup"
+                            className="ui-mockup-image"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="project-content">
                     <div className="project-main">
                       <p className="project-description">{project.description}</p>
@@ -446,50 +478,6 @@ const Examples: React.FC = () => {
                           ))}
                         </div>
                       </details>
-                    </div>
-
-                    <div className="ui-mockup-section">
-                      <div className="ui-mockup-header">
-                        <h3>User Interface</h3>
-                        <div className="view-toggle">
-                          <button 
-                            className={`view-toggle-button ${selectedView === 'desktop' ? 'active' : ''}`}
-                            onClick={() => setSelectedView('desktop')}
-                          >
-                            Desktop
-                          </button>
-                          <button 
-                            className={`view-toggle-button ${selectedView === 'mobile' ? 'active' : ''}`}
-                            onClick={() => setSelectedView('mobile')}
-                          >
-                            Mobile
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="ui-mockup-container">
-                        <div className={`ui-mockup-frame ${selectedView}`}>
-                          {project.uiMockup.component ? (
-                            <project.uiMockup.component />
-                          ) : (
-                            <img 
-                              src={selectedView === 'mobile' ? project.uiMockup.mobileImage : project.uiMockup.image}
-                              alt={project.uiMockup.description}
-                              className="ui-mockup-image"
-                            />
-                          )}
-                          <div className="ui-mockup-overlay">
-                            <div className="ui-highlights">
-                              {project.uiMockup.highlights.map((highlight, i) => (
-                                <div key={i} className="ui-highlight-item">
-                                  <span className="highlight-icon">→</span>
-                                  {highlight}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
                     </div>
 
                     {project.caseStudy && (
