@@ -399,7 +399,25 @@ const Examples: React.FC = () => {
                   <div className="project-content">
                     <div className="project-main">
                       <p className="project-description">{project.description}</p>
-                      
+
+                      {/* User Interface directly below description */}
+                      <div className="ui-mockup-section">
+                        <h3>User Interface</h3>
+                        <div className="ui-mockup-container">
+                          <div className="ui-mockup-frame desktop">
+                            {project.uiMockup.component ? (
+                              <project.uiMockup.component />
+                            ) : (
+                              <img 
+                                src={project.uiMockup.image!}
+                                alt="UI Mockup"
+                                className="ui-mockup-image"
+                              />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
                       <div className="project-stats">
                         {project.stats.map((stat, i) => (
                           <div key={i} className="stat-card">
@@ -459,23 +477,6 @@ const Examples: React.FC = () => {
                         <span className="button-icon">📋</span>
                         Request Case Study
                       </button>
-                    </div>
-                  </div>
-
-                  <div className="ui-mockup-section">
-                    <h3>User Interface</h3>
-                    <div className="ui-mockup-container">
-                      <div className="ui-mockup-frame desktop">
-                        {project.uiMockup.component ? (
-                          <project.uiMockup.component />
-                        ) : (
-                          <img 
-                            src={project.uiMockup.image!}
-                            alt="UI Mockup"
-                            className="ui-mockup-image"
-                          />
-                        )}
-                      </div>
                     </div>
                   </div>
                 </div>
