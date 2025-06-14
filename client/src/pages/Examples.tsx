@@ -397,31 +397,15 @@ const Examples: React.FC = () => {
                   </div>
 
                   <div className="ui-mockup-section">
-                    <div className="ui-mockup-header">
-                      <h3>User Interface</h3>
-                      <div className="view-toggle">
-                        <button 
-                          className={`view-toggle-button ${selectedView === 'desktop' ? 'active' : ''}`}
-                          onClick={() => setSelectedView('desktop')}
-                        >
-                          Desktop
-                        </button>
-                        <button 
-                          className={`view-toggle-button ${selectedView === 'mobile' ? 'active' : ''}`}
-                          onClick={() => setSelectedView('mobile')}
-                        >
-                          Mobile
-                        </button>
-                      </div>
-                    </div>
-
+                    <h3>User Interface</h3>
+                    <p className="ui-description">{project.description}</p>
                     <div className="ui-mockup-container">
-                      <div className={`ui-mockup-frame ${selectedView}`}>
+                      <div className="ui-mockup-frame desktop">
                         {project.uiMockup.component ? (
                           <project.uiMockup.component />
                         ) : (
                           <img 
-                            src={selectedView === 'desktop' ? project.uiMockup.image! : project.uiMockup.mobileImage || project.uiMockup.image!}
+                            src={project.uiMockup.image!}
                             alt="UI Mockup"
                             className="ui-mockup-image"
                           />
