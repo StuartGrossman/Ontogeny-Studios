@@ -35,6 +35,15 @@ type Category = 'All' | 'Operations' | 'Management' | 'Finance' | 'Integration' 
 
 const categories: Category[] = ['All', 'Operations', 'Management', 'Finance', 'Integration', 'Customer Service'];
 
+const techDescriptions: Record<string, string> = {
+  'React': 'Front-end library for building user interfaces',
+  'Node.js': 'JavaScript runtime environment for server-side applications',
+  'PostgreSQL': 'Relational database system for structured data',
+  'Redis': 'In-memory data store used for caching and messaging',
+  'Docker': 'Containerization platform for consistent environments',
+  'AWS': 'Cloud platform providing scalable infrastructure services'
+};
+
 const projects: Project[] = [
   {
     id: 1,
@@ -402,7 +411,6 @@ const Examples: React.FC = () => {
 
                       {/* User Interface directly below description */}
                       <div className="ui-mockup-section">
-                        <h3>User Interface</h3>
                         <div className="ui-mockup-container">
                           <div className="ui-mockup-frame desktop">
                             {project.uiMockup.component ? (
@@ -456,11 +464,13 @@ const Examples: React.FC = () => {
                       
                       <details className="details-section">
                         <summary>Technology Stack</summary>
-                        <div className="tech-tags">
-                          {project.technologies.map((tech, i) => (
-                            <span key={i} className="tech-tag">{tech}</span>
+                        <ul className="tech-list">
+                          {project.technologies.map((tech) => (
+                            <li key={tech} className="tech-item">
+                              <strong>{tech}</strong> — {techDescriptions[tech] || ''}
+                            </li>
                           ))}
-                        </div>
+                        </ul>
                       </details>
                     </div>
 
