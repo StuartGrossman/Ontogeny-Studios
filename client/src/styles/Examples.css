@@ -473,9 +473,21 @@
   margin: var(--spacing-xl) 0;
   overflow: hidden;
   width: 100%;
-  max-width: 1400px;
-  margin-left: auto;
-  margin-right: auto;
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.ui-mockup-container {
+  position: relative;
+  width: 100%;
+  border-radius: 0;
+  overflow: hidden;
+  background: transparent;
+  box-shadow: none;
+  height: 600px;
+  padding: 0;
+  margin: 0;
 }
 
 .ui-mockup-header {
@@ -512,18 +524,6 @@
 .view-toggle-button.active {
   background: rgba(var(--brand-gradient-start-rgb), 0.1);
   color: var(--brand-gradient-start);
-}
-
-.ui-mockup-container {
-  position: relative;
-  width: 100%;
-  border-radius: 0;
-  overflow: hidden;
-  background: transparent;
-  box-shadow: none;
-  height: 600px;
-  padding: 0;
-  margin: 0;
 }
 
 .ui-mockup-frame {
@@ -832,8 +832,8 @@
     grid-template-columns: 1fr;
   }
 
-  .ui-mockup-section {
-    margin: var(--spacing-lg) var(--spacing-md);
+  .ui-mockup-container {
+    /* reverted: no custom height override */
   }
 }
 
@@ -908,8 +908,8 @@
     font-size: 0.9375rem;
   }
 
-  .ui-mockup-section {
-    margin: var(--spacing-md) var(--spacing-sm);
+  .ui-mockup-container {
+    /* reverted: no custom height override */
   }
 }
 
