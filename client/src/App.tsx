@@ -1,10 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Examples from './pages/Examples';
 import './App.css';
 
 const App: React.FC = () => {
+  return (
+    <Router>
+      <Main />
+    </Router>
+  );
+};
+
+const Main: React.FC = () => {
+  const location = useLocation();
+  const isHomePage = location.pathname === '/';
+
   const codeContentRef = useRef<HTMLDivElement>(null);
   const [codeBoxOpacity, setCodeBoxOpacity] = useState(1);
   const [isHoveringRightSide, setIsHoveringRightSide] = useState(false);
@@ -60,49 +71,43 @@ const App: React.FC = () => {
   };
 
   return (
-    <Router>
+    <>
+      <Navbar />
       <Routes>
         <Route path="/" element={
-          <>
-            <Navbar />
-    <div className="app">
-      <div className="split-screen">
-        {/* Left side - Brand */}
-        <div className="brand-section">
-          <h1 className="brand-title">
-            <span className="gradient-text">Ontogeny</span>
-            <span className="brand-subtitle">Labs</span>
-          </h1>
-          <p className="brand-description">
-                    Custom software for your business
-                  </p>
-                  <div className="button-container">
-                    <button 
-                      className="login-button"
-                      onClick={() => console.log('Login clicked')}
-                    >
-                      Login
-                    </button>
-                    <button 
-                      className="examples-button"
-                      onClick={() => window.location.href = '/examples'}
-                    >
-                      Examples
-                    </button>
-                  </div>
-        </div>
+          <div className="app">
+            <div className="split-screen">
+              {/* Left side - Brand */}
+              <div className="brand-section">
+                <h1 className="brand-title">
+                  <span className="gradient-text">Ontogeny</span>
+                  <span className="brand-subtitle">Labs</span>
+                </h1>
+                <p className="brand-description">
+                          Custom software for your business
+                        </p>
+                        <div className="button-container">
+                        
+                          <button 
+                            className="examples-button"
+                            onClick={() => window.location.href = '/examples'}
+                          >
+                            Examples
+                          </button>
+                        </div>
+              </div>
 
-        {/* Right side - Code Window */}
-                <div className="code-box" style={{ opacity: codeBoxOpacity, zIndex: 0 }}>
-          <div className="code-header">
-            <div className="code-dot red"></div>
-            <div className="code-dot yellow"></div>
-            <div className="code-dot green"></div>
-            <span className="code-title">server.js</span>
-          </div>
-          <div className="code-content" ref={codeContentRef}>
-            <pre>
-                      <code dangerouslySetInnerHTML={{ __html: `
+              {/* Right side - Code Window */}
+                      <div className="code-box" style={{ opacity: codeBoxOpacity, zIndex: 0 }}>
+                <div className="code-header">
+                  <div className="code-dot red"></div>
+                  <div className="code-dot yellow"></div>
+                  <div className="code-dot green"></div>
+                  <span className="code-title">server.js</span>
+                </div>
+                <div className="code-content" ref={codeContentRef}>
+                  <pre>
+                            <code dangerouslySetInnerHTML={{ __html: `
 <span style="color: #6272a4; font-style: italic;">// React + TypeScript + GraphQL API Integration</span>
 <span style="color: #ff79c6; font-weight: bold;">import</span> { <span style="color: #50fa7b;">useState</span>, <span style="color: #50fa7b;">useEffect</span>, <span style="color: #50fa7b;">useCallback</span> } <span style="color: #ff79c6; font-weight: bold;">from</span> <span style="color: #f1fa8c; font-style: italic;">'react'</span>;
 <span style="color: #ff79c6; font-weight: bold;">import</span> { <span style="color: #8be9fd;">gql</span>, <span style="color: #50fa7b;">useQuery</span>, <span style="color: #50fa7b;">useMutation</span> } <span style="color: #ff79c6; font-weight: bold;">from</span> <span style="color: #f1fa8c; font-style: italic;">'@apollo/client'</span>;
@@ -189,21 +194,20 @@ const App: React.FC = () => {
 };
 
 <span style="color: #ff79c6; font-weight: bold;">export</span> <span style="color: #ff79c6; font-weight: bold;">default</span> <span style="color: #8be9fd; font-weight: bold;">UserProfile</span>;
-                      ` }} />
-            </pre>
-          </div>
-        </div>
-      </div>
-              <div className="static-text" style={{ opacity: 1 - codeBoxOpacity, position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', zIndex: 0 }}>
-                <h2>Discover More</h2>
-                <p>Scroll down to explore additional content and insights.</p>
+                            ` }} />
+                  </pre>
+                </div>
               </div>
-    </div>
-          </>
+            </div>
+                    <div className="static-text" style={{ opacity: 1 - codeBoxOpacity, position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', zIndex: 0 }}>
+                      <h2>Discover More</h2>
+                      <p>Scroll down to explore additional content and insights.</p>
+            </div>
+          </div>
         } />
         <Route path="/examples" element={<Examples />} />
       </Routes>
-    </Router>
+    </>
   );
 };
 

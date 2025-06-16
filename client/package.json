@@ -13,6 +13,7 @@
     "@types/leaflet": "^1.9.18",
     "@types/react-router-dom": "^5.3.3",
     "chart.js": "^4.4.9",
+    "firebase": "^11.9.1",
     "leaflet": "^1.9.4",
     "prism-react-renderer": "^2.4.1",
     "react": "^19.0.0",

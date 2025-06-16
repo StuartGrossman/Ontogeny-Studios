@@ -1,15 +1,15 @@
 .examples-page {
   min-height: 100vh;
   background: linear-gradient(135deg, var(--background-dark) 0%, var(--background-darker) 100%);
-  padding: calc(var(--nav-height) + var(--spacing-2xl)) var(--spacing-xl) var(--spacing-2xl);
-  max-width: 1400px;
+  padding: 120px var(--spacing-xl) var(--spacing-2xl);
+  max-width: 1600px;
   margin: 0 auto;
   position: relative;
 }
 
 .examples-header {
   text-align: center;
-  padding: calc(var(--nav-height) + var(--spacing-lg)) var(--spacing-xl) var(--spacing-xl);
+  padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-xl);
   margin: 0 auto var(--spacing-2xl);
   max-width: 1200px;
   background: rgba(255, 255, 255, 0.02);
@@ -266,9 +266,6 @@
 
 .project-icon {
   font-size: 3rem;
-  background: linear-gradient(135deg, var(--brand-gradient-start), var(--brand-gradient-end));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   padding: var(--spacing-md);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.05);
@@ -315,7 +312,7 @@
 
 .project-main {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: var(--spacing-xl);
 }
 
@@ -375,6 +372,7 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--spacing-xl);
+  margin-top: var(--spacing-xl);
 }
 
 .benefits-section,
@@ -468,14 +466,12 @@
   grid-column: 1 / -1;
   background: rgba(255, 255, 255, 0.03);
   padding: 0;
-  border-radius: 20px;
+  border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.05);
-  margin: var(--spacing-xl) 0;
+  margin: 0 0 var(--spacing-xl) 0;
   overflow: hidden;
   width: 100%;
   max-width: none;
-  margin-left: 0;
-  margin-right: 0;
 }
 
 .ui-mockup-container {
@@ -485,7 +481,7 @@
   overflow: hidden;
   background: transparent;
   box-shadow: none;
-  height: 600px;
+  height: 700px;
   padding: 0;
   margin: 0;
 }
@@ -493,11 +489,27 @@
 .ui-mockup-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 0;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-xl);
   background: rgba(255, 255, 255, 0.02);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ui-mockup-title h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-sm) 0;
+  letter-spacing: -0.01em;
+}
+
+.ui-mockup-title p {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 600px;
 }
 
 .view-toggle {
@@ -795,11 +807,16 @@
     max-width: 1200px;
     margin: var(--spacing-xl) var(--spacing-lg);
   }
+
+  .ui-mockup-container {
+    height: 600px;
+  }
 }
 
 @media (max-width: 1200px) {
   .examples-page {
-    padding: calc(var(--nav-height) + var(--spacing-xl)) var(--spacing-lg) var(--spacing-xl);
+    max-width: 1200px;
+    padding: calc(var(--nav-height) + var(--spacing-lg)) var(--spacing-md) var(--spacing-lg);
   }
 
   .examples-header {
@@ -833,7 +850,17 @@
   }
 
   .ui-mockup-container {
-    /* reverted: no custom height override */
+    height: 550px;
+  }
+
+  .ui-mockup-header {
+    flex-direction: column;
+    gap: var(--spacing-md);
+    align-items: flex-start;
+  }
+
+  .ui-mockup-title p {
+    max-width: none;
   }
 }
 
@@ -909,7 +936,24 @@
   }
 
   .ui-mockup-container {
-    /* reverted: no custom height override */
+    height: 400px;
+  }
+
+  .ui-mockup-section {
+    margin: var(--spacing-lg) 0;
+    border-radius: 12px;
+  }
+
+  .ui-mockup-header {
+    padding: var(--spacing-lg);
+  }
+
+  .ui-mockup-title h3 {
+    font-size: 1.25rem;
+  }
+
+  .ui-mockup-title p {
+    font-size: 0.9375rem;
   }
 }
 
@@ -976,6 +1020,22 @@
   .tech-tag {
     font-size: 0.8125rem;
     padding: 4px 10px;
+  }
+
+  .ui-mockup-container {
+    height: 350px;
+  }
+
+  .ui-mockup-header {
+    padding: var(--spacing-md);
+  }
+
+  .ui-mockup-title h3 {
+    font-size: 1.125rem;
+  }
+
+  .ui-mockup-title p {
+    font-size: 0.875rem;
   }
 }
 
@@ -1156,16 +1216,29 @@
 .tech-list {
   list-style: none;
   padding: 0;
-  margin: var(--spacing-md) 0 0 0;
+  margin: 10px 0 0 0;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: 12px;
 }
 
 .tech-item {
-  color: var(--text-secondary);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   font-size: 1rem;
-  line-height: 1.5;
+  color: var(--text-secondary);
+  padding-left: 0;
+  position: relative;
+}
+
+.tech-bullet {
+  color: var(--brand-gradient-start);
+  font-size: 1.25em;
+  margin-right: 8px;
+  line-height: 1.2;
+  font-weight: bold;
+  flex-shrink: 0;
 }
 
 .tech-item strong {

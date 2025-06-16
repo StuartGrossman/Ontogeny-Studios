@@ -27,18 +27,7 @@ const Navbar: React.FC = () => {
         </Link>
         
         <div className="nav-links">
-          <Link 
-            to="/" 
-            className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}
-          >
-            Home
-          </Link>
-          <Link 
-            to="/examples" 
-            className={`nav-link ${location.pathname === '/examples' ? 'active' : ''}`}
-          >
-            Examples
-          </Link>
+          
           <button className="nav-button login-button">
             Login
           </button>

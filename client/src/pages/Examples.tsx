@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import LogisticsDashboard from '../components/LogisticsDashboard';
 import '../styles/Examples.css';
+import ProjectCard from '../components/ProjectCard';
 
 interface Project {
   id: number;
@@ -34,15 +35,6 @@ interface Project {
 type Category = 'All' | 'Operations' | 'Management' | 'Finance' | 'Integration' | 'Customer Service';
 
 const categories: Category[] = ['All', 'Operations', 'Management', 'Finance', 'Integration', 'Customer Service'];
-
-const techDescriptions: Record<string, string> = {
-  'React': 'Front-end library for building user interfaces',
-  'Node.js': 'JavaScript runtime environment for server-side applications',
-  'PostgreSQL': 'Relational database system for structured data',
-  'Redis': 'In-memory data store used for caching and messaging',
-  'Docker': 'Containerization platform for consistent environments',
-  'AWS': 'Cloud platform providing scalable infrastructure services'
-};
 
 const projects: Project[] = [
   {
@@ -92,17 +84,6 @@ const projects: Project[] = [
         'Route optimization interface',
         'Inventory management system'
       ]
-    },
-    caseStudy: {
-      title: 'Global Logistics Transformation',
-      description: 'How we helped a Fortune 500 company revolutionize their supply chain',
-      results: [
-        'Reduced delivery times by 35%',
-        'Cut operational costs by $2.5M annually',
-        'Improved customer satisfaction by 40%',
-        'Streamlined warehouse operations across 12 locations'
-      ],
-      link: '/case-studies/logistics-transformation'
     }
   },
   {
@@ -384,6 +365,9 @@ const Examples: React.FC = () => {
   return (
     <>
       <div className="examples-page">
+        {/* Header Section */}
+      
+
         {filteredProjects.length === 0 ? (
           <div className="no-results">
             <h2>No solutions found</h2>
@@ -393,107 +377,29 @@ const Examples: React.FC = () => {
           <>
             <div className="examples-grid">
               {filteredProjects.map((project, index) => (
-                <div
+                <ProjectCard
                   key={project.id}
-                  className={`project-card ${index === currentIndex ? 'active' : ''}`}
-                >
-                  <div className="project-header">
-                    <div className="project-icon">{project.icon}</div>
-                    <div className="project-title-section">
-                      <h2>{project.title}</h2>
-                      <span className="category">{project.category}</span>
-                    </div>
-                  </div>
-
-                  <div className="project-content">
-                    <div className="project-main">
-                      <p className="project-description">{project.description}</p>
-
-                      {/* User Interface directly below description */}
-                      <div className="ui-mockup-section">
-                        <div className="ui-mockup-container">
-                          <div className="ui-mockup-frame desktop">
-                            {project.uiMockup.component ? (
-                              <project.uiMockup.component />
-                            ) : (
-                              <img 
-                                src={project.uiMockup.image!}
-                                alt="UI Mockup"
-                                className="ui-mockup-image"
-                              />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="project-stats">
-                        {project.stats.map((stat, i) => (
-                          <div key={i} className="stat-card">
-                            <span className="stat-value">{stat.value}</span>
-                            <span className="stat-metric">{stat.metric}</span>
-                            <span className="stat-description">{stat.description}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      <details className="details-section" open>
-                        <summary>Key Benefits</summary>
-                        <ul className="benefits-list">
-                          {project.benefits.map((benefit, i) => (
-                            <li key={i} className="benefit-item">
-                              <span className="benefit-icon">✓</span>
-                              {benefit}
-                            </li>
-                          ))}
-                        </ul>
-                      </details>
-                    </div>
-
-                    <div className="project-details">
-                      <details className="details-section">
-                        <summary>Core Features</summary>
-                        <ul className="features-list">
-                          {project.features.map((feature, i) => (
-                            <li key={i} className="feature-item">
-                              <span className="feature-icon">•</span>
-                              {feature}
-                            </li>
-                          ))}
-                        </ul>
-                      </details>
-                      
-                      <details className="details-section">
-                        <summary>Technology Stack</summary>
-                        <ul className="tech-list">
-                          {project.technologies.map((tech) => (
-                            <li key={tech} className="tech-item">
-                              <strong>{tech}</strong> — {techDescriptions[tech] || ''}
-                            </li>
-                          ))}
-                        </ul>
-                      </details>
-                    </div>
-
-                    {project.caseStudy && (
-                      <></>
-                    )}
-
-                    <div className="project-actions">
-                      <button className="demo-button">
-                        <span className="button-icon">🎥</span>
-                        Watch Demo
-                      </button>
-                      <button className="learn-more">
-                        <span className="button-icon">📋</span>
-                        Request Case Study
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  project={project}
+                  isActive={index === currentIndex}
+                  selectedView={selectedView}
+                  setSelectedView={setSelectedView}
+                />
               ))}
             </div>
           </>
         )}
+
+        {/* Footer CTA */}
+        <div className="examples-footer">
+          <div className="footer-content">
+            <h2>Ready to Transform Your Business?</h2>
+            <p>Let's discuss how our custom software solutions can drive your success</p>
+            <div className="footer-actions">
+              <button className="contact-button primary">Start Your Project</button>
+              <button className="contact-button secondary">Schedule a Consultation</button>
+            </div>
+          </div>
+        </div>
       </div>
     </>
   );
