@@ -3,9 +3,10 @@ import { useAuth } from '../contexts/AuthContext';
 import LogisticsDashboard from '../components/LogisticsDashboard';
 import SchedulingDashboard from '../components/SchedulingDashboard';
 import PayrollDashboard from '../components/PayrollDashboard';
-import '../styles/Examples.css';
 import ProjectCard from '../components/ProjectCard';
 import ProjectSelector from '../components/ProjectSelector';
+import Footer from '../components/Footer';
+import '../styles/Examples.css';
 
 interface Project {
   id: number;
@@ -437,12 +438,12 @@ const Examples: React.FC = () => {
           </div>
         )}
 
-        {/* Footer CTA */}
-        <div className="examples-footer">
-          <div className="footer-content">
+        {/* CTA Banner */}
+        <div className="examples-cta-banner">
+          <div className="cta-content">
             <h2>Ready to Transform Your Business?</h2>
             <p>Let's discuss how our custom software solutions can drive your success</p>
-            <div className="footer-actions">
+                          <div className="cta-actions">
               {currentUser ? (
                 <>
                   <button 
@@ -474,6 +475,8 @@ const Examples: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      <Footer />
     </>
   );
 };
