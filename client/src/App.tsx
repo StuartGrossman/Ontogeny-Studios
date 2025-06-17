@@ -4,6 +4,12 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import Examples from './pages/Examples';
 import Dashboard from './pages/Dashboard';
+import InventoryPage from './pages/InventoryPage';
+import CustomerPortalPage from './pages/CustomerPortalPage';
+import APIIntegrationPage from './pages/APIIntegrationPage';
+import PayrollPage from './pages/PayrollPage';
+import SchedulingPage from './pages/SchedulingPage';
+import LogisticsPage from './pages/LogisticsPage';
 import './App.css';
 
 // Protected Route Component
@@ -35,8 +41,9 @@ const Main: React.FC = () => {
   const [codeBoxOpacity, setCodeBoxOpacity] = useState(1);
   const [isHoveringRightSide, setIsHoveringRightSide] = useState(false);
 
-  // Don't show the main navbar on the dashboard page since it has its own
-  const shouldShowNavbar = location.pathname !== '/dashboard';
+  // Don't show the main navbar on the dashboard pages since they have their own navigation
+  const dashboardPaths = ['/dashboard', '/inventory', '/customer-portal', '/api-integration', '/payroll', '/scheduling', '/logistics'];
+  const shouldShowNavbar = !dashboardPaths.includes(location.pathname);
 
   useEffect(() => {
     const codeContent = codeContentRef.current;
@@ -259,6 +266,12 @@ const Main: React.FC = () => {
             <Dashboard />
           </ProtectedRoute>
         } />
+        <Route path="/inventory" element={<InventoryPage />} />
+        <Route path="/customer-portal" element={<CustomerPortalPage />} />
+        <Route path="/api-integration" element={<APIIntegrationPage />} />
+        <Route path="/payroll" element={<PayrollPage />} />
+        <Route path="/scheduling" element={<SchedulingPage />} />
+        <Route path="/logistics" element={<LogisticsPage />} />
       </Routes>
     </>
   );

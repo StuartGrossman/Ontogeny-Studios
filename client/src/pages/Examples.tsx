@@ -1,13 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import LogisticsDashboard from '../components/LogisticsDashboard';
-import SchedulingDashboard from '../components/SchedulingDashboard';
-import PayrollDashboard from '../components/PayrollDashboard';
-import APIIntegrationHub from '../components/APIIntegrationHub';
-import InventoryManagementSystem from '../components/InventoryManagementSystem';
-import CustomerPortalPlatform from '../components/CustomerPortalPlatform';
-import ProjectCard from '../components/ProjectCard';
-import ProjectSelector from '../components/ProjectSelector';
 import Footer from '../components/Footer';
 import '../styles/Examples.css';
 
@@ -20,24 +13,13 @@ interface Project {
   features: string[];
   technologies: string[];
   benefits: string[];
+  route: string;
+  preview: string;
   stats: {
     metric: string;
     value: string;
     description: string;
   }[];
-  uiMockup: {
-    component?: React.FC;
-    image?: string;
-    description: string;
-    highlights: string[];
-    mobileImage?: string;
-  };
-  caseStudy?: {
-    title: string;
-    description: string;
-    results: string[];
-    link: string;
-  };
 }
 
 type Category = 'All' | 'Operations' | 'Management' | 'Finance' | 'Integration' | 'Customer Service';
@@ -51,6 +33,8 @@ const projects: Project[] = [
     description: 'A comprehensive logistics management system that revolutionizes how businesses handle their supply chain. Our platform combines real-time tracking, automated processing, and intelligent routing to optimize your entire logistics operation.',
     category: 'Operations',
     icon: '🚚',
+    route: '/logistics',
+    preview: 'Interactive logistics dashboard with real-time tracking, route optimization, and warehouse management.',
     features: [
       'Real-time shipment tracking and monitoring',
       'AI-powered route optimization',
@@ -82,17 +66,7 @@ const projects: Project[] = [
         value: '3x',
         description: 'Increase in processing capacity'
       }
-    ],
-    uiMockup: {
-      component: LogisticsDashboard,
-      description: 'Interactive logistics dashboard with real-time tracking and analytics',
-      highlights: [
-        'Live shipment tracking map',
-        'Performance metrics dashboard',
-        'Route optimization interface',
-        'Inventory management system'
-      ]
-    }
+    ]
   },
   {
     id: 2,
@@ -100,6 +74,8 @@ const projects: Project[] = [
     description: 'An intelligent scheduling platform that adapts to your business needs. Our system uses AI to optimize resource allocation, manage appointments, and ensure efficient staff scheduling across multiple locations.',
     category: 'Management',
     icon: '⚡',
+    route: '/scheduling',
+    preview: 'Smart scheduling interface with AI-powered optimization and resource management.',
     features: [
       'AI-powered scheduling optimization',
       'Multi-location resource management',
@@ -123,25 +99,15 @@ const projects: Project[] = [
       },
       {
         metric: 'Time Savings',
-        value: '15+ hours per week',
-        description: 'Saved on scheduling'
+        value: '15+ hours',
+        description: 'Saved per week on scheduling'
       },
       {
-        metric: 'Resource Utilization',
-        value: 'Improve',
-        description: 'Enhanced resource utilization'
+        metric: 'Efficiency',
+        value: '85%',
+        description: 'Improved resource utilization'
       }
-    ],
-    uiMockup: {
-      component: SchedulingDashboard,
-      description: 'Smart scheduling interface with AI-powered optimization',
-      highlights: [
-        'Interactive calendar view',
-        'Resource allocation dashboard',
-        'Staff scheduling interface',
-        'Analytics and reporting'
-      ]
-    }
+    ]
   },
   {
     id: 3,
@@ -149,6 +115,8 @@ const projects: Project[] = [
     description: 'A comprehensive payroll management platform that automates complex calculations, tax filings, and compliance requirements. Our system ensures accuracy while saving countless hours of manual processing.',
     category: 'Finance',
     icon: '💎',
+    route: '/payroll',
+    preview: 'Comprehensive payroll management with automated processing and compliance.',
     features: [
       'Automated tax calculations and filings',
       'Multi-state compliance management',
@@ -171,26 +139,16 @@ const projects: Project[] = [
         description: 'Reduction in payroll processing time'
       },
       {
-        metric: 'Error Reduction',
-        value: 'Eliminate',
-        description: 'Elimination of calculation errors'
+        metric: 'Accuracy',
+        value: '99.9%',
+        description: 'Error-free calculations'
       },
       {
-        metric: 'Regulatory Compliance',
-        value: 'Ensure',
-        description: 'Ensured regulatory compliance'
+        metric: 'Compliance',
+        value: '100%',
+        description: 'Regulatory compliance rate'
       }
-    ],
-    uiMockup: {
-      component: PayrollDashboard,
-      description: 'Comprehensive payroll management interface with automated processing',
-      highlights: [
-        'Payroll processing dashboard',
-        'Tax management interface',
-        'Employee portal preview',
-        'Reporting and analytics'
-      ]
-    }
+    ]
   },
   {
     id: 4,
@@ -198,97 +156,81 @@ const projects: Project[] = [
     description: 'A powerful API integration platform that connects your business systems seamlessly. Our hub provides unified access to multiple services while ensuring security and reliability.',
     category: 'Integration',
     icon: '🔗',
+    route: '/api-integration',
+    preview: 'Unified API management with security, monitoring, and integration tools.',
     features: [
-      'Unified API gateway',
-      'Real-time data synchronization',
-      'Custom connector development',
-      'Advanced security protocols',
-      'Performance monitoring',
-      'Automated error handling'
+      'Unified API management dashboard',
+      'Real-time monitoring and analytics',
+      'Advanced security and authentication',
+      'Custom webhook management',
+      'Rate limiting and throttling',
+      'Multi-protocol support (REST, GraphQL, SOAP)'
     ],
-    technologies: ['TypeScript', 'Node.js', 'MongoDB', 'Redis', 'AWS', 'Kubernetes'],
+    technologies: ['Next.js', 'TypeScript', 'Docker', 'Kong', 'Redis', 'Elasticsearch'],
     benefits: [
       'Reduce integration time by 70%',
       'Improve system reliability',
-      'Enhance data consistency',
-      'Simplify maintenance'
+      'Enhance security posture',
+      'Streamline data flows'
     ],
     stats: [
       {
-        metric: 'Time Savings',
+        metric: 'Integration Speed',
         value: '70%',
-        description: 'Reduction in integration time'
+        description: 'Faster integration deployment'
       },
       {
-        metric: 'Reliability',
-        value: 'Improve',
-        description: 'Improved system reliability'
+        metric: 'Uptime',
+        value: '99.9%',
+        description: 'System reliability'
       },
       {
-        metric: 'Data Consistency',
-        value: 'Enhance',
-        description: 'Enhanced data consistency'
+        metric: 'Security',
+        value: '100%',
+        description: 'Threat detection rate'
       }
-    ],
-    uiMockup: {
-      component: APIIntegrationHub,
-      description: 'API integration dashboard with service connections and monitoring',
-      highlights: [
-        'Service connection dashboard',
-        'API monitoring interface',
-        'Integration workflow builder',
-        'Performance analytics'
-      ]
-    }
+    ]
   },
   {
     id: 5,
     title: 'Inventory Management System',
-    description: 'An intelligent inventory management solution that optimizes stock levels, generates QR codes for warehouses, and provides real-time visibility across your supply chain.',
+    description: 'An advanced inventory management solution that provides real-time tracking, automated reordering, and comprehensive analytics. Perfect for businesses of all sizes looking to optimize their inventory operations.',
     category: 'Operations',
     icon: '📦',
+    route: '/inventory',
+    preview: 'Real-time inventory tracking with QR codes, analytics, and automated management.',
     features: [
       'Real-time inventory tracking',
-      'QR code generation for warehouses and items',
+      'QR code scanning and management',
+      'Automated reorder point calculations',
       'Multi-warehouse support',
-      'Automated stock level monitoring',
-      'Supplier management',
-      'Advanced analytics and reporting'
+      'Comprehensive reporting and analytics',
+      'Integration with major e-commerce platforms'
     ],
-    technologies: ['React', 'TypeScript', 'QR Code', 'CSS Grid', 'Responsive Design', 'Modern UI'],
+    technologies: ['React', 'TypeScript', 'Node.js', 'PostgreSQL', 'Redis', 'Docker'],
     benefits: [
-      'Generate QR codes for efficient warehouse operations',
-      'Track inventory across multiple locations',
-      'Reduce stockouts by 60%',
-      'Optimize warehouse efficiency'
+      'Reduce inventory costs by 20%',
+      'Improve stock accuracy to 99%',
+      'Eliminate stockouts and overstock',
+      'Streamline warehouse operations'
     ],
     stats: [
       {
-        metric: 'QR Code Generation',
-        value: 'Instant',
-        description: 'Generate QR codes for warehouses and items'
+        metric: 'Cost Reduction',
+        value: '20%',
+        description: 'Inventory cost savings'
       },
       {
-        metric: 'Stockout Reduction',
-        value: '60%',
-        description: 'Reduction in stockouts'
+        metric: 'Accuracy',
+        value: '99%',
+        description: 'Stock level accuracy'
       },
       {
-        metric: 'Warehouse Efficiency',
-        value: '3x',
-        description: 'Improved warehouse operations'
+        metric: 'Efficiency',
+        value: '40%',
+        description: 'Faster inventory processing'
       }
-    ],
-    uiMockup: {
-      component: InventoryManagementSystem,
-      description: 'Interactive inventory management dashboard with QR code generation',
-      highlights: [
-        'Generate QR codes for warehouses',
-        'Real-time inventory tracking',
-        'Multi-warehouse support',
-        'Advanced filtering and search'
-      ]
-    }
+    ]
   },
   {
     id: 6,
@@ -296,6 +238,8 @@ const projects: Project[] = [
     description: 'A modern customer portal that enhances engagement and streamlines service delivery. Our platform provides a personalized experience while automating routine customer interactions.',
     category: 'Customer Service',
     icon: '🎯',
+    route: '/customer-portal',
+    preview: 'Personalized customer dashboard with support tickets and real-time chat.',
     features: [
       'Personalized customer dashboard',
       'Automated ticket management',
@@ -313,38 +257,27 @@ const projects: Project[] = [
     ],
     stats: [
       {
-        metric: 'Customer Satisfaction',
+        metric: 'Satisfaction',
         value: '40%',
         description: 'Increase in customer satisfaction'
       },
       {
-        metric: 'Support Efficiency',
+        metric: 'Resolution Speed',
         value: '60%',
         description: 'Faster ticket resolution'
       },
       {
-        metric: 'Self-Service Usage',
+        metric: 'Self-Service',
         value: '3x',
         description: 'Increased knowledge base usage'
       }
-    ],
-    uiMockup: {
-      component: CustomerPortalPlatform,
-      description: 'Interactive customer portal with support tickets, knowledge base, and live chat',
-      highlights: [
-        'Personalized customer dashboard',
-        'Support ticket management',
-        'Real-time chat support',
-        'Knowledge base integration'
-      ]
-    }
+    ]
   }
 ];
 
 const Examples: React.FC = () => {
+  const navigate = useNavigate();
   const { currentUser, signInWithGoogle } = useAuth();
-  const [selectedProject, setSelectedProject] = useState<Project>(projects[0]);
-  const [selectedView, setSelectedView] = useState<'desktop' | 'mobile'>('desktop');
   const [selectedCategory, setSelectedCategory] = useState<Category>('All');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -367,17 +300,9 @@ const Examples: React.FC = () => {
     });
   }, [selectedCategory, searchQuery]);
 
-  const handleProjectSelect = (project: Project) => {
-    setSelectedProject(project);
-    setSelectedView('desktop'); // Reset to desktop view when switching projects
+  const handleProjectClick = (project: Project) => {
+    navigate(project.route);
   };
-
-  // Update selected project when filters change
-  React.useEffect(() => {
-    if (filteredProjects.length > 0 && !filteredProjects.find(p => p.id === selectedProject.id)) {
-      setSelectedProject(filteredProjects[0]);
-    }
-  }, [filteredProjects, selectedProject.id]);
 
   return (
     <>
@@ -387,6 +312,10 @@ const Examples: React.FC = () => {
           <div className="header-content">
             <h1>Project Examples</h1>
             <p>Explore our innovative software solutions that transform businesses across industries</p>
+            <div className="header-subtitle">
+              <span className="preview-badge">✨ Live Demos</span>
+              <span>Click any project to experience the full interactive dashboard</span>
+            </div>
           </div>
           
           {/* Search and Filter Controls */}
@@ -416,28 +345,85 @@ const Examples: React.FC = () => {
           </div>
         </div>
 
-        {/* Project Selector Panel */}
-        <ProjectSelector
-          projects={filteredProjects}
-          selectedProjectId={selectedProject.id}
-          onProjectSelect={handleProjectSelect}
-        />
-
-        {/* Selected Project Display */}
+        {/* Projects Grid */}
         {filteredProjects.length === 0 ? (
           <div className="no-results">
             <h2>No solutions found</h2>
             <p>Try adjusting your search or filter criteria</p>
           </div>
         ) : (
-          <div className="selected-project-container">
-            <ProjectCard
-              key={selectedProject.id}
-              project={selectedProject}
-              isActive={true}
-              selectedView={selectedView}
-              setSelectedView={setSelectedView}
-            />
+          <div className="projects-grid">
+            {filteredProjects.map((project) => (
+              <div
+                key={project.id}
+                className="project-preview-card"
+                onClick={() => handleProjectClick(project)}
+              >
+                <div className="project-card-header">
+                  <div className="project-icon">{project.icon}</div>
+                  <div className="project-title">
+                    <h3>{project.title}</h3>
+                    <span className="project-category">{project.category}</span>
+                  </div>
+                  <div className="launch-indicator">
+                    <span className="launch-text">Launch →</span>
+                  </div>
+                </div>
+
+                <div className="project-preview-content">
+                  <p className="project-description">{project.description}</p>
+                  <div className="project-preview-text">
+                    <span className="preview-label">Preview:</span>
+                    <p>{project.preview}</p>
+                  </div>
+                </div>
+
+                <div className="project-features">
+                  <div className="features-list">
+                    {project.features.slice(0, 3).map((feature, index) => (
+                      <div key={index} className="feature-item">
+                        <span className="feature-bullet">•</span>
+                        <span>{feature}</span>
+                      </div>
+                    ))}
+                    {project.features.length > 3 && (
+                      <div className="more-features">
+                        +{project.features.length - 3} more features
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="project-stats">
+                  {project.stats.map((stat, index) => (
+                    <div key={index} className="stat-item">
+                      <div className="stat-value">{stat.value}</div>
+                      <div className="stat-label">{stat.metric}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="project-technologies">
+                  {project.technologies.slice(0, 4).map((tech, index) => (
+                    <span key={index} className="tech-tag">{tech}</span>
+                  ))}
+                  {project.technologies.length > 4 && (
+                    <span className="tech-more">+{project.technologies.length - 4}</span>
+                  )}
+                </div>
+
+                <div className="project-hover-overlay">
+                  <div className="hover-content">
+                    <h4>Experience the Full Dashboard</h4>
+                    <p>Click to explore the complete interactive interface</p>
+                    <div className="hover-button">
+                      <span>Launch Demo</span>
+                      <span className="hover-arrow">→</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
@@ -446,12 +432,12 @@ const Examples: React.FC = () => {
           <div className="cta-content">
             <h2>Ready to Transform Your Business?</h2>
             <p>Let's discuss how our custom software solutions can drive your success</p>
-                          <div className="cta-actions">
+            <div className="cta-actions">
               {currentUser ? (
                 <>
                   <button 
                     className="contact-button primary"
-                    onClick={() => window.location.href = '/dashboard'}
+                    onClick={() => navigate('/dashboard')}
                   >
                     Go to Dashboard
                   </button>
