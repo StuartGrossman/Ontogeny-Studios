@@ -41,19 +41,34 @@ const Main: React.FC = () => {
   useEffect(() => {
     const codeContent = codeContentRef.current;
     if (codeContent) {
-      // Auto-scroll to a certain point and back to top
-      const scrollInterval = setInterval(() => {
-        const { scrollTop, scrollHeight, clientHeight } = codeContent;
-        if (scrollTop < scrollHeight - clientHeight) {
-          codeContent.scrollTop += 1; // Scroll down by 1 pixel for smoother effect
-        } else {
-          codeContent.scrollTop = 0; // Reset to top when reaching bottom
-        }
-      }, 20); // Faster interval for smoother scrolling
+      // Reset scroll position when component mounts/remounts
+      codeContent.scrollTop = 0;
+      
+      let scrollInterval: NodeJS.Timeout;
+      
+      // Force a small delay to ensure DOM is ready
+      const initDelay = setTimeout(() => {
+        // Auto-scroll to a certain point and back to top
+        scrollInterval = setInterval(() => {
+          if (codeContentRef.current) {
+            const { scrollTop, scrollHeight, clientHeight } = codeContentRef.current;
+            if (scrollTop < scrollHeight - clientHeight) {
+              codeContentRef.current.scrollTop += 1; // Scroll down by 1 pixel for smoother effect
+            } else {
+              codeContentRef.current.scrollTop = 0; // Reset to top when reaching bottom
+            }
+          }
+        }, 20); // Faster interval for smoother scrolling
+      }, 100);
 
-      return () => clearInterval(scrollInterval);
+      return () => {
+        clearTimeout(initDelay);
+        if (scrollInterval) {
+          clearInterval(scrollInterval);
+        }
+      };
     }
-  }, []);
+  }, [location.pathname]); // Reset when route changes
 
   useEffect(() => {
     console.log('Component mounted, setting up scroll listener');

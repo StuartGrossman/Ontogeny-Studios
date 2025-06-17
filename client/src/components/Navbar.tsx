@@ -40,7 +40,7 @@ const Navbar: React.FC = () => {
             <img src={ontogenyIcon} alt="Ontogeny Labs" className="nav-brand-icon" />
             <span className="nav-brand-text">Ontogeny Labs</span>
           </Link>
-          {location.pathname !== '/' && (
+          {location.pathname !== '/' && location.pathname !== '/examples' && (
             <Link 
               to="/examples" 
               className={`nav-title-link ${location.pathname === '/examples' ? 'active' : ''}`}

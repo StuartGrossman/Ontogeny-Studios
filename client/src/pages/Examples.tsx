@@ -46,7 +46,7 @@ const projects: Project[] = [
     title: 'Business Logistics Platform',
     description: 'A comprehensive logistics management system that revolutionizes how businesses handle their supply chain. Our platform combines real-time tracking, automated processing, and intelligent routing to optimize your entire logistics operation.',
     category: 'Operations',
-    icon: '📦',
+    icon: '🚚',
     features: [
       'Real-time shipment tracking and monitoring',
       'AI-powered route optimization',
@@ -95,7 +95,7 @@ const projects: Project[] = [
     title: 'Enterprise Scheduling System',
     description: 'An intelligent scheduling platform that adapts to your business needs. Our system uses AI to optimize resource allocation, manage appointments, and ensure efficient staff scheduling across multiple locations.',
     category: 'Management',
-    icon: '📅',
+    icon: '⚡',
     features: [
       'AI-powered scheduling optimization',
       'Multi-location resource management',
@@ -144,7 +144,7 @@ const projects: Project[] = [
     title: 'Payroll Automation System',
     description: 'A comprehensive payroll management platform that automates complex calculations, tax filings, and compliance requirements. Our system ensures accuracy while saving countless hours of manual processing.',
     category: 'Finance',
-    icon: '💰',
+    icon: '💎',
     features: [
       'Automated tax calculations and filings',
       'Multi-state compliance management',
@@ -193,7 +193,7 @@ const projects: Project[] = [
     title: 'API Integration Hub',
     description: 'A powerful API integration platform that connects your business systems seamlessly. Our hub provides unified access to multiple services while ensuring security and reliability.',
     category: 'Integration',
-    icon: '🔌',
+    icon: '🔗',
     features: [
       'Unified API gateway',
       'Real-time data synchronization',
@@ -242,7 +242,7 @@ const projects: Project[] = [
     title: 'Inventory Management System',
     description: 'An intelligent inventory management solution that optimizes stock levels, automates reordering, and provides real-time visibility across your supply chain.',
     category: 'Operations',
-    icon: '📊',
+    icon: '📈',
     features: [
       'Real-time inventory tracking',
       'Automated reorder management',
@@ -291,7 +291,7 @@ const projects: Project[] = [
     title: 'Customer Portal Platform',
     description: 'A modern customer portal that enhances engagement and streamlines service delivery. Our platform provides a personalized experience while automating routine customer interactions.',
     category: 'Customer Service',
-    icon: '👥',
+    icon: '🎯',
     features: [
       'Personalized customer dashboard',
       'Automated ticket management',

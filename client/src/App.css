@@ -281,6 +281,8 @@ main {
   word-break: break-all;
   pointer-events: none;
   contain: content;
+  scroll-behavior: smooth;
+  will-change: scroll-position;
 }
 
 .code-content:hover {
