@@ -481,7 +481,7 @@
   overflow: hidden;
   background: transparent;
   box-shadow: none;
-  height: 700px;
+  height: 1200px;
   padding: 0;
   margin: 0;
 }
@@ -513,29 +513,15 @@
 }
 
 .view-toggle {
-  display: flex;
-  gap: var(--spacing-xs);
-  background: rgba(255, 255, 255, 0.05);
-  padding: 4px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: none;
 }
 
 .view-toggle-button {
-  padding: 8px 20px;
-  border: none;
-  background: none;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  font-weight: 500;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  display: none;
 }
 
 .view-toggle-button.active {
-  background: rgba(var(--brand-gradient-start-rgb), 0.1);
-  color: var(--brand-gradient-start);
+  display: none;
 }
 
 .ui-mockup-frame {
@@ -759,30 +745,45 @@
 }
 
 .contact-button {
-  padding: var(--spacing-lg) var(--spacing-2xl);
-  border-radius: 12px;
+  padding: 16px 32px;
   font-size: 1.125rem;
   font-weight: 600;
-  cursor: pointer;
+  border-radius: 12px;
   transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
 }
 
 .contact-button.primary {
-  background: linear-gradient(135deg, var(--brand-gradient-start), var(--brand-gradient-end));
+  background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
   color: white;
-  border: none;
-  box-shadow: 0 4px 12px rgba(var(--brand-gradient-start-rgb), 0.2);
+  box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
+}
+
+.contact-button.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
 }
 
 .contact-button.secondary {
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-primary);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.contact-button.secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .contact-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
 @keyframes fadeIn {

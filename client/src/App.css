@@ -512,50 +512,65 @@ main {
 }
 
 .login-button,
+.dashboard-button,
 .examples-button {
-  background: linear-gradient(135deg, var(--brand-gradient-start), var(--brand-gradient-end));
-  color: white;
+  padding: 12px 24px;
   border: none;
-  padding: 12px 32px;
-  font-size: 1.125rem;
-  font-weight: 600;
   border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  margin: 0 8px;
+}
+
+.login-button {
+  background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
+}
+
+.dashboard-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 
 .examples-button {
-  background: linear-gradient(135deg, #2d3436, #636e72);
+  background: transparent;
+  color: var(--text-color);
+  border: 2px solid var(--border-color);
 }
 
 .login-button:hover,
-.examples-button:hover {
+.dashboard-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-  opacity: 0.95;
+  box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
+}
+
+.dashboard-button:hover {
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 .login-button:active,
-.examples-button:active {
+.dashboard-button:active {
   transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.gradient-text {
-  background: linear-gradient(135deg, var(--brand-gradient-start), var(--brand-gradient-end));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-fill-color: transparent;
-  animation: gradient 8s ease infinite;
-  background-size: 200% 200%;
-}
-
-@keyframes gradient {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+/* Loading state */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-size: 1.2rem;
+  color: var(--text-color);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
 }
 
 /* Responsive Design */

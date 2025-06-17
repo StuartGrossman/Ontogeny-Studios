@@ -22,7 +22,23 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isActive, selectedVi
         <div className="project-main">
           <p className="project-description">{project.description}</p>
 
-          {/* User Interface Section without view toggle and extra header/description */}
+          {/* View Toggle */}
+          <div className="view-toggle">
+            <button
+              className={`view-toggle-button${selectedView === 'desktop' ? ' active' : ''}`}
+              onClick={() => setSelectedView('desktop')}
+            >
+              Desktop
+            </button>
+            <button
+              className={`view-toggle-button${selectedView === 'mobile' ? ' active' : ''}`}
+              onClick={() => setSelectedView('mobile')}
+            >
+              Mobile
+            </button>
+          </div>
+
+          {/* User Interface Section */}
           <div className="ui-mockup-section">
             <div className="ui-mockup-container">
               <div className={`ui-mockup-frame ${selectedView}`}>
