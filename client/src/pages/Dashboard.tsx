@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import AIChatModal from '../components/AIChatModal';
 import '../styles/Dashboard.css';
 
 const Dashboard: React.FC = () => {
@@ -11,6 +12,9 @@ const Dashboard: React.FC = () => {
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState<React.ReactNode>(null);
+  
+  // AI Chat Modal state
+  const [aiChatOpen, setAiChatOpen] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -182,6 +186,13 @@ const Dashboard: React.FC = () => {
             <div className="welcome-section">
               <h2>Welcome back, {currentUser?.displayName?.split(' ')[0] || 'User'}! 👋</h2>
               <p>Here's what's happening with your projects today.</p>
+              <button 
+                className="request-project-button"
+                onClick={() => setAiChatOpen(true)}
+              >
+                <span className="button-icon">🚀</span>
+                Request New Project
+              </button>
             </div>
 
             {/* Metrics Grid */}
@@ -305,6 +316,12 @@ const Dashboard: React.FC = () => {
           </div>
         )}
       </div>
+      
+      {/* AI Chat Modal */}
+      <AIChatModal 
+        isOpen={aiChatOpen}
+        onClose={() => setAiChatOpen(false)}
+      />
     </div>
   );
 };

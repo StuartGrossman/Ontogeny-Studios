@@ -3,6 +3,9 @@ import { useAuth } from '../contexts/AuthContext';
 import LogisticsDashboard from '../components/LogisticsDashboard';
 import SchedulingDashboard from '../components/SchedulingDashboard';
 import PayrollDashboard from '../components/PayrollDashboard';
+import APIIntegrationHub from '../components/APIIntegrationHub';
+import InventoryManagementSystem from '../components/InventoryManagementSystem';
+import CustomerPortalPlatform from '../components/CustomerPortalPlatform';
 import ProjectCard from '../components/ProjectCard';
 import ProjectSelector from '../components/ProjectSelector';
 import Footer from '../components/Footer';
@@ -228,7 +231,7 @@ const projects: Project[] = [
       }
     ],
     uiMockup: {
-      image: '/mockups/api-hub.png',
+      component: APIIntegrationHub,
       description: 'API integration dashboard with service connections and monitoring',
       highlights: [
         'Service connection dashboard',
@@ -241,49 +244,49 @@ const projects: Project[] = [
   {
     id: 5,
     title: 'Inventory Management System',
-    description: 'An intelligent inventory management solution that optimizes stock levels, automates reordering, and provides real-time visibility across your supply chain.',
+    description: 'An intelligent inventory management solution that optimizes stock levels, generates QR codes for warehouses, and provides real-time visibility across your supply chain.',
     category: 'Operations',
-    icon: '📈',
+    icon: '📦',
     features: [
       'Real-time inventory tracking',
-      'Automated reorder management',
-      'Multi-location support',
-      'Barcode scanning integration',
+      'QR code generation for warehouses and items',
+      'Multi-warehouse support',
+      'Automated stock level monitoring',
       'Supplier management',
-      'Advanced forecasting'
+      'Advanced analytics and reporting'
     ],
-    technologies: ['Vue.js', 'Python', 'PostgreSQL', 'Redis', 'AWS', 'Docker'],
+    technologies: ['React', 'TypeScript', 'QR Code', 'CSS Grid', 'Responsive Design', 'Modern UI'],
     benefits: [
+      'Generate QR codes for efficient warehouse operations',
+      'Track inventory across multiple locations',
       'Reduce stockouts by 60%',
-      'Optimize inventory levels',
-      'Improve order fulfillment',
-      'Reduce carrying costs'
+      'Optimize warehouse efficiency'
     ],
     stats: [
+      {
+        metric: 'QR Code Generation',
+        value: 'Instant',
+        description: 'Generate QR codes for warehouses and items'
+      },
       {
         metric: 'Stockout Reduction',
         value: '60%',
         description: 'Reduction in stockouts'
       },
       {
-        metric: 'Inventory Optimization',
-        value: 'Optimize',
-        description: 'Optimized inventory levels'
-      },
-      {
-        metric: 'Order Fulfillment',
-        value: 'Improve',
-        description: 'Improved order fulfillment'
+        metric: 'Warehouse Efficiency',
+        value: '3x',
+        description: 'Improved warehouse operations'
       }
     ],
     uiMockup: {
-      image: '/mockups/inventory-dashboard.png',
-      description: 'Inventory management interface with real-time tracking',
+      component: InventoryManagementSystem,
+      description: 'Interactive inventory management dashboard with QR code generation',
       highlights: [
-        'Inventory overview dashboard',
-        'Stock level monitoring',
-        'Order management interface',
-        'Analytics and reporting'
+        'Generate QR codes for warehouses',
+        'Real-time inventory tracking',
+        'Multi-warehouse support',
+        'Advanced filtering and search'
       ]
     }
   },
@@ -301,7 +304,7 @@ const projects: Project[] = [
       'Document management',
       'Customer analytics'
     ],
-    technologies: ['React', 'Node.js', 'MongoDB', 'Socket.io', 'AWS', 'Redis'],
+    technologies: ['React', 'TypeScript', 'Real-time Chat', 'Dashboard Design', 'Customer Experience', 'Support Systems'],
     benefits: [
       'Increase customer satisfaction by 40%',
       'Reduce support ticket volume',
@@ -315,24 +318,24 @@ const projects: Project[] = [
         description: 'Increase in customer satisfaction'
       },
       {
-        metric: 'Support Ticket Reduction',
-        value: 'Reduce',
-        description: 'Reduction in support ticket volume'
+        metric: 'Support Efficiency',
+        value: '60%',
+        description: 'Faster ticket resolution'
       },
       {
-        metric: 'Response Time',
-        value: 'Improve',
-        description: 'Improved response times'
+        metric: 'Self-Service Usage',
+        value: '3x',
+        description: 'Increased knowledge base usage'
       }
     ],
     uiMockup: {
-      image: '/mockups/customer-portal.png',
-      description: 'Customer portal interface with support and self-service features',
+      component: CustomerPortalPlatform,
+      description: 'Interactive customer portal with support tickets, knowledge base, and live chat',
       highlights: [
-        'Customer dashboard view',
-        'Support ticket interface',
-        'Knowledge base access',
-        'Service analytics'
+        'Personalized customer dashboard',
+        'Support ticket management',
+        'Real-time chat support',
+        'Knowledge base integration'
       ]
     }
   }
