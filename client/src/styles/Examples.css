@@ -227,6 +227,12 @@
   margin-top: var(--spacing-xl);
 }
 
+.selected-project-container {
+  max-width: 1200px;
+  margin: 30px auto;
+  padding: 0 var(--spacing-md);
+}
+
 .project-card {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 20px;

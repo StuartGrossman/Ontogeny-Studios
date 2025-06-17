@@ -120,14 +120,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isActive, selectedVi
         )}
 
         <div className="project-actions">
-          <button className="demo-button">
-            <span className="button-icon">🎥</span>
-            Watch Demo
-          </button>
-          <button className="learn-more">
-            <span className="button-icon">📋</span>
-            Request Case Study
-          </button>
+      
         </div>
       </div>
     </div>

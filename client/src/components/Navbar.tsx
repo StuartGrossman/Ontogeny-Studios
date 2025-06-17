@@ -1,6 +1,7 @@
 import React, { useLayoutEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import ontogenyIcon from '../assets/otogeny-icon.png';
 import '../styles/Navbar.css';
 
 const Navbar: React.FC = () => {
@@ -34,18 +35,23 @@ const Navbar: React.FC = () => {
   return (
     <nav className="navbar" ref={navRef}>
       <div className="navbar-content">
-        <Link to="/" className="nav-brand">
-          Ontogeny Labs
-        </Link>
+        <div className="nav-left">
+          <Link to="/" className="nav-brand">
+            <img src={ontogenyIcon} alt="Ontogeny Labs" className="nav-brand-icon" />
+            <span className="nav-brand-text">Ontogeny Labs</span>
+          </Link>
+          {location.pathname !== '/' && (
+            <Link 
+              to="/examples" 
+              className={`nav-title-link ${location.pathname === '/examples' ? 'active' : ''}`}
+            >
+              Project Examples
+            </Link>
+          )}
+        </div>
         
         <div className="nav-links">
-          <Link 
-            to="/examples" 
-            className={`nav-link ${location.pathname === '/examples' ? 'active' : ''}`}
-          >
-            Project Examples
-          </Link>
-          {currentUser && (
+          {currentUser && location.pathname !== '/' && (
             <Link 
               to="/dashboard" 
               className={`nav-link dashboard-link ${location.pathname === '/dashboard' ? 'active' : ''}`}

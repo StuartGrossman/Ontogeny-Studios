@@ -67,11 +67,11 @@ const DesktopDashboard: React.FC = () => {
 
   // Enhanced mock data with more features
   const mockShipments = [
-    {
-      id: 'SH001',
+  {
+    id: 'SH001',
       origin: 'New York',
       destination: 'Los Angeles',
-      status: 'in-transit',
+    status: 'in-transit',
       progress: 65,
       estimatedDelivery: '2024-03-16',
       driver: 'John Smith',
@@ -81,9 +81,9 @@ const DesktopDashboard: React.FC = () => {
       coordinates: { lat: 39.8283, lng: -98.5795 },
       temperature: 22,
       humidity: 45
-    },
-    {
-      id: 'SH002',
+  },
+  {
+    id: 'SH002',
       origin: 'Chicago',
       destination: 'Miami',
       status: 'pending',
@@ -96,9 +96,9 @@ const DesktopDashboard: React.FC = () => {
       coordinates: { lat: 41.8781, lng: -87.6298 },
       temperature: 4,
       humidity: 35
-    },
-    {
-      id: 'SH003',
+  },
+  {
+    id: 'SH003',
       origin: 'San Francisco',
       destination: 'Seattle',
       status: 'in-transit',
@@ -146,7 +146,7 @@ const DesktopDashboard: React.FC = () => {
       id: 'SH006',
       origin: 'Phoenix',
       destination: 'Las Vegas',
-      status: 'pending',
+    status: 'pending',
       progress: 0,
       estimatedDelivery: '2024-03-19',
       driver: 'Emma Davis',
@@ -280,10 +280,10 @@ const DesktopDashboard: React.FC = () => {
   ];
 
   const mockInventory = [
-    {
-      id: 'INV001',
+  {
+    id: 'INV001',
       name: 'Electronic Components',
-      category: 'Electronics',
+    category: 'Electronics',
       quantity: 1250,
       minStock: 200,
       maxStock: 2000,
@@ -295,9 +295,9 @@ const DesktopDashboard: React.FC = () => {
       temperature: 'Room Temperature',
       weight: 450,
       dimensions: '120x80x40 cm'
-    },
-    {
-      id: 'INV002',
+  },
+  {
+    id: 'INV002',
       name: 'Medical Supplies',
       category: 'Healthcare',
       quantity: 85,
@@ -311,9 +311,9 @@ const DesktopDashboard: React.FC = () => {
       temperature: 'Cold Storage',
       weight: 120,
       dimensions: '60x40x30 cm'
-    },
-    {
-      id: 'INV003',
+  },
+  {
+    id: 'INV003',
       name: 'Automotive Parts',
       category: 'Automotive',
       quantity: 750,
@@ -520,33 +520,33 @@ const DesktopDashboard: React.FC = () => {
     await saveToFirebase('route_optimizations', { warehouseId, optimizedAt: new Date() });
     setRouteOptimizationModalOpen(false);
   };
-
-  return (
+    
+    return (
     <div className="logistics-dashboard enhanced">
       <div className="dashboard-header">
         <div className="header-stats">
           <div className="stat-item">
             <span className="stat-label">Active Shipments</span>
             <span className="stat-value">{realTimeData.totalShipments || 567}</span>
-          </div>
+        </div>
           <div className="stat-item">
             <span className="stat-label">Drivers Online</span>
             <span className="stat-value">{realTimeData.activeDrivers || 89}</span>
-          </div>
+        </div>
           <div className="stat-item">
             <span className="stat-label">On-Time Rate</span>
             <span className="stat-value">{realTimeData.deliveryRate || '94.2'}%</span>
-          </div>
+        </div>
         </div>
         <div className="header-tabs">
-          {['overview', 'tracking', 'inventory', 'drivers', 'analytics', 'alerts'].map(tab => (
-            <button 
+          {['overview', 'tracking', 'inventory', 'analytics', 'alerts'].map(tab => (
+          <button 
               key={tab}
               className={`tab-button ${activeTab === tab ? 'active' : ''}`}
               onClick={() => setActiveTab(tab)}
-            >
+          >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
+          </button>
           ))}
         </div>
       </div>
@@ -606,27 +606,27 @@ const DesktopDashboard: React.FC = () => {
               
               <div className="map-overview">
                 <h3>Live Tracking Overview</h3>
-                <MapContainer
-                  center={[39.8283, -98.5795]}
-                  zoom={4}
+              <MapContainer
+                center={[39.8283, -98.5795]}
+                zoom={4}
                   style={{ height: '300px', width: '100%' }}
                 >
                   <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                  {shipments.map((shipment) => (
+                {shipments.map((shipment) => (
                     <Marker key={shipment.id} position={shipment.coordinates}>
-                      <Popup>
+                    <Popup>
                         <div className="enhanced-popup">
                           <h4>Shipment #{shipment.id}</h4>
-                          <p>Status: {shipment.status}</p>
+                        <p>Status: {shipment.status}</p>
                           <p>Driver: {shipment.driver}</p>
                           <p>Temperature: {shipment.temperature}°C</p>
                           <button onClick={() => setShipmentModalOpen(true)}>View Details</button>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  ))}
-                </MapContainer>
-              </div>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ))}
+              </MapContainer>
+            </div>
             </div>
           </div>
         )}
@@ -636,7 +636,7 @@ const DesktopDashboard: React.FC = () => {
             <div className="tracking-header">
               <h3>Real-Time Shipment Tracking</h3>
               <div className="tracking-controls">
-                <select 
+                <select
                   className="tracking-status-filter"
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
@@ -714,7 +714,7 @@ const DesktopDashboard: React.FC = () => {
 
               <div className="shipments-table-container">
                 <div className="table-controls">
-                  <input 
+                  <input
                     type="text" 
                     placeholder="Search shipments..."
                     className="shipment-search"
@@ -725,22 +725,22 @@ const DesktopDashboard: React.FC = () => {
                     <option value="medium">Medium Priority</option>
                     <option value="low">Low Priority</option>
                   </select>
-                </div>
+              </div>
                 
                 <div className="shipments-table">
                   <table>
-                    <thead>
-                      <tr>
+                  <thead>
+                    <tr>
                         <th>Shipment ID</th>
                         <th>Route</th>
                         <th>Status</th>
                         <th>Progress</th>
                         <th>Driver</th>
                         <th>ETA</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
                       {shipments.map((shipment) => (
                         <tr key={shipment.id}>
                           <td>
@@ -748,9 +748,9 @@ const DesktopDashboard: React.FC = () => {
                               <strong>{shipment.id}</strong>
                               <span className={`priority-indicator ${shipment.priority}`}>
                                 {shipment.priority}
-                              </span>
+                          </span>
                             </div>
-                          </td>
+                        </td>
                           <td>
                             <div className="route-cell">
                               <span className="origin">{shipment.origin}</span>
@@ -793,11 +793,11 @@ const DesktopDashboard: React.FC = () => {
                               <button className="action-btn track">Track</button>
                               <button className="action-btn details">Details</button>
                             </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
                 </div>
               </div>
             </div>
@@ -813,15 +813,15 @@ const DesktopDashboard: React.FC = () => {
                 <button className="add-item-button" onClick={() => setInventoryModalOpen(true)}>
                   Add New Item
                 </button>
-              </div>
-            </div>
+                  </div>
+                </div>
             
             <div className="inventory-stats">
               <div className="inventory-stat-card">
                 <h4>Total Items</h4>
                 <div className="stat-value">{inventory.reduce((acc, item) => acc + item.quantity, 0)}</div>
                 <div className="stat-trend positive">↑ 5%</div>
-              </div>
+                </div>
               <div className="inventory-stat-card">
                 <h4>Low Stock Items</h4>
                 <div className="stat-value">{inventory.filter(i => i.quantity < i.minStock).length}</div>
@@ -831,17 +831,17 @@ const DesktopDashboard: React.FC = () => {
                 <h4>Total Value</h4>
                 <div className="stat-value">${inventory.reduce((acc, item) => acc + item.value, 0).toLocaleString()}</div>
                 <div className="stat-trend positive">↑ 8%</div>
-              </div>
+                </div>
               <div className="inventory-stat-card">
                 <h4>Categories</h4>
                 <div className="stat-value">{new Set(inventory.map(i => i.category)).size}</div>
                 <div className="stat-trend neutral">—</div>
               </div>
-            </div>
+                </div>
 
             <div className="inventory-overview">
               <div className="inventory-charts">
-                <div className="chart-container">
+              <div className="chart-container">
                   <h4>Inventory by Category</h4>
                   <ResponsiveContainer width="100%" height={250}>
                     <PieChart>
@@ -867,13 +867,13 @@ const DesktopDashboard: React.FC = () => {
                           <Cell key={`cell-${index}`} fill={entry.fill} />
                         ))}
                       </Pie>
-                      <Tooltip />
-                      <Legend />
+                    <Tooltip />
+                    <Legend />
                     </PieChart>
-                  </ResponsiveContainer>
-                </div>
+                </ResponsiveContainer>
+              </div>
                 
-                <div className="chart-container">
+              <div className="chart-container">
                   <h4>Stock Levels vs Targets</h4>
                   <ResponsiveContainer width="100%" height={250}>
                     <BarChart data={inventory.map(item => ({
@@ -882,34 +882,34 @@ const DesktopDashboard: React.FC = () => {
                       minimum: item.minStock,
                       maximum: item.maxStock
                     }))}>
-                      <CartesianGrid strokeDasharray="3 3" />
+                    <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
                       <Bar dataKey="current" fill="#3b82f6" name="Current Stock" />
                       <Bar dataKey="minimum" fill="#ef4444" name="Min Stock" />
                       <Bar dataKey="maximum" fill="#10b981" name="Max Stock" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </div>
+          </div>
 
             <div className="inventory-table">
               <div className="table-header">
                 <h4>Detailed Inventory</h4>
                 <div className="table-filters">
                   <select className="category-filter">
-                    <option value="all">All Categories</option>
+                  <option value="all">All Categories</option>
                     <option value="electronics">Electronics</option>
                     <option value="healthcare">Healthcare</option>
                     <option value="automotive">Automotive</option>
                     <option value="textiles">Textiles</option>
-                  </select>
+                </select>
                   <input type="text" placeholder="Search items..." className="search-input" />
-                </div>
               </div>
+            </div>
               <table>
                 <thead>
                   <tr>
@@ -944,7 +944,7 @@ const DesktopDashboard: React.FC = () => {
                           <br />
                           <span className={`status-badge ${item.quantity < item.minStock ? 'low-stock' : 'in-stock'}`}>
                             {item.quantity < item.minStock ? 'Low Stock' : 'In Stock'}
-                          </span>
+                        </span>
                           <br />
                           <small>Min: {item.minStock} | Max: {item.maxStock}</small>
                         </div>
@@ -968,8 +968,8 @@ const DesktopDashboard: React.FC = () => {
                       <td>
                         <div className="item-actions">
                           <button className="action-button restock" onClick={() => setInventoryModalOpen(true)}>
-                            Restock
-                          </button>
+                          Restock
+                        </button>
                           <button className="action-button edit">Edit</button>
                           <button className="action-button move">Move</button>
                         </div>
@@ -989,21 +989,21 @@ const DesktopDashboard: React.FC = () => {
               <button className="add-driver-button" onClick={() => setDriverModalOpen(true)}>
                 Add New Driver
               </button>
-            </div>
+      </div>
 
             <div className="drivers-stats">
               <div className="driver-stat-card">
                 <h4>Total Drivers</h4>
                 <div className="stat-value">{drivers.length}</div>
-              </div>
+            </div>
               <div className="driver-stat-card">
                 <h4>Active Now</h4>
                 <div className="stat-value">{drivers.filter(d => d.status === 'active').length}</div>
-              </div>
+          </div>
               <div className="driver-stat-card">
                 <h4>Available</h4>
                 <div className="stat-value">{drivers.filter(d => d.status === 'available').length}</div>
-              </div>
+        </div>
               <div className="driver-stat-card">
                 <h4>Avg Rating</h4>
                 <div className="stat-value">{(drivers.reduce((acc, d) => acc + d.rating, 0) / drivers.length).toFixed(1)}</div>
@@ -1016,7 +1016,7 @@ const DesktopDashboard: React.FC = () => {
                   <div className="driver-header">
                     <h4>{driver.name}</h4>
                     <span className={`status ${driver.status}`}>{driver.status}</span>
-                  </div>
+            </div>
                   <div className="driver-details">
                     <p><strong>Experience:</strong> {driver.experience}</p>
                     <p><strong>Rating:</strong> {driver.rating}/5</p>
@@ -1034,9 +1034,9 @@ const DesktopDashboard: React.FC = () => {
                   </div>
                 </div>
               ))}
-            </div>
           </div>
-        )}
+        </div>
+      )}
 
         {activeTab === 'analytics' && (
           <div className="analytics-section">
@@ -1153,10 +1153,10 @@ const DesktopDashboard: React.FC = () => {
                     <Bar dataKey="deliveries" fill="#10b981" name="Daily Deliveries" />
                   </BarChart>
                 </ResponsiveContainer>
-              </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
         {activeTab === 'alerts' && (
           <div className="alerts-section">
@@ -1172,8 +1172,8 @@ const DesktopDashboard: React.FC = () => {
                 </select>
                 <button className="clear-all-button">Clear Resolved</button>
                 <button className="export-alerts">Export Alerts</button>
-              </div>
             </div>
+          </div>
 
             <div className="alerts-summary">
               <div className="alert-summary-card high">
@@ -1181,7 +1181,7 @@ const DesktopDashboard: React.FC = () => {
                 <h4>Critical Alerts</h4>
                 <div className="count">{alerts.filter(a => a.severity === 'high' && !a.resolved).length}</div>
                 <div className="summary-detail">Requires immediate attention</div>
-              </div>
+        </div>
               <div className="alert-summary-card medium">
                 <div className="summary-icon">⚠️</div>
                 <h4>Warning Alerts</h4>
@@ -1275,11 +1275,11 @@ const DesktopDashboard: React.FC = () => {
             <input placeholder="Insurance Value" type="number" />
             <select><option>Select Driver</option></select>
           </div>
-          <div className="modal-actions">
+            <div className="modal-actions">
             <button onClick={() => handleCreateShipment({})}>Create Shipment</button>
             <button onClick={() => setShipmentModalOpen(false)}>Cancel</button>
+            </div>
           </div>
-        </div>
       </Modal>
 
       <Modal isOpen={driverModalOpen} onClose={() => setDriverModalOpen(false)} title="Driver Management">
@@ -1292,7 +1292,7 @@ const DesktopDashboard: React.FC = () => {
                   <p>Status: <span className={`status ${driver.status}`}>{driver.status}</span></p>
                   <p>Rating: {driver.rating}/5</p>
                   <p>Deliveries: {driver.totalDeliveries}</p>
-                </div>
+        </div>
                 <div className="driver-actions">
                   <button onClick={() => handleAssignDriver('', driver.id)}>Assign Route</button>
                   <button>Contact</button>

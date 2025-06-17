@@ -1,8 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import LogisticsDashboard from '../components/LogisticsDashboard';
+import SchedulingDashboard from '../components/SchedulingDashboard';
+import PayrollDashboard from '../components/PayrollDashboard';
 import '../styles/Examples.css';
 import ProjectCard from '../components/ProjectCard';
+import ProjectSelector from '../components/ProjectSelector';
 
 interface Project {
   id: number;
@@ -126,7 +129,7 @@ const projects: Project[] = [
       }
     ],
     uiMockup: {
-      image: '/mockups/scheduling-interface.png',
+      component: SchedulingDashboard,
       description: 'Smart scheduling interface with AI-powered optimization',
       highlights: [
         'Interactive calendar view',
@@ -175,7 +178,7 @@ const projects: Project[] = [
       }
     ],
     uiMockup: {
-      image: '/mockups/payroll-dashboard.png',
+      component: PayrollDashboard,
       description: 'Comprehensive payroll management interface with automated processing',
       highlights: [
         'Payroll processing dashboard',
@@ -336,7 +339,7 @@ const projects: Project[] = [
 
 const Examples: React.FC = () => {
   const { currentUser, signInWithGoogle } = useAuth();
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedProject, setSelectedProject] = useState<Project>(projects[0]);
   const [selectedView, setSelectedView] = useState<'desktop' | 'mobile'>('desktop');
   const [selectedCategory, setSelectedCategory] = useState<Category>('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -360,45 +363,78 @@ const Examples: React.FC = () => {
     });
   }, [selectedCategory, searchQuery]);
 
-  const nextSlide = () => {
-    setCurrentIndex((prevIndex) => 
-      prevIndex === filteredProjects.length - 1 ? 0 : prevIndex + 1
-    );
+  const handleProjectSelect = (project: Project) => {
+    setSelectedProject(project);
+    setSelectedView('desktop'); // Reset to desktop view when switching projects
   };
 
-  const prevSlide = () => {
-    setCurrentIndex((prevIndex) => 
-      prevIndex === 0 ? filteredProjects.length - 1 : prevIndex - 1
-    );
-  };
+  // Update selected project when filters change
+  React.useEffect(() => {
+    if (filteredProjects.length > 0 && !filteredProjects.find(p => p.id === selectedProject.id)) {
+      setSelectedProject(filteredProjects[0]);
+    }
+  }, [filteredProjects, selectedProject.id]);
 
   return (
     <>
       <div className="examples-page">
         {/* Header Section */}
-      
+        <div className="examples-header">
+          <div className="header-content">
+            <h1>Project Examples</h1>
+            <p>Explore our innovative software solutions that transform businesses across industries</p>
+          </div>
+          
+          {/* Search and Filter Controls */}
+          <div className="search-filter-container">
+            <div className="search-box">
+              <span className="search-icon">🔍</span>
+              <input
+                type="text"
+                className="search-input"
+                placeholder="Search projects, features, or technologies..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            
+            <div className="category-filter">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  className={`category-button ${selectedCategory === category ? 'active' : ''}`}
+                  onClick={() => setSelectedCategory(category)}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
 
+        {/* Project Selector Panel */}
+        <ProjectSelector
+          projects={filteredProjects}
+          selectedProjectId={selectedProject.id}
+          onProjectSelect={handleProjectSelect}
+        />
+
+        {/* Selected Project Display */}
         {filteredProjects.length === 0 ? (
           <div className="no-results">
             <h2>No solutions found</h2>
             <p>Try adjusting your search or filter criteria</p>
           </div>
         ) : (
-          <>
-            <div className="examples-grid">
-              {filteredProjects.map((project, index) => (
-                <ProjectCard
-                  key={project.id}
-                  project={project}
-                  isActive={index === currentIndex}
-                  selectedView={index === currentIndex ? selectedView : 'desktop'}
-                  setSelectedView={(view: 'desktop' | 'mobile') => {
-                    if (index === currentIndex) setSelectedView(view);
-                  }}
-                />
-              ))}
-            </div>
-          </>
+          <div className="selected-project-container">
+            <ProjectCard
+              key={selectedProject.id}
+              project={selectedProject}
+              isActive={true}
+              selectedView={selectedView}
+              setSelectedView={setSelectedView}
+            />
+          </div>
         )}
 
         {/* Footer CTA */}
