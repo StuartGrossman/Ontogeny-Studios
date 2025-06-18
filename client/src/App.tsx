@@ -39,7 +39,7 @@ const Main: React.FC = () => {
 
   const codeContentRef = useRef<HTMLDivElement>(null);
   const [codeBoxOpacity, setCodeBoxOpacity] = useState(1);
-  const [isHoveringRightSide, setIsHoveringRightSide] = useState(false);
+  const [isHoveringRightSide] = useState(false);
 
   // Don't show the main navbar on the dashboard pages since they have their own navigation
   const dashboardPaths = ['/dashboard', '/inventory', '/customer-portal', '/api-integration', '/payroll', '/scheduling', '/logistics'];

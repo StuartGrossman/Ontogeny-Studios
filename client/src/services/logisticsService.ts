@@ -221,7 +221,7 @@ export const subscribeToRoutes = (appId: string, warehouseId: string, callback: 
 
 export const updateOptimizedRoute = async (appId: string, warehouseId: string, route: OptimizedRoute): Promise<void> => {
   const routeRef = doc(db, 'examples', appId, 'routes', warehouseId);
-  await updateDoc(routeRef, route);
+  await updateDoc(routeRef, route as any);
 };
 
 // Initialize example data

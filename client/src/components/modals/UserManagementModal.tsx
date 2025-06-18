@@ -30,10 +30,11 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({ onClose, onUp
   const handleRoleChange = async (userId: string, newRole: 'user' | 'admin') => {
     try {
       // TODO: Implement actual role update logic
+      const updatedUser = { ...users.find(u => u.id === userId)!, role: newRole };
       setUsers(users.map(user =>
-        user.id === userId ? { ...user, role: newRole } : user
+        user.id === userId ? updatedUser : user
       ));
-      onUpdateSuccess();
+      onUpdateSuccess(updatedUser);
     } catch (err) {
       setError('Failed to update user role');
     }

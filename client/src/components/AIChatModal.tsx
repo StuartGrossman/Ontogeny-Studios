@@ -24,7 +24,6 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [conversationId, setConversationId] = useState<string>('');
   const [error, setError] = useState<string>('');
-  const [isSubmittingProject, setIsSubmittingProject] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -46,7 +45,6 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
   const submitProjectRequest = async (projectName: string, features: string, description: string) => {
     if (!currentUser) return false;
     
-    setIsSubmittingProject(true);
     try {
       await addDoc(collection(db, 'user_project_requests'), {
         projectName: projectName.trim(),
@@ -67,8 +65,6 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
     } catch (error) {
       console.error('Error submitting project request:', error);
       return false;
-    } finally {
-      setIsSubmittingProject(false);
     }
   };
 

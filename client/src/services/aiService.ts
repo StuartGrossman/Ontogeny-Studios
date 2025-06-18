@@ -1,5 +1,3 @@
-import { useAuth } from '../contexts/AuthContext';
-
 const DEEPSEEK_API_KEY = 'sk-62b86883848c4907bdbdc730ac77eadd';
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
 const SERVER_URL = 'http://localhost:5000/api';
