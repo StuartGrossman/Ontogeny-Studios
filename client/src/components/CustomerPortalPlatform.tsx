@@ -1,4 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  MessageCircle, 
+  Search, 
+  FileText, 
+  FolderOpen, 
+  Upload,
+  File,
+  FileCheck,
+  Folder
+} from 'lucide-react';
 import '../styles/CustomerPortalPlatform.css';
 
 interface SupportTicket {
@@ -39,6 +49,7 @@ interface Document {
   size: string;
   uploadDate: string;
   category: string;
+  file?: File;
 }
 
 const CustomerPortalPlatform: React.FC = () => {
@@ -52,6 +63,26 @@ const CustomerPortalPlatform: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [newMessage, setNewMessage] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
+  
+  // Modal states
+  const [isCreateTicketModalOpen, setIsCreateTicketModalOpen] = useState(false);
+  const [isUploadDocumentModalOpen, setIsUploadDocumentModalOpen] = useState(false);
+  
+  // Form states
+  const [newTicketForm, setNewTicketForm] = useState({
+    subject: '',
+    description: '',
+    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
+    category: 'general'
+  });
+  
+  const [uploadForm, setUploadForm] = useState({
+    category: 'general',
+    description: ''
+  });
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Mock data
   const mockTickets: SupportTicket[] = [
@@ -180,6 +211,79 @@ const CustomerPortalPlatform: React.FC = () => {
     setDocuments(mockDocuments);
   }, []);
 
+  // Handler functions
+  const handleCreateTicket = () => {
+    if (!newTicketForm.subject.trim() || !newTicketForm.description.trim()) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    const newTicket: SupportTicket = {
+      id: `TKT-${String(tickets.length + 1).padStart(3, '0')}`,
+      subject: newTicketForm.subject,
+      description: newTicketForm.description,
+      priority: newTicketForm.priority,
+      status: 'open',
+      createdDate: new Date().toISOString().split('T')[0],
+      lastUpdated: new Date().toISOString().split('T')[0],
+      responses: 0
+    };
+
+    setTickets([newTicket, ...tickets]);
+    setNewTicketForm({
+      subject: '',
+      description: '',
+      priority: 'medium',
+      category: 'general'
+    });
+    setIsCreateTicketModalOpen(false);
+    setActiveTab('tickets');
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  const handleUploadDocument = () => {
+    if (!selectedFile) {
+      alert('Please select a file to upload');
+      return;
+    }
+
+    const fileType = selectedFile.name.split('.').pop()?.toLowerCase();
+    let docType: 'pdf' | 'doc' | 'image' | 'other' = 'other';
+    
+    if (fileType === 'pdf') docType = 'pdf';
+    else if (['doc', 'docx'].includes(fileType || '')) docType = 'doc';
+    else if (['jpg', 'jpeg', 'png', 'gif'].includes(fileType || '')) docType = 'image';
+
+    const newDocument: Document = {
+      id: `DOC-${String(documents.length + 1).padStart(3, '0')}`,
+      name: selectedFile.name,
+      type: docType,
+      size: `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB`,
+      uploadDate: new Date().toISOString().split('T')[0],
+      category: uploadForm.category,
+      file: selectedFile
+    };
+
+    setDocuments([newDocument, ...documents]);
+    setSelectedFile(null);
+    setUploadForm({
+      category: 'general',
+      description: ''
+    });
+    setIsUploadDocumentModalOpen(false);
+    setActiveTab('documents');
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSendMessage = () => {
     if (newMessage.trim()) {
       const message: ChatMessage = {
@@ -249,7 +353,7 @@ const CustomerPortalPlatform: React.FC = () => {
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon">💬</div>
+                      <MessageCircle className="stat-icon" size={24} />
           <div className="stat-content">
             <h3>Messages</h3>
             <div className="stat-number">5</div>
@@ -294,20 +398,20 @@ const CustomerPortalPlatform: React.FC = () => {
         <div className="quick-actions">
           <h3>Quick Actions</h3>
           <div className="action-buttons">
-            <button className="action-btn" onClick={() => setActiveTab('tickets')}>
+            <button className="action-btn" onClick={() => setIsCreateTicketModalOpen(true)}>
               <span className="action-icon">📝</span>
               Create Ticket
             </button>
             <button className="action-btn" onClick={() => setActiveTab('knowledge')}>
-              <span className="action-icon">🔍</span>
+              <Search className="action-icon" size={16} />
               Search Knowledge Base
             </button>
             <button className="action-btn" onClick={() => setIsChatOpen(true)}>
-              <span className="action-icon">💬</span>
+              <MessageCircle className="action-icon" size={16} />
               Start Live Chat
             </button>
-            <button className="action-btn" onClick={() => setActiveTab('documents')}>
-              <span className="action-icon">📄</span>
+            <button className="action-btn" onClick={() => setIsUploadDocumentModalOpen(true)}>
+              <FileText className="action-icon" size={16} />
               Upload Document
             </button>
           </div>
@@ -320,7 +424,7 @@ const CustomerPortalPlatform: React.FC = () => {
     <div className="tickets-section">
       <div className="section-header">
         <h2>Support Tickets</h2>
-        <button className="primary-btn">Create New Ticket</button>
+        <button className="primary-btn" onClick={() => setIsCreateTicketModalOpen(true)}>Create New Ticket</button>
       </div>
 
       <div className="tickets-container">
@@ -504,14 +608,14 @@ const CustomerPortalPlatform: React.FC = () => {
     <div className="documents-section">
       <div className="section-header">
         <h2>My Documents</h2>
-        <button className="primary-btn">Upload Document</button>
+        <button className="primary-btn" onClick={() => setIsUploadDocumentModalOpen(true)}>Upload Document</button>
       </div>
 
       <div className="documents-grid">
         {documents.map(doc => (
           <div key={doc.id} className="document-card">
             <div className="document-icon">
-              {doc.type === 'pdf' ? '📄' : doc.type === 'doc' ? '📝' : '📁'}
+                              {doc.type === 'pdf' ? <FileText size={16} /> : doc.type === 'doc' ? <FileCheck size={16} /> : <Folder size={16} />}
             </div>
             <div className="document-info">
               <h4 className="document-name">{doc.name}</h4>
@@ -619,8 +723,148 @@ const CustomerPortalPlatform: React.FC = () => {
       {/* Chat Button */}
       {!isChatOpen && (
         <button className="chat-button" onClick={() => setIsChatOpen(true)}>
-          💬
+                          <MessageCircle size={16} />
         </button>
+      )}
+
+      {/* Create Ticket Modal */}
+      {isCreateTicketModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsCreateTicketModalOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Create New Support Ticket</h3>
+              <button className="modal-close" onClick={() => setIsCreateTicketModalOpen(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-grid">
+                <div className="form-group">
+                  <label htmlFor="ticket-subject">Subject *</label>
+                  <input
+                    id="ticket-subject"
+                    type="text"
+                    placeholder="Brief description of your issue"
+                    value={newTicketForm.subject}
+                    onChange={(e) => setNewTicketForm({...newTicketForm, subject: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="ticket-priority">Priority</label>
+                  <select
+                    id="ticket-priority"
+                    value={newTicketForm.priority}
+                    onChange={(e) => setNewTicketForm({...newTicketForm, priority: e.target.value as any})}
+                    className="form-select"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+                <div className="form-group full-width">
+                  <label htmlFor="ticket-description">Description *</label>
+                  <textarea
+                    id="ticket-description"
+                    placeholder="Please provide detailed information about your issue"
+                    value={newTicketForm.description}
+                    onChange={(e) => setNewTicketForm({...newTicketForm, description: e.target.value})}
+                    className="form-textarea"
+                    rows={4}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="cancel-btn" onClick={() => setIsCreateTicketModalOpen(false)}>
+                Cancel
+              </button>
+              <button className="submit-btn" onClick={handleCreateTicket}>
+                Create Ticket
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Document Modal */}
+      {isUploadDocumentModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsUploadDocumentModalOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Upload Document</h3>
+              <button className="modal-close" onClick={() => setIsUploadDocumentModalOpen(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-grid">
+                <div className="form-group">
+                  <label htmlFor="doc-category">Category</label>
+                  <select
+                    id="doc-category"
+                    value={uploadForm.category}
+                    onChange={(e) => setUploadForm({...uploadForm, category: e.target.value})}
+                    className="form-select"
+                  >
+                    <option value="general">General</option>
+                    <option value="contracts">Contracts</option>
+                    <option value="billing">Billing</option>
+                    <option value="documentation">Documentation</option>
+                    <option value="support">Support</option>
+                  </select>
+                </div>
+                <div className="form-group full-width">
+                  <label htmlFor="doc-file">Select File *</label>
+                  <div className="file-upload-area">
+                    <input
+                      ref={fileInputRef}
+                      id="doc-file"
+                      type="file"
+                      onChange={handleFileSelect}
+                      className="file-input"
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
+                    />
+                    <div className="file-upload-display">
+                      {selectedFile ? (
+                        <div className="selected-file">
+                          <File className="file-icon" size={16} />
+                          <div className="file-info">
+                            <div className="file-name">{selectedFile.name}</div>
+                            <div className="file-size">{(selectedFile.size / (1024 * 1024)).toFixed(1)} MB</div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="upload-placeholder">
+                          <Upload className="upload-icon" size={24} />
+                          <p>Click to select a file or drag and drop</p>
+                          <p className="upload-hint">Supported: PDF, DOC, DOCX, JPG, PNG, GIF</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="form-group full-width">
+                  <label htmlFor="doc-description">Description (Optional)</label>
+                  <textarea
+                    id="doc-description"
+                    placeholder="Brief description of the document"
+                    value={uploadForm.description}
+                    onChange={(e) => setUploadForm({...uploadForm, description: e.target.value})}
+                    className="form-textarea"
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="cancel-btn" onClick={() => setIsUploadDocumentModalOpen(false)}>
+                Cancel
+              </button>
+              <button className="submit-btn" onClick={handleUploadDocument}>
+                Upload Document
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

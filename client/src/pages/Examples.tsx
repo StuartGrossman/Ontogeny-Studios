@@ -1,7 +1,16 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Footer from '../components/Footer';
+import { 
+  Truck, 
+  Zap, 
+  DollarSign, 
+  Link, 
+  Package, 
+  Target,
+  LucideIcon 
+} from 'lucide-react';
 import '../styles/Examples.css';
 
 interface Project {
@@ -9,7 +18,7 @@ interface Project {
   title: string;
   description: string;
   category: string;
-  icon: string;
+  icon: LucideIcon;
   features: string[];
   technologies: string[];
   benefits: string[];
@@ -22,17 +31,13 @@ interface Project {
   }[];
 }
 
-type Category = 'All' | 'Operations' | 'Management' | 'Finance' | 'Integration' | 'Customer Service';
-
-const categories: Category[] = ['All', 'Operations', 'Management', 'Finance', 'Integration', 'Customer Service'];
-
 const projects: Project[] = [
   {
     id: 1,
     title: 'Business Logistics Platform',
     description: 'A comprehensive logistics management system that revolutionizes how businesses handle their supply chain. Our platform combines real-time tracking, automated processing, and intelligent routing to optimize your entire logistics operation.',
     category: 'Operations',
-    icon: '🚚',
+    icon: Truck,
     route: '/logistics',
     preview: 'Interactive logistics dashboard with real-time tracking, route optimization, and warehouse management.',
     features: [
@@ -73,7 +78,7 @@ const projects: Project[] = [
     title: 'Enterprise Scheduling System',
     description: 'An intelligent scheduling platform that adapts to your business needs. Our system uses AI to optimize resource allocation, manage appointments, and ensure efficient staff scheduling across multiple locations.',
     category: 'Management',
-    icon: '⚡',
+    icon: Zap,
     route: '/scheduling',
     preview: 'Smart scheduling interface with AI-powered optimization and resource management.',
     features: [
@@ -114,7 +119,7 @@ const projects: Project[] = [
     title: 'Payroll Automation System',
     description: 'A comprehensive payroll management platform that automates complex calculations, tax filings, and compliance requirements. Our system ensures accuracy while saving countless hours of manual processing.',
     category: 'Finance',
-    icon: '💎',
+    icon: DollarSign,
     route: '/payroll',
     preview: 'Comprehensive payroll management with automated processing and compliance.',
     features: [
@@ -155,7 +160,7 @@ const projects: Project[] = [
     title: 'API Integration Hub',
     description: 'A powerful API integration platform that connects your business systems seamlessly. Our hub provides unified access to multiple services while ensuring security and reliability.',
     category: 'Integration',
-    icon: '🔗',
+    icon: Link,
     route: '/api-integration',
     preview: 'Unified API management with security, monitoring, and integration tools.',
     features: [
@@ -196,7 +201,7 @@ const projects: Project[] = [
     title: 'Inventory Management System',
     description: 'An advanced inventory management solution that provides real-time tracking, automated reordering, and comprehensive analytics. Perfect for businesses of all sizes looking to optimize their inventory operations.',
     category: 'Operations',
-    icon: '📦',
+    icon: Package,
     route: '/inventory',
     preview: 'Real-time inventory tracking with QR codes, analytics, and automated management.',
     features: [
@@ -237,7 +242,7 @@ const projects: Project[] = [
     title: 'Customer Portal Platform',
     description: 'A modern customer portal that enhances engagement and streamlines service delivery. Our platform provides a personalized experience while automating routine customer interactions.',
     category: 'Customer Service',
-    icon: '🎯',
+    icon: Target,
     route: '/customer-portal',
     preview: 'Personalized customer dashboard with support tickets and real-time chat.',
     features: [
@@ -278,8 +283,6 @@ const projects: Project[] = [
 const Examples: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, signInWithGoogle } = useAuth();
-  const [selectedCategory, setSelectedCategory] = useState<Category>('All');
-  const [searchQuery, setSearchQuery] = useState('');
 
   const handleGoogleLogin = async () => {
     try {
@@ -288,17 +291,6 @@ const Examples: React.FC = () => {
       console.error('Login failed:', error);
     }
   };
-
-  const filteredProjects = useMemo(() => {
-    return projects.filter(project => {
-      const matchesCategory = selectedCategory === 'All' || project.category === selectedCategory;
-      const matchesSearch = searchQuery === '' || 
-        project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        project.features.some(feature => feature.toLowerCase().includes(searchQuery.toLowerCase()));
-      return matchesCategory && matchesSearch;
-    });
-  }, [selectedCategory, searchQuery]);
 
   const handleProjectClick = (project: Project) => {
     navigate(project.route);
@@ -317,115 +309,84 @@ const Examples: React.FC = () => {
               <span>Click any project to experience the full interactive dashboard</span>
             </div>
           </div>
-          
-          {/* Search and Filter Controls */}
-          <div className="search-filter-container">
-            <div className="search-box">
-              <span className="search-icon">🔍</span>
-              <input
-                type="text"
-                className="search-input"
-                placeholder="Search projects, features, or technologies..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            
-            <div className="category-filter">
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  className={`category-button ${selectedCategory === category ? 'active' : ''}`}
-                  onClick={() => setSelectedCategory(category)}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Projects Grid */}
-        {filteredProjects.length === 0 ? (
-          <div className="no-results">
-            <h2>No solutions found</h2>
-            <p>Try adjusting your search or filter criteria</p>
-          </div>
-        ) : (
-          <div className="projects-grid">
-            {filteredProjects.map((project) => (
-              <div
-                key={project.id}
-                className="project-preview-card"
-                onClick={() => handleProjectClick(project)}
-              >
-                <div className="project-card-header">
-                  <div className="project-icon">{project.icon}</div>
-                  <div className="project-title">
-                    <h3>{project.title}</h3>
-                    <span className="project-category">{project.category}</span>
-                  </div>
-                  <div className="launch-indicator">
-                    <span className="launch-text">Launch →</span>
-                  </div>
+        <div className="projects-grid">
+          {projects.map((project) => (
+            <div
+              key={project.id}
+              className="project-preview-card"
+              onClick={() => handleProjectClick(project)}
+            >
+              <div className="project-card-header">
+                <div className="project-icon">
+                  <project.icon size={32} />
                 </div>
-
-                <div className="project-preview-content">
-                  <p className="project-description">{project.description}</p>
-                  <div className="project-preview-text">
-                    <span className="preview-label">Preview:</span>
-                    <p>{project.preview}</p>
-                  </div>
+                <div className="project-title">
+                  <h3>{project.title}</h3>
+                  <span className="project-category">{project.category}</span>
                 </div>
-
-                <div className="project-features">
-                  <div className="features-list">
-                    {project.features.slice(0, 3).map((feature, index) => (
-                      <div key={index} className="feature-item">
-                        <span className="feature-bullet">•</span>
-                        <span>{feature}</span>
-                      </div>
-                    ))}
-                    {project.features.length > 3 && (
-                      <div className="more-features">
-                        +{project.features.length - 3} more features
-                      </div>
-                    )}
-                  </div>
+                <div className="launch-indicator">
+                  <span className="launch-text">Launch →</span>
                 </div>
+              </div>
 
-                <div className="project-stats">
-                  {project.stats.map((stat, index) => (
-                    <div key={index} className="stat-item">
-                      <div className="stat-value">{stat.value}</div>
-                      <div className="stat-label">{stat.metric}</div>
+              <div className="project-preview-content">
+                <p className="project-description">{project.description}</p>
+                <div className="project-preview-text">
+                  <span className="preview-label">Preview:</span>
+                  <p>{project.preview}</p>
+                </div>
+              </div>
+
+              <div className="project-features">
+                <div className="features-list">
+                  {project.features.slice(0, 3).map((feature, index) => (
+                    <div key={index} className="feature-item">
+                      <span className="feature-bullet">•</span>
+                      <span>{feature}</span>
                     </div>
                   ))}
-                </div>
-
-                <div className="project-technologies">
-                  {project.technologies.slice(0, 4).map((tech, index) => (
-                    <span key={index} className="tech-tag">{tech}</span>
-                  ))}
-                  {project.technologies.length > 4 && (
-                    <span className="tech-more">+{project.technologies.length - 4}</span>
+                  {project.features.length > 3 && (
+                    <div className="more-features">
+                      +{project.features.length - 3} more features
+                    </div>
                   )}
                 </div>
+              </div>
 
-                <div className="project-hover-overlay">
-                  <div className="hover-content">
-                    <h4>Experience the Full Dashboard</h4>
-                    <p>Click to explore the complete interactive interface</p>
-                    <div className="hover-button">
-                      <span>Launch Demo</span>
-                      <span className="hover-arrow">→</span>
-                    </div>
+              <div className="project-stats">
+                {project.stats.map((stat, index) => (
+                  <div key={index} className="stat-item">
+                    <div className="stat-value">{stat.value}</div>
+                    <div className="stat-label">{stat.metric}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="project-technologies">
+                {project.technologies.slice(0, 4).map((tech, index) => (
+                  <span key={index} className="tech-tag">{tech}</span>
+                ))}
+                {project.technologies.length > 4 && (
+                  <span className="tech-more">+{project.technologies.length - 4}</span>
+                )}
+              </div>
+
+              <div className="project-hover-overlay">
+                <div className="hover-content">
+                  <h4>Experience the Full Dashboard</h4>
+                  <p>Click to explore the complete interactive interface</p>
+                  <div className="hover-button">
+                    <span>Launch Demo</span>
+                    <span className="hover-arrow">→</span>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
 
         {/* CTA Banner */}
         <div className="examples-cta-banner">

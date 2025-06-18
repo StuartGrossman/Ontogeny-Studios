@@ -33,8 +33,8 @@ const SignupModal: React.FC<SignupModalProps> = ({ onClose, onLoginClick, onSign
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal">
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Create Account</h2>
           <button className="modal-close" onClick={onClose}>×</button>

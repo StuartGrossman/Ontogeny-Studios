@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ClipboardList } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { aiService, Conversation } from '../services/aiService';
 import '../styles/ConversationHistory.css';
@@ -88,7 +89,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({ onSelectConve
       
       {conversations.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">📋</div>
+          <ClipboardList className="empty-icon" size={48} />
           <p>No project plans yet</p>
           <span>Start a conversation to create your first plan</span>
         </div>

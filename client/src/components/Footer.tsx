@@ -1,4 +1,5 @@
 import React from 'react';
+import { Mail, Phone } from 'lucide-react';
 import '../styles/Footer.css';
 
 const Footer: React.FC = () => {
@@ -49,12 +50,12 @@ const Footer: React.FC = () => {
             <h4>Get in Touch</h4>
             <div className="contact-info">
               <div className="contact-item">
-                <span className="contact-icon">📧</span>
-                <a href="mailto:hello@ontogenylabs.com">hello@ontogenylabs.com</a>
+                <Mail className="contact-icon" size={16} />
+                <span>hello@ontogenylabs.com</span>
               </div>
               <div className="contact-item">
-                <span className="contact-icon">📱</span>
-                <a href="tel:+1-555-0123">+1 (555) 012-3456</a>
+                <Phone className="contact-icon" size={16} />
+                <span>+1 (555) 012-3456</span>
               </div>
               <div className="contact-item">
                 <span className="contact-icon">📍</span>

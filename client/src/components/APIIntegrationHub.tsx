@@ -1,4 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import { 
+  CreditCard, 
+  Mail, 
+  BarChart3, 
+  ShoppingBag, 
+  Zap, 
+  AlertTriangle,
+  Info,
+  BarChart,
+  Activity,
+  FileText,
+  RefreshCw,
+  CheckCircle,
+  Link
+} from 'lucide-react';
 import '../styles/APIIntegrationHub.css';
 
 interface APIService {
@@ -188,7 +203,7 @@ const APIIntegrationHub: React.FC = () => {
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon">⚡</div>
+          <Zap className="stat-icon" size={24} />
           <div className="stat-content">
             <div className="stat-value">{realTimeData.avgResponseTime}ms</div>
             <div className="stat-label">Avg Response Time</div>
@@ -258,7 +273,7 @@ const APIIntegrationHub: React.FC = () => {
             <div className="activity-item">
               <div className="activity-time">12 min ago</div>
               <div className="activity-content">
-                <span className="activity-icon">📧</span>
+                <Mail className="activity-icon" size={16} />
                 Mailchimp connection established - Testing in progress
               </div>
             </div>
@@ -487,7 +502,7 @@ const APIIntegrationHub: React.FC = () => {
           className={`nav-tab ${activeTab === 'overview' ? 'active' : ''}`}
           onClick={() => setActiveTab('overview')}
         >
-          📊 Overview
+                      <BarChart3 size={16} /> Overview
         </button>
         <button 
           className={`nav-tab ${activeTab === 'services' ? 'active' : ''}`}
@@ -505,13 +520,13 @@ const APIIntegrationHub: React.FC = () => {
           className={`nav-tab ${activeTab === 'monitoring' ? 'active' : ''}`}
           onClick={() => setActiveTab('monitoring')}
         >
-          📈 Monitoring
+                      <Activity size={16} /> Monitoring
         </button>
         <button 
           className={`nav-tab ${activeTab === 'logs' ? 'active' : ''}`}
           onClick={() => setActiveTab('logs')}
         >
-          📋 Logs
+                      <FileText size={16} /> Logs
         </button>
       </div>
 

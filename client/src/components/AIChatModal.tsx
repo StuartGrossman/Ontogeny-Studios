@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { aiService, Message, Conversation } from '../services/aiService';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import '../styles/AIChatModal.css';
 
 interface AIChatModalProps {
@@ -13,7 +15,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "Hello! I'm your AI project consultant at Ontogeny Labs. I'm here to help you define and plan your next software project. Tell me about what you're looking to build, and I'll help you break it down into actionable requirements.",
+      text: "👋 Welcome to Ontogeny Labs Project Consultant!\n\nI'm here to help you define the features for your new software project. Let's work together to create a comprehensive feature list that our development team can bring to life.\n\n🎯 **What I need from you:**\n• Tell me about your project idea\n• Describe the features you envision\n• Share any specific requirements or goals\n\nThe more detail you provide, the better I can help you refine and organize your feature requirements. What project are you thinking about building?",
       sender: 'ai',
       timestamp: new Date()
     }
@@ -22,6 +24,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [conversationId, setConversationId] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [isSubmittingProject, setIsSubmittingProject] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -39,6 +42,35 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
       setConversationId(newConversationId);
     }
   }, [isOpen, conversationId]);
+
+  const submitProjectRequest = async (projectName: string, features: string, description: string) => {
+    if (!currentUser) return false;
+    
+    setIsSubmittingProject(true);
+    try {
+      await addDoc(collection(db, 'user_project_requests'), {
+        projectName: projectName.trim(),
+        description: description.trim(),
+        features: features.trim(),
+        requestedBy: currentUser.uid,
+        requestedByName: currentUser.displayName || currentUser.email,
+        requestedByEmail: currentUser.email,
+        status: 'requested',
+        priority: 'medium',
+        conversationId: conversationId,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      
+      console.log('Project request submitted successfully');
+      return true;
+    } catch (error) {
+      console.error('Error submitting project request:', error);
+      return false;
+    } finally {
+      setIsSubmittingProject(false);
+    }
+  };
 
   const getAIResponse = async (userMessage: string) => {
     setIsTyping(true);
@@ -69,6 +101,42 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
         
         const finalMessages = [...updatedMessages, aiMessage];
         setMessages(finalMessages);
+        
+        // Check if AI wants to submit the project
+        if (response.shouldSubmitProject && response.projectData) {
+          console.log('AI detected project submission intent:', response.projectData);
+          
+          // Submit the project request
+          const success = await submitProjectRequest(
+            response.projectData.name,
+            response.projectData.features,
+            response.projectData.description
+          );
+          
+          if (success) {
+            // Add success message
+            const successMessage: Message = {
+              id: (Date.now() + 2).toString(),
+              text: "✅ **Project Request Submitted Successfully!**\n\nYour project request has been submitted to our development team. You can view the status of your request in your dashboard under 'Requested Projects'.\n\nThank you for choosing Ontogeny Labs! 🚀",
+              sender: 'ai',
+              timestamp: new Date()
+            };
+            
+            const successMessages = [...finalMessages, successMessage];
+            setMessages(successMessages);
+          } else {
+            // Add error message
+            const errorMessage: Message = {
+              id: (Date.now() + 2).toString(),
+              text: "❌ **Project Submission Failed**\n\nI'm sorry, there was an error submitting your project request. Please try again later or contact support.\n\nYour conversation has been saved and you can continue refining your project requirements.",
+              sender: 'ai',
+              timestamp: new Date()
+            };
+            
+            const errorMessages = [...finalMessages, errorMessage];
+            setMessages(errorMessages);
+          }
+        }
         
         // Save conversation
         if (currentUser) {
@@ -136,7 +204,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
     // Reset state
     setMessages([{
       id: '1',
-      text: "Hello! I'm your AI project consultant at Ontogeny Labs. I'm here to help you define and plan your next software project. Tell me about what you're looking to build, and I'll help you break it down into actionable requirements.",
+      text: "👋 Welcome to Ontogeny Labs Project Consultant!\n\nI'm here to help you define the features for your new software project. Let's work together to create a comprehensive feature list that our development team can bring to life.\n\n🎯 **What I need from you:**\n• Tell me about your project idea\n• Describe the features you envision\n• Share any specific requirements or goals\n\nThe more detail you provide, the better I can help you refine and organize your feature requirements. What project are you thinking about building?",
       sender: 'ai',
       timestamp: new Date()
     }]);
@@ -179,12 +247,40 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
               </div>
               <div className="message-content">
                 <div className="message-text">
-                  {message.text.split('\n').map((line, index) => (
-                    <React.Fragment key={index}>
-                      {line}
-                      {index < message.text.split('\n').length - 1 && <br />}
-                    </React.Fragment>
-                  ))}
+                  {message.text.split('\n').map((line, index) => {
+                    // Handle markdown-style formatting
+                    let formattedLine = line;
+                    
+                    // Bold text **text**
+                    if (formattedLine.includes('**')) {
+                      const parts = formattedLine.split('**');
+                      return (
+                        <React.Fragment key={index}>
+                          {parts.map((part, partIndex) => 
+                            partIndex % 2 === 1 ? <strong key={partIndex}>{part}</strong> : part
+                          )}
+                          {index < message.text.split('\n').length - 1 && <br />}
+                        </React.Fragment>
+                      );
+                    }
+                    
+                    // List items starting with •
+                    if (formattedLine.trim().startsWith('•')) {
+                      return (
+                        <React.Fragment key={index}>
+                          <div className="message-list-item">{formattedLine}</div>
+                          {index < message.text.split('\n').length - 1 && <br />}
+                        </React.Fragment>
+                      );
+                    }
+                    
+                    return (
+                      <React.Fragment key={index}>
+                        {formattedLine}
+                        {index < message.text.split('\n').length - 1 && <br />}
+                      </React.Fragment>
+                    );
+                  })}
                 </div>
                 <div className="message-time">
                   {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -232,24 +328,24 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
             </button>
           </div>
           <div className="chat-suggestions">
-            <span className="suggestion-label">Quick suggestions:</span>
+            <span className="suggestion-label">Project ideas:</span>
             <button 
               className="suggestion-chip"
-              onClick={() => setInputValue("I need an e-commerce platform")}
+              onClick={() => setInputValue("I want to build an e-commerce platform with user accounts, shopping cart, payment processing, and inventory management features.")}
               disabled={isTyping}
             >
               E-commerce Platform
             </button>
             <button 
               className="suggestion-chip"
-              onClick={() => setInputValue("I want to build a mobile app")}
+              onClick={() => setInputValue("I need a mobile app with user authentication, push notifications, offline mode, and social sharing features.")}
               disabled={isTyping}
             >
               Mobile App
             </button>
             <button 
               className="suggestion-chip"
-              onClick={() => setInputValue("I need a dashboard with analytics")}
+              onClick={() => setInputValue("I want a dashboard with real-time analytics, data visualization, user management, and reporting features.")}
               disabled={isTyping}
             >
               Analytics Dashboard

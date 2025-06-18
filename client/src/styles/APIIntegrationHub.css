@@ -135,7 +135,7 @@
 }
 
 .hub-navigation {
-  background: rgba(255, 255, 255, 0.02);
+  background: #1e293b;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding: 0 32px;
   display: flex;
@@ -145,7 +145,7 @@
 .nav-tab {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.9);
   font-size: 14px;
   font-weight: 600;
   padding: 16px 20px;

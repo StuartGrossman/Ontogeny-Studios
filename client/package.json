@@ -16,6 +16,7 @@
     "chart.js": "^4.4.9",
     "firebase": "^11.9.1",
     "leaflet": "^1.9.4",
+    "lucide-react": "^0.516.0",
     "prism-react-renderer": "^2.4.1",
     "qrcode": "^1.5.4",
     "qrcode-generator": "^1.5.0",

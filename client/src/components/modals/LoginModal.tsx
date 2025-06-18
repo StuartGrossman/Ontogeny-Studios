@@ -26,8 +26,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSignupClick, onLogin
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal">
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Sign In</h2>
           <button className="modal-close" onClick={onClose}>×</button>

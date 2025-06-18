@@ -1,4 +1,18 @@
 import React, { useState } from 'react';
+import { 
+  Search, 
+  Users, 
+  DollarSign, 
+  TrendingUp, 
+  Play, 
+  BarChart3, 
+  FileText, 
+  Calendar, 
+  CreditCard, 
+  Settings, 
+  Mail,
+  Rocket
+} from 'lucide-react';
 import '../styles/PayrollDashboard.css';
 
 interface PayrollDashboardProps {
@@ -85,28 +99,28 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
       <div className="employees-header">
         <h3>Employee Management</h3>
         <div className="header-actions">
-          <button className="filter-btn">🔍 Filter</button>
+                      <button className="filter-btn"><Search size={16} /> Filter</button>
           <button className="add-btn">+ Add Employee</button>
         </div>
       </div>
       
       <div className="employees-stats">
         <div className="stat-card">
-          <div className="stat-icon">👥</div>
+                        <Users className="stat-icon" size={24} />
           <div className="stat-content">
             <div className="stat-value">45</div>
             <div className="stat-label">Active Employees</div>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon">💰</div>
+                        <DollarSign className="stat-icon" size={24} />
           <div className="stat-content">
             <div className="stat-value">{formatCurrency(4250000)}</div>
             <div className="stat-label">Annual Payroll</div>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon">📈</div>
+                        <TrendingUp className="stat-icon" size={24} />
           <div className="stat-content">
             <div className="stat-value">{formatCurrency(85400)}</div>
             <div className="stat-label">Avg. Salary</div>
@@ -154,8 +168,8 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
             </div>
             <div className="cell actions-cell">
               <button className="action-btn">✏️</button>
-              <button className="action-btn">💰</button>
-              <button className="action-btn">📊</button>
+                              <DollarSign className="action-btn" size={16} />
+                <BarChart3 className="action-btn" size={16} />
             </div>
           </div>
         ))}
@@ -293,7 +307,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
             <option>Year to Date</option>
             <option>Last 12 Months</option>
           </select>
-          <button className="export-btn">📊 Export</button>
+                      <button className="export-btn"><BarChart3 size={16} /> Export</button>
         </div>
       </div>
 
@@ -372,12 +386,12 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
         <div className="report-card">
           <h4>Quick Reports</h4>
           <div className="quick-reports">
-            <button className="report-btn">📄 Payroll Register</button>
+            <button className="report-btn"><FileText size={16} /> Payroll Register</button>
             <button className="report-btn">🏦 Tax Liability</button>
-            <button className="report-btn">📊 Employee Summary</button>
-            <button className="report-btn">💰 Cost Center Report</button>
-            <button className="report-btn">📈 Year-End Report</button>
-            <button className="report-btn">🔍 Audit Trail</button>
+                          <button className="report-btn"><BarChart3 size={16} /> Employee Summary</button>
+                          <button className="report-btn"><DollarSign size={16} /> Cost Center Report</button>
+                          <button className="report-btn"><TrendingUp size={16} /> Year-End Report</button>
+                          <button className="report-btn"><Search size={16} /> Audit Trail</button>
           </div>
         </div>
       </div>
@@ -388,7 +402,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
     <div className="compliance-section">
       <div className="compliance-header">
         <h3>Tax Compliance & Settings</h3>
-        <button className="settings-btn">⚙️ Settings</button>
+                    <button className="settings-btn"><Settings size={16} /> Settings</button>
       </div>
 
       <div className="compliance-overview">
@@ -401,7 +415,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
           </div>
         </div>
         <div className="overview-card">
-          <div className="overview-icon">📅</div>
+                      <Calendar className="overview-icon" size={24} />
           <div className="overview-content">
             <h4>Next Filing</h4>
             <div className="score">Dec 10</div>
@@ -409,7 +423,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
           </div>
         </div>
         <div className="overview-card">
-          <div className="overview-icon">💳</div>
+                      <CreditCard className="overview-icon" size={24} />
           <div className="overview-content">
             <h4>Direct Deposit</h4>
             <div className="score">98%</div>
@@ -452,7 +466,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
               <div className="integration-indicator connected"></div>
             </div>
             <div className="integration-item">
-              <div className="integration-icon">📊</div>
+              <BarChart3 className="integration-icon" size={24} />
               <div className="integration-info">
                 <div className="integration-name">QuickBooks Online</div>
                 <div className="integration-status">Syncing</div>
@@ -460,7 +474,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
               <div className="integration-indicator syncing"></div>
             </div>
             <div className="integration-item">
-              <div className="integration-icon">📧</div>
+              <Mail className="integration-icon" size={24} />
               <div className="integration-info">
                 <div className="integration-name">Employee Email System</div>
                 <div className="integration-status">Connected</div>
@@ -486,8 +500,8 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
       <div className="dashboard-header">
         <h2>Payroll Automation System</h2>
         <div className="header-actions">
-          <button className="action-button">📊 Generate Report</button>
-          <button className="action-button primary">🚀 Run Payroll</button>
+                      <button className="action-button"><BarChart3 size={16} /> Generate Report</button>
+            <button className="action-button primary"><Rocket size={16} /> Run Payroll</button>
         </div>
       </div>
       
@@ -496,7 +510,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
           className={`nav-item ${selectedView === 'payroll' ? 'active' : ''}`}
           onClick={() => setSelectedView('payroll')}
         >
-          💰 Payroll
+                      <DollarSign size={16} /> Payroll
         </button>
         <button 
           className={`nav-item ${selectedView === 'employees' ? 'active' : ''}`}
@@ -508,7 +522,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
           className={`nav-item ${selectedView === 'reports' ? 'active' : ''}`}
           onClick={() => setSelectedView('reports')}
         >
-          📊 Reports
+                      <BarChart3 size={16} /> Reports
         </button>
         <button 
           className={`nav-item ${selectedView === 'compliance' ? 'active' : ''}`}

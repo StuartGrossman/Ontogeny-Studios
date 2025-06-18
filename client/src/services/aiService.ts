@@ -24,6 +24,12 @@ export interface AIResponse {
   success: boolean;
   message?: string;
   error?: string;
+  shouldSubmitProject?: boolean;
+  projectData?: {
+    name: string;
+    description: string;
+    features: string;
+  };
 }
 
 class AIService {
@@ -40,17 +46,36 @@ class AIService {
           messages: [
             {
               role: 'system',
-              content: `You are an expert software development consultant at Ontogeny Labs. Your role is to help clients define and plan their software projects. 
+              content: `You are a specialized Project Feature Consultant at Ontogeny Labs. Your ONLY focus is helping clients define comprehensive feature lists for their software projects.
 
-Key responsibilities:
-- Ask clarifying questions to understand project requirements
-- Provide technical recommendations and architecture suggestions
-- Help estimate project scope and timeline
-- Suggest appropriate technologies and frameworks
-- Identify potential challenges and solutions
-- Guide clients through the planning process
+🎯 YOUR MISSION:
+- Guide clients to articulate ALL features they want in their project
+- Ask specific follow-up questions about functionality, user experience, and requirements
+- Help organize features into clear, actionable categories
+- Once you have a comprehensive feature list, offer to submit it as a project request
 
-Always be professional, helpful, and thorough in your responses. Ask follow-up questions to gather more details when needed.`
+📋 CONVERSATION FLOW:
+1. First, understand their basic project idea
+2. Ask detailed questions about specific features they want
+3. Probe for additional functionality they might need
+4. Organize features into a clean, bulleted list
+5. When feature gathering feels complete, present the final list and ask: "Would you like me to submit this project request to our development team?"
+
+💡 QUESTION EXAMPLES:
+- "What specific user actions do you want to support?"
+- "How should users interact with [feature]?"
+- "What data do you need to track/store?"
+- "Do you need admin/user role differences?"
+- "What integrations or third-party services?"
+- "Any specific security or performance requirements?"
+
+✅ FORMATTING:
+- Use bullet points for features
+- Use emojis for visual appeal
+- Keep responses concise but thorough
+- Always end with a specific follow-up question
+
+Remember: Your goal is comprehensive feature definition, not technical implementation details.`
             },
             ...messages
           ],
@@ -89,7 +114,91 @@ Always be professional, helpful, and thorough in your responses. Ask follow-up q
       content: msg.text
     }));
 
-    return await this.makeAPICall(apiMessages);
+    const response = await this.makeAPICall(apiMessages);
+    
+    // Check if the AI wants to submit the project
+    if (response.success && response.message) {
+      const shouldSubmit = this.checkForProjectSubmission(response.message);
+      if (shouldSubmit) {
+        const projectData = this.extractProjectData(conversationHistory, response.message);
+        return {
+          ...response,
+          shouldSubmitProject: true,
+          projectData
+        };
+      }
+    }
+    
+    return response;
+  }
+
+  private checkForProjectSubmission(aiMessage: string): boolean {
+    const submissionKeywords = [
+      'submit this project request',
+      'submit the project',
+      'send this to our development team',
+      'create the project request',
+      'finalize the project',
+      'submit your project'
+    ];
+    
+    const lowerMessage = aiMessage.toLowerCase();
+    return submissionKeywords.some(keyword => lowerMessage.includes(keyword));
+  }
+
+  private extractProjectData(conversationHistory: Message[], finalMessage: string): { name: string; description: string; features: string } {
+    // Extract project name, description, and features from conversation
+    let projectName = 'Untitled Project';
+    let description = '';
+    let features = '';
+    
+    // Look through conversation for project details
+    const allText = conversationHistory.map(msg => msg.text).join(' ');
+    
+    // Try to extract project name (look for patterns like "I want to build..." or project names)
+    const namePatterns = [
+      /(?:build|create|develop|make)\s+(?:a|an)?\s*([^.!?]+)/i,
+      /project\s+(?:called|named)\s+([^.!?]+)/i,
+      /(?:app|application|system|platform)\s+(?:called|named)?\s*([^.!?]+)/i
+    ];
+    
+    for (const pattern of namePatterns) {
+      const match = allText.match(pattern);
+      if (match && match[1]) {
+        projectName = match[1].trim().split(/\s+/).slice(0, 5).join(' '); // Max 5 words
+        break;
+      }
+    }
+    
+    // Extract description from user messages
+    const userMessages = conversationHistory.filter(msg => msg.sender === 'user');
+    if (userMessages.length > 0) {
+      description = userMessages[0].text.substring(0, 500); // First user message as description
+    }
+    
+    // Extract features from the final AI message or throughout conversation
+    const featureLines = finalMessage.split('\n').filter(line => 
+      line.trim().startsWith('•') || 
+      line.trim().startsWith('-') || 
+      line.trim().startsWith('*')
+    );
+    
+    if (featureLines.length > 0) {
+      features = featureLines.join('\n');
+    } else {
+      // Look for feature mentions in the conversation
+      const featureKeywords = conversationHistory
+        .filter(msg => msg.sender === 'user')
+        .map(msg => msg.text)
+        .join('\n');
+      features = featureKeywords.substring(0, 1000);
+    }
+    
+    return {
+      name: projectName,
+      description: description,
+      features: features
+    };
   }
 
   async saveConversation(conversation: Conversation): Promise<void> {

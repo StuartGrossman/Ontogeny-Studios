@@ -320,38 +320,61 @@
 
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 .metric-card {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 1.25rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%);
+}
+
+.metric-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .metric-card h3 {
   color: #64748b;
   font-size: 0.875rem;
-  font-weight: 600;
-  margin: 0 0 0.5rem;
+  font-weight: 700;
+  margin: 0 0 1rem;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .metric-value {
   color: #1e293b;
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
+  font-size: 2.25rem;
+  font-weight: 800;
+  margin-bottom: 0.75rem;
+  line-height: 1;
 }
 
 .metric-trend {
   align-items: center;
   display: flex;
   font-size: 0.875rem;
-  font-weight: 500;
-  gap: 0.25rem;
+  font-weight: 600;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .metric-trend.positive {
@@ -721,7 +744,8 @@
   }
 
   .metrics-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
   }
 
   .inventory-actions {
@@ -735,6 +759,12 @@
 
   .inventory-table {
     overflow-x: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1639,13 +1669,14 @@
 }
 
 .modal-header {
-  background: linear-gradient(135deg, #1a365d, #2d3748);
-  color: white;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  color: #1e293b;
   padding: 2rem 2.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .modal-header h3 {
@@ -1657,16 +1688,17 @@
 .modal-close {
   background: none;
   border: none;
-  color: white;
+  color: #64748b;
   font-size: 1.5rem;
   cursor: pointer;
   padding: 0.25rem;
   border-radius: 4px;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .modal-close:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.1);
+  color: #1e293b;
 }
 
 .modal-body {
