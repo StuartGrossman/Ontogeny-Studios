@@ -1,1373 +1,1739 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
-import { Icon } from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, PieChart, Pie, Cell } from 'recharts';
-import { collection, addDoc, getDocs, updateDoc, doc, onSnapshot, query, orderBy, where } from 'firebase/firestore';
-import { db } from '../firebase';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState, useEffect } from 'react';
 import '../styles/LogisticsDashboard.css';
-import * as logisticsService from '../services/logisticsService';
-import L from 'leaflet';
 
-// Modal Components
-interface ModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  children: React.ReactNode;
-  title: string;
+// Interface definitions
+interface Vehicle {
+  id: string;
+  licensePlate: string;
+  type: string;
+  status: 'active' | 'maintenance' | 'idle';
+  driver?: string;
+  location: string;
+  fuelLevel: number;
+  mileage: number;
+  color: string;
+  capacity: string;
+  lastService: string;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, title }) => {
-  if (!isOpen) return null;
+interface Driver {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  status: 'available' | 'driving' | 'off-duty';
+  licenseClass: string;
+  experience: number;
+  rating: number;
+  currentVehicle?: string;
+  color: string;
+  totalDeliveries: number;
+  hoursWorked: number;
+  hourlyRate: number;
+}
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>{title}</h3>
-          <button className="modal-close" onClick={onClose}>×</button>
-        </div>
-        <div className="modal-body">
-          {children}
-        </div>
-      </div>
-    </div>
-  );
-};
+interface Shipment {
+  id: string;
+  origin: string;
+  destination: string;
+  status: 'pending' | 'in-transit' | 'delivered' | 'delayed';
+  driver?: string;
+  vehicle?: string;
+  cargo: string;
+  weight: number;
+  priority: 'low' | 'medium' | 'high';
+  estimatedDelivery: string;
+  actualDelivery?: string;
+  cost: number;
+  distance: number;
+  createdDate: string;
+}
 
-// Enhanced Desktop Dashboard Component
-const DesktopDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [selectedShipment, setSelectedShipment] = useState<string | null>(null);
-  const [sortColumn, setSortColumn] = useState<string>('id');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [selectedWarehouse, setSelectedWarehouse] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [shipments, setShipments] = useState<any[]>([]);
-  const [warehouses, setWarehouses] = useState<any[]>([]);
-  const [drivers, setDrivers] = useState<any[]>([]);
-  const [inventory, setInventory] = useState<any[]>([]);
-  const [alerts, setAlerts] = useState<any[]>([]);
-  const [realTimeData, setRealTimeData] = useState<any>({});
+interface Route {
+  id: string;
+  name: string;
+  origin: string;
+  destination: string;
+  distance: number;
+  estimatedTime: number;
+  fuelCost: number;
+  tollCost: number;
+  driver?: string;
+  vehicle?: string;
+  status: 'planned' | 'active' | 'completed';
+}
+
+const LogisticsDashboard: React.FC = () => {
+  // State management
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [shipments, setShipments] = useState<Shipment[]>([]);
+  const [routes, setRoutes] = useState<Route[]>([]);
   
   // Modal states
-  const [shipmentModalOpen, setShipmentModalOpen] = useState(false);
-  const [driverModalOpen, setDriverModalOpen] = useState(false);
-  const [inventoryModalOpen, setInventoryModalOpen] = useState(false);
-  const [alertModalOpen, setAlertModalOpen] = useState(false);
-  const [routeOptimizationModalOpen, setRouteOptimizationModalOpen] = useState(false);
-  const [warehouseModalOpen, setWarehouseModalOpen] = useState(false);
+  const [showVehicleModal, setShowVehicleModal] = useState(false);
+  const [showDriverModal, setShowDriverModal] = useState(false);
+  const [showShipmentModal, setShowShipmentModal] = useState(false);
+  const [showRouteModal, setShowRouteModal] = useState(false);
+  const [showStatisticsModal, setShowStatisticsModal] = useState(false);
+  const [showGraphsModal, setShowGraphsModal] = useState(false);
+  const [showVehicleDetailModal, setShowVehicleDetailModal] = useState(false);
+  const [showDriverDetailModal, setShowDriverDetailModal] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   
-  // Filter states
-  const [trackingFilter, setTrackingFilter] = useState('all');
+  // Form states
+  const [vehicleForm, setVehicleForm] = useState({
+    licensePlate: '',
+    type: 'truck',
+    location: '',
+    capacity: '',
+    color: '#3b82f6'
+  });
   
-  const { currentUser } = useAuth();
-
-  // Enhanced mock data with more features
-  const mockShipments = [
-  {
-    id: 'SH001',
-      origin: 'New York',
-      destination: 'Los Angeles',
-    status: 'in-transit',
-      progress: 65,
-      estimatedDelivery: '2024-03-16',
-      driver: 'John Smith',
-      vehicle: 'VEH001',
-      cargo: 'Electronics',
-      priority: 'high',
-      coordinates: { lat: 39.8283, lng: -98.5795 },
-      temperature: 22,
-      humidity: 45
-  },
-  {
-    id: 'SH002',
-      origin: 'Chicago',
-      destination: 'Miami',
-      status: 'pending',
-      progress: 0,
-      estimatedDelivery: '2024-03-18',
-      driver: 'Sarah Johnson',
-      vehicle: 'VEH002',
-      cargo: 'Medical Supplies',
-      priority: 'high',
-      coordinates: { lat: 41.8781, lng: -87.6298 },
-      temperature: 4,
-      humidity: 35
-  },
-  {
-    id: 'SH003',
-      origin: 'San Francisco',
-      destination: 'Seattle',
-      status: 'in-transit',
-      progress: 80,
-      estimatedDelivery: '2024-03-15',
-      driver: 'Mike Brown',
-      vehicle: 'VEH003',
-      cargo: 'Automotive Parts',
-      priority: 'medium',
-      coordinates: { lat: 45.5152, lng: -122.6784 },
-      temperature: 18,
-      humidity: 55
-    },
-    {
-      id: 'SH004',
-      origin: 'Houston',
-      destination: 'Denver',
-      status: 'delivered',
-      progress: 100,
-      estimatedDelivery: '2024-03-14',
-      driver: 'Lisa Wilson',
-      vehicle: 'VEH004',
-      cargo: 'Textile Materials',
-      priority: 'low',
-      coordinates: { lat: 39.7392, lng: -104.9903 },
-      temperature: 20,
-      humidity: 40
-    },
-    {
-      id: 'SH005',
-      origin: 'Boston',
-      destination: 'Atlanta',
-      status: 'in-transit',
-      progress: 45,
-      estimatedDelivery: '2024-03-17',
-      driver: 'David Lee',
-      vehicle: 'VEH005',
-      cargo: 'Food Products',
-      priority: 'high',
-      coordinates: { lat: 33.7490, lng: -84.3880 },
-      temperature: 2,
-      humidity: 65
-    },
-    {
-      id: 'SH006',
-      origin: 'Phoenix',
-      destination: 'Las Vegas',
-    status: 'pending',
-      progress: 0,
-      estimatedDelivery: '2024-03-19',
-      driver: 'Emma Davis',
-      vehicle: 'VEH006',
-      cargo: 'Construction Materials',
-      priority: 'medium',
-      coordinates: { lat: 36.1699, lng: -115.1398 },
-      temperature: 25,
-      humidity: 30
-    },
-    {
-      id: 'SH007',
-      origin: 'Portland',
-      destination: 'Sacramento',
-      status: 'in-transit',
-      progress: 70,
-      estimatedDelivery: '2024-03-16',
-      driver: 'James Wilson',
-      vehicle: 'VEH007',
-      cargo: 'Technology Equipment',
-      priority: 'high',
-      coordinates: { lat: 38.5816, lng: -121.4944 },
-      temperature: 21,
-      humidity: 50
-    },
-    {
-      id: 'SH008',
-      origin: 'Detroit',
-      destination: 'Nashville',
-      status: 'delivered',
-      progress: 100,
-      estimatedDelivery: '2024-03-13',
-      driver: 'Amy Johnson',
-      vehicle: 'VEH008',
-      cargo: 'Musical Instruments',
-      priority: 'medium',
-      coordinates: { lat: 36.1627, lng: -86.7816 },
-      temperature: 22,
-      humidity: 45
-    }
-  ];
-
-  const mockDrivers = [
-    {
-      id: 'DRV001',
-      name: 'John Smith',
-      status: 'active',
-      currentLocation: [37.7749, -122.4194],
-      experience: '5 years',
-      rating: 4.8,
-      totalDeliveries: 1250,
-      vehicleType: 'Truck',
-      phone: '+1-555-0123',
-      currentShipment: 'SH001'
-    },
-    {
-      id: 'DRV002',
-      name: 'Sarah Johnson',
-      status: 'available',
-      currentLocation: [34.0522, -118.2437],
-      experience: '3 years',
-      rating: 4.9,
-      totalDeliveries: 890,
-      vehicleType: 'Van',
-      phone: '+1-555-0124',
-      currentShipment: null
-    }
-  ];
-
-  const mockAlerts = [
-    {
-      id: 'ALT001',
-      type: 'delay',
-      severity: 'high',
-      message: 'Shipment SH001 delayed due to weather conditions - Expected 2 hour delay',
-      timestamp: '2024-03-14 11:30',
-      resolved: false,
-      affectedShipments: ['SH001'],
-      estimatedImpact: 'High'
-    },
-    {
-      id: 'ALT002',
-      type: 'inventory',
-      severity: 'medium',
-      message: 'Medical Supplies below minimum stock level - Only 85 units remaining',
-      timestamp: '2024-03-14 09:15',
-      resolved: false,
-      affectedShipments: [],
-      estimatedImpact: 'Medium'
-    },
-    {
-      id: 'ALT003',
-      type: 'vehicle',
-      severity: 'high',
-      message: 'Vehicle VEH001 requires immediate maintenance - Engine temperature warning',
-      timestamp: '2024-03-14 08:45',
-      resolved: false,
-      affectedShipments: ['SH001'],
-      estimatedImpact: 'High'
-    },
-    {
-      id: 'ALT004',
-      type: 'route',
-      severity: 'medium',
-      message: 'Traffic congestion on Route I-95 causing delays for 3 shipments',
-      timestamp: '2024-03-14 07:30',
-      resolved: false,
-      affectedShipments: ['SH001', 'SH002', 'SH003'],
-      estimatedImpact: 'Medium'
-    },
-    {
-      id: 'ALT005',
-      type: 'driver',
-      severity: 'low',
-      message: 'Driver license renewal required for John Smith in 30 days',
-      timestamp: '2024-03-14 06:00',
-      resolved: false,
-      affectedShipments: [],
-      estimatedImpact: 'Low'
-    },
-    {
-      id: 'ALT006',
-      type: 'security',
-      severity: 'high',
-      message: 'Unauthorized access attempt detected at West Coast Hub',
-      timestamp: '2024-03-14 05:15',
-      resolved: true,
-      affectedShipments: [],
-      estimatedImpact: 'High'
-    }
-  ];
-
-  const mockInventory = [
-  {
-    id: 'INV001',
-      name: 'Electronic Components',
-    category: 'Electronics',
-      quantity: 1250,
-      minStock: 200,
-      maxStock: 2000,
-      location: 'WH001',
-      value: 125000,
-      supplier: 'TechCorp Inc',
-      lastRestocked: '2024-03-10',
-      expiryDate: '2025-03-10',
-      temperature: 'Room Temperature',
-      weight: 450,
-      dimensions: '120x80x40 cm'
-  },
-  {
-    id: 'INV002',
-      name: 'Medical Supplies',
-      category: 'Healthcare',
-      quantity: 85,
-      minStock: 100,
-      maxStock: 500,
-      location: 'WH002',
-      value: 45000,
-      supplier: 'MedSupply Ltd',
-      lastRestocked: '2024-03-12',
-      expiryDate: '2024-12-31',
-      temperature: 'Cold Storage',
-      weight: 120,
-      dimensions: '60x40x30 cm'
-  },
-  {
-    id: 'INV003',
-      name: 'Automotive Parts',
-      category: 'Automotive',
-      quantity: 750,
-      minStock: 150,
-      maxStock: 1000,
-      location: 'WH001',
-      value: 89000,
-      supplier: 'AutoParts Pro',
-      lastRestocked: '2024-03-08',
-      expiryDate: 'N/A',
-      temperature: 'Room Temperature',
-      weight: 680,
-      dimensions: '100x60x50 cm'
-    },
-    {
-      id: 'INV004',
-      name: 'Textile Materials',
-      category: 'Textiles',
-      quantity: 320,
-      minStock: 80,
-      maxStock: 600,
-      location: 'WH003',
-      value: 28000,
-      supplier: 'Fabric World',
-      lastRestocked: '2024-03-13',
-      expiryDate: 'N/A',
-      temperature: 'Dry Storage',
-      weight: 200,
-      dimensions: '80x60x40 cm'
-    }
-  ];
-
-  // Enhanced performance data for analytics
-  const enhancedPerformanceData = [
-    { 
-      date: 'Mon', 
-      onTime: 85, 
-      delayed: 15, 
-      returns: 5, 
-      deliveries: 145,
-      revenue: 28500,
-      fuelCost: 2400,
-      customerSatisfaction: 4.2
-    },
-    { 
-      date: 'Tue', 
-      onTime: 92, 
-      delayed: 8, 
-      returns: 3, 
-      deliveries: 158,
-      revenue: 31200,
-      fuelCost: 2100,
-      customerSatisfaction: 4.6
-    },
-    { 
-      date: 'Wed', 
-      onTime: 88, 
-      delayed: 12, 
-      returns: 4, 
-      deliveries: 142,
-      revenue: 29800,
-      fuelCost: 2300,
-      customerSatisfaction: 4.4
-    },
-    { 
-      date: 'Thu', 
-      onTime: 95, 
-      delayed: 5, 
-      returns: 2, 
-      deliveries: 167,
-      revenue: 35400,
-      fuelCost: 1950,
-      customerSatisfaction: 4.8
-    },
-    { 
-      date: 'Fri', 
-      onTime: 90, 
-      delayed: 10, 
-      returns: 6, 
-      deliveries: 152,
-      revenue: 32100,
-      fuelCost: 2200,
-      customerSatisfaction: 4.5
-    },
-    { 
-      date: 'Sat', 
-      onTime: 78, 
-      delayed: 22, 
-      returns: 8, 
-      deliveries: 98,
-      revenue: 19600,
-      fuelCost: 1800,
-      customerSatisfaction: 3.9
-    },
-    { 
-      date: 'Sun', 
-      onTime: 82, 
-      delayed: 18, 
-      returns: 7, 
-      deliveries: 87,
-      revenue: 17400,
-      fuelCost: 1650,
-      customerSatisfaction: 4.1
-    }
-  ];
-
-  // Filtering logic
-  const filteredShipments = mockShipments.filter(shipment => {
-    if (trackingFilter === 'all') return true;
-    return shipment.status === trackingFilter;
+  const [driverForm, setDriverForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    licenseClass: 'CDL-A',
+    experience: 0,
+    hourlyRate: 25,
+    color: '#3b82f6'
+  });
+  
+  const [shipmentForm, setShipmentForm] = useState({
+    origin: '',
+    destination: '',
+    cargo: '',
+    weight: 0,
+    priority: 'medium' as 'low' | 'medium' | 'high',
+    estimatedDelivery: '',
+    driver: '',
+    vehicle: '',
+    cost: 0,
+    distance: 0
+  });
+  
+  const [routeForm, setRouteForm] = useState({
+    name: '',
+    origin: '',
+    destination: '',
+    distance: 0,
+    estimatedTime: 0,
+    fuelCost: 0,
+    tollCost: 0,
+    driver: '',
+    vehicle: ''
   });
 
-  // Firebase integration functions
-  const saveToFirebase = async (collection_name: string, data: any) => {
-    if (!currentUser) return;
-    try {
-      await addDoc(collection(db, collection_name), {
-        ...data,
-        userId: currentUser.uid,
-        timestamp: new Date()
-      });
-    } catch (error) {
-      console.error('Error saving to Firebase:', error);
-    }
-  };
-
-  const loadFromFirebase = async (collection_name: string) => {
-    if (!currentUser) return [];
-    try {
-      const q = query(
-        collection(db, collection_name),
-        where('userId', '==', currentUser.uid),
-        orderBy('timestamp', 'desc')
-      );
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    } catch (error) {
-      console.error('Error loading from Firebase:', error);
-      return [];
-    }
-  };
-
-  useEffect(() => {
-    setShipments(mockShipments);
-    setWarehouses([
+  // Firebase simulation with data persistence
+  const generateSampleData = () => {
+    console.log('🚛 Sample data loaded for Business Logistics Demo');
+    
+    // Simulate Firebase data loading with realistic delay
+    setTimeout(() => {
+      console.log('📊 Firebase simulation: Data refreshed from cloud database');
+    }, 500);
+    
+    const sampleVehicles: Vehicle[] = [
       {
-        id: 'WH001',
-        name: 'Main Distribution Center',
-        location: [39.8283, -98.5795] as [number, number],
-        capacity: 10000,
-        currentStock: 8500,
+        id: 'VEH001',
+        licensePlate: 'TRK-4501',
+        type: 'Semi-Truck',
         status: 'active',
-        manager: 'Mike Wilson',
-        operatingHours: '24/7',
-        securityLevel: 'High'
+        driver: 'DRV001',
+        location: 'Los Angeles, CA',
+        fuelLevel: 75,
+        mileage: 125000,
+        color: '#3b82f6',
+        capacity: '40 tons',
+        lastService: '2024-05-15'
       },
       {
-        id: 'WH002',
-        name: 'West Coast Hub',
-        location: [34.0522, -118.2437] as [number, number],
-        capacity: 7500,
-        currentStock: 6200,
+        id: 'VEH002',
+        licensePlate: 'VAN-2301',
+        type: 'Delivery Van',
         status: 'active',
-        manager: 'Lisa Chen',
-        operatingHours: '6AM-10PM',
-        securityLevel: 'Medium'
+        driver: 'DRV002',
+        location: 'Phoenix, AZ',
+        fuelLevel: 60,
+        mileage: 87000,
+        color: '#10b981',
+        capacity: '3 tons',
+        lastService: '2024-06-01'
+      },
+      {
+        id: 'VEH003',
+        licensePlate: 'TRK-7892',
+        type: 'Box Truck',
+        status: 'maintenance',
+        location: 'Denver, CO',
+        fuelLevel: 25,
+        mileage: 156000,
+        color: '#f59e0b',
+        capacity: '12 tons',
+        lastService: '2024-04-20'
+      },
+      {
+        id: 'VEH004',
+        licensePlate: 'VAN-5647',
+        type: 'Cargo Van',
+        status: 'idle',
+        location: 'Dallas, TX',
+        fuelLevel: 90,
+        mileage: 45000,
+        color: '#8b5cf6',
+        capacity: '2 tons',
+        lastService: '2024-06-10'
+      },
+      {
+        id: 'VEH005',
+        licensePlate: 'TRK-9034',
+        type: 'Flatbed Truck',
+        status: 'active',
+        driver: 'DRV005',
+        location: 'Miami, FL',
+        fuelLevel: 80,
+        mileage: 98000,
+        color: '#ef4444',
+        capacity: '25 tons',
+        lastService: '2024-05-28'
+      },
+      {
+        id: 'VEH006',
+        licensePlate: 'TRK-1127',
+        type: 'Refrigerated Truck',
+        status: 'active',
+        driver: 'DRV003',
+        location: 'Seattle, WA',
+        fuelLevel: 85,
+        mileage: 67000,
+        color: '#06b6d4',
+        capacity: '18 tons',
+        lastService: '2024-06-05'
       }
-    ]);
-    setDrivers(mockDrivers);
-    setInventory(mockInventory);
-    setAlerts(mockAlerts);
+    ];
 
-    // Set up real-time data simulation
-    const interval = setInterval(() => {
-      setRealTimeData({
-        totalShipments: Math.floor(Math.random() * 100) + 500,
-        activeDrivers: Math.floor(Math.random() * 20) + 80,
-        deliveryRate: (Math.random() * 5 + 92).toFixed(1),
-        avgDeliveryTime: (Math.random() * 0.5 + 2.2).toFixed(1),
-        fuelEfficiency: (Math.random() * 2 + 8.5).toFixed(1)
-      });
-    }, 5000);
+    const sampleDrivers: Driver[] = [
+      {
+        id: 'DRV001',
+        name: 'Marcus Johnson',
+        email: 'marcus.johnson@logistics.com',
+        phone: '(555) 123-4567',
+        status: 'driving',
+        licenseClass: 'CDL-A',
+        experience: 12,
+        rating: 4.8,
+        currentVehicle: 'VEH001',
+        color: '#3b82f6',
+        totalDeliveries: 1247,
+        hoursWorked: 2080,
+        hourlyRate: 28
+      },
+      {
+        id: 'DRV002',
+        name: 'Sarah Chen',
+        email: 'sarah.chen@logistics.com',
+        phone: '(555) 234-5678',
+        status: 'driving',
+        licenseClass: 'CDL-B',
+        experience: 8,
+        rating: 4.9,
+        currentVehicle: 'VEH002',
+        color: '#10b981',
+        totalDeliveries: 892,
+        hoursWorked: 1664,
+        hourlyRate: 26
+      },
+      {
+        id: 'DRV003',
+        name: 'Robert Davis',
+        email: 'robert.davis@logistics.com',
+        phone: '(555) 345-6789',
+        status: 'driving',
+        licenseClass: 'CDL-A',
+        experience: 15,
+        rating: 4.7,
+        currentVehicle: 'VEH006',
+        color: '#06b6d4',
+        totalDeliveries: 1563,
+        hoursWorked: 3120,
+        hourlyRate: 32
+      },
+      {
+        id: 'DRV004',
+        name: 'Emily Rodriguez',
+        email: 'emily.rodriguez@logistics.com',
+        phone: '(555) 456-7890',
+        status: 'available',
+        licenseClass: 'CDL-B',
+        experience: 6,
+        rating: 4.6,
+        color: '#8b5cf6',
+        totalDeliveries: 634,
+        hoursWorked: 1248,
+        hourlyRate: 24
+      },
+      {
+        id: 'DRV005',
+        name: 'David Wilson',
+        email: 'david.wilson@logistics.com',
+        phone: '(555) 567-8901',
+        status: 'driving',
+        licenseClass: 'CDL-A',
+        experience: 10,
+        rating: 4.8,
+        currentVehicle: 'VEH005',
+        color: '#ef4444',
+        totalDeliveries: 1089,
+        hoursWorked: 2080,
+        hourlyRate: 29
+      },
+      {
+        id: 'DRV006',
+        name: 'Lisa Thompson',
+        email: 'lisa.thompson@logistics.com',
+        phone: '(555) 678-9012',
+        status: 'off-duty',
+        licenseClass: 'CDL-B',
+        experience: 4,
+        rating: 4.5,
+        color: '#f59e0b',
+        totalDeliveries: 387,
+        hoursWorked: 832,
+        hourlyRate: 22
+      }
+    ];
 
-    return () => clearInterval(interval);
+    const sampleShipments: Shipment[] = [
+      {
+        id: 'SHP001',
+        origin: 'Los Angeles, CA',
+        destination: 'Las Vegas, NV',
+        status: 'in-transit',
+        driver: 'DRV001',
+        vehicle: 'VEH001',
+        cargo: 'Electronics',
+        weight: 15000,
+        priority: 'high',
+        estimatedDelivery: '2024-06-20',
+        cost: 2500,
+        distance: 270,
+        createdDate: '2024-06-18'
+      },
+      {
+        id: 'SHP002',
+        origin: 'Phoenix, AZ',
+        destination: 'Albuquerque, NM',
+        status: 'in-transit',
+        driver: 'DRV002',
+        vehicle: 'VEH002',
+        cargo: 'Medical Supplies',
+        weight: 800,
+        priority: 'high',
+        estimatedDelivery: '2024-06-21',
+        cost: 1200,
+        distance: 220,
+        createdDate: '2024-06-19'
+      },
+      {
+        id: 'SHP003',
+        origin: 'Dallas, TX',
+        destination: 'Houston, TX',
+        status: 'pending',
+        cargo: 'Automotive Parts',
+        weight: 5000,
+        priority: 'medium',
+        estimatedDelivery: '2024-06-22',
+        cost: 800,
+        distance: 240,
+        createdDate: '2024-06-19'
+      },
+      {
+        id: 'SHP004',
+        origin: 'Miami, FL',
+        destination: 'Tampa, FL',
+        status: 'in-transit',
+        driver: 'DRV005',
+        vehicle: 'VEH005',
+        cargo: 'Construction Materials',
+        weight: 22000,
+        priority: 'medium',
+        estimatedDelivery: '2024-06-20',
+        cost: 1500,
+        distance: 280,
+        createdDate: '2024-06-18'
+      },
+      {
+        id: 'SHP005',
+        origin: 'Denver, CO',
+        destination: 'Salt Lake City, UT',
+        status: 'delayed',
+        cargo: 'Food Products',
+        weight: 3500,
+        priority: 'high',
+        estimatedDelivery: '2024-06-21',
+        cost: 1100,
+        distance: 350,
+        createdDate: '2024-06-17'
+      }
+    ];
+
+    const sampleRoutes: Route[] = [
+      {
+        id: 'RTE001',
+        name: 'West Coast Express',
+        origin: 'Los Angeles, CA',
+        destination: 'Las Vegas, NV',
+        distance: 270,
+        estimatedTime: 4,
+        fuelCost: 120,
+        tollCost: 25,
+        driver: 'DRV001',
+        vehicle: 'VEH001',
+        status: 'active'
+      },
+      {
+        id: 'RTE002',
+        name: 'Southwest Corridor',
+        origin: 'Phoenix, AZ',
+        destination: 'Albuquerque, NM',
+        distance: 220,
+        estimatedTime: 3.5,
+        fuelCost: 95,
+        tollCost: 15,
+        driver: 'DRV002',
+        vehicle: 'VEH002',
+        status: 'active'
+      },
+      {
+        id: 'RTE003',
+        name: 'Texas Triangle',
+        origin: 'Dallas, TX',
+        destination: 'Houston, TX',
+        distance: 240,
+        estimatedTime: 3.5,
+        fuelCost: 85,
+        tollCost: 20,
+        status: 'planned'
+      },
+      {
+        id: 'RTE004',
+        name: 'Florida Connection',
+        origin: 'Miami, FL',
+        destination: 'Tampa, FL',
+        distance: 280,
+        estimatedTime: 4.5,
+        fuelCost: 110,
+        tollCost: 30,
+        driver: 'DRV005',
+        vehicle: 'VEH005',
+        status: 'active'
+      }
+    ];
+
+    setVehicles(sampleVehicles);
+    setDrivers(sampleDrivers);
+    setShipments(sampleShipments);
+    setRoutes(sampleRoutes);
+  };
+
+  // Load sample data on component mount
+  useEffect(() => {
+    generateSampleData();
   }, []);
 
-  // Enhanced action handlers
-  const handleCreateShipment = async (shipmentData: any) => {
-    await saveToFirebase('shipments', shipmentData);
-    setShipmentModalOpen(false);
-  };
-
-  const handleAssignDriver = async (shipmentId: string, driverId: string) => {
-    await saveToFirebase('assignments', { shipmentId, driverId });
-    setDriverModalOpen(false);
-  };
-
-  const handleInventoryUpdate = async (inventoryData: any) => {
-    await saveToFirebase('inventory', inventoryData);
-    setInventoryModalOpen(false);
-  };
-
-  const handleOptimizeRoute = async (warehouseId: string) => {
-    await saveToFirebase('route_optimizations', { warehouseId, optimizedAt: new Date() });
-    setRouteOptimizationModalOpen(false);
-  };
+  // Handler functions
+  const addVehicle = () => {
+    const newVehicle: Vehicle = {
+      id: `VEH${String(vehicles.length + 1).padStart(3, '0')}`,
+      licensePlate: vehicleForm.licensePlate,
+      type: vehicleForm.type,
+      status: 'idle',
+      location: vehicleForm.location,
+      fuelLevel: 100,
+      mileage: 0,
+      color: vehicleForm.color,
+      capacity: vehicleForm.capacity,
+      lastService: new Date().toISOString().split('T')[0]
+    };
     
-    return (
-    <div className="logistics-dashboard enhanced">
-      <div className="dashboard-header">
-        <div className="header-stats">
-          <div className="stat-item">
-            <span className="stat-label">Active Shipments</span>
-            <span className="stat-value">{realTimeData.totalShipments || 567}</span>
-        </div>
-          <div className="stat-item">
-            <span className="stat-label">Drivers Online</span>
-            <span className="stat-value">{realTimeData.activeDrivers || 89}</span>
-        </div>
-          <div className="stat-item">
-            <span className="stat-label">On-Time Rate</span>
-            <span className="stat-value">{realTimeData.deliveryRate || '94.2'}%</span>
-        </div>
-        </div>
-        <div className="header-tabs">
-          {['overview', 'tracking', 'inventory', 'analytics', 'alerts'].map(tab => (
-          <button 
-              key={tab}
-              className={`tab-button ${activeTab === tab ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab)}
-          >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-          </button>
-          ))}
-        </div>
+    setVehicles([...vehicles, newVehicle]);
+    setVehicleForm({
+      licensePlate: '',
+      type: 'truck',
+      location: '',
+      capacity: '',
+      color: '#3b82f6'
+    });
+    setShowVehicleModal(false);
+  };
+
+  const addDriver = () => {
+    const newDriver: Driver = {
+      id: `DRV${String(drivers.length + 1).padStart(3, '0')}`,
+      name: driverForm.name,
+      email: driverForm.email,
+      phone: driverForm.phone,
+      status: 'available',
+      licenseClass: driverForm.licenseClass,
+      experience: driverForm.experience,
+      rating: 4.5,
+      color: driverForm.color,
+      totalDeliveries: 0,
+      hoursWorked: 0,
+      hourlyRate: driverForm.hourlyRate
+    };
+    
+    setDrivers([...drivers, newDriver]);
+    setDriverForm({
+      name: '',
+      email: '',
+      phone: '',
+      licenseClass: 'CDL-A',
+      experience: 0,
+      hourlyRate: 25,
+      color: '#3b82f6'
+    });
+    setShowDriverModal(false);
+  };
+
+  const addShipment = () => {
+    const newShipment: Shipment = {
+      id: `SHP${String(shipments.length + 1).padStart(3, '0')}`,
+      origin: shipmentForm.origin,
+      destination: shipmentForm.destination,
+      status: 'pending',
+      driver: shipmentForm.driver || undefined,
+      vehicle: shipmentForm.vehicle || undefined,
+      cargo: shipmentForm.cargo,
+      weight: shipmentForm.weight,
+      priority: shipmentForm.priority,
+      estimatedDelivery: shipmentForm.estimatedDelivery,
+      cost: shipmentForm.cost,
+      distance: shipmentForm.distance,
+      createdDate: new Date().toISOString().split('T')[0]
+    };
+    
+    setShipments([...shipments, newShipment]);
+    setShipmentForm({
+      origin: '',
+      destination: '',
+      cargo: '',
+      weight: 0,
+      priority: 'medium',
+      estimatedDelivery: '',
+      driver: '',
+      vehicle: '',
+      cost: 0,
+      distance: 0
+    });
+    setShowShipmentModal(false);
+  };
+
+  const addRoute = () => {
+    const newRoute: Route = {
+      id: `RTE${String(routes.length + 1).padStart(3, '0')}`,
+      name: routeForm.name,
+      origin: routeForm.origin,
+      destination: routeForm.destination,
+      distance: routeForm.distance,
+      estimatedTime: routeForm.estimatedTime,
+      fuelCost: routeForm.fuelCost,
+      tollCost: routeForm.tollCost,
+      driver: routeForm.driver || undefined,
+      vehicle: routeForm.vehicle || undefined,
+      status: 'planned'
+    };
+    
+    setRoutes([...routes, newRoute]);
+    setRouteForm({
+      name: '',
+      origin: '',
+      destination: '',
+      distance: 0,
+      estimatedTime: 0,
+      fuelCost: 0,
+      tollCost: 0,
+      driver: '',
+      vehicle: ''
+    });
+    setShowRouteModal(false);
+  };
+
+  return (
+    <div className="logistics-dashboard">
+      <div className="secondary-nav">
+        <button 
+          className="nav-action-button"
+          onClick={() => setShowVehicleModal(true)}
+        >
+          Add Vehicle
+        </button>
+        <button 
+          className="nav-action-button"
+          onClick={() => setShowDriverModal(true)}
+        >
+          Add Driver
+        </button>
+        <button 
+          className="nav-action-button"
+          onClick={() => setShowShipmentModal(true)}
+        >
+          Add Shipment
+        </button>
+        <button 
+          className="nav-action-button"
+          onClick={() => setShowRouteModal(true)}
+        >
+          Add Route
+        </button>
+        <button 
+          className="nav-action-button"
+          onClick={() => setShowStatisticsModal(true)}
+        >
+          Statistics
+        </button>
+        <button 
+          className="nav-action-button"
+          onClick={() => setShowGraphsModal(true)}
+        >
+          Graphs
+        </button>
       </div>
 
-      <div className="dashboard-content">
-        {activeTab === 'overview' && (
-          <div className="overview-section">
-            <div className="metrics-grid">
-              <div className="metric-card clickable" onClick={() => setShipmentModalOpen(true)}>
-                <h3>Total Shipments</h3>
-                <div className="metric-value">{realTimeData.totalShipments || 567}</div>
-                <div className="metric-trend positive">↑ 12%</div>
-                <button className="quick-action">Create New</button>
-              </div>
-              <div className="metric-card clickable" onClick={() => setDriverModalOpen(true)}>
-                <h3>Active Drivers</h3>
-                <div className="metric-value">{realTimeData.activeDrivers || 89}</div>
-                <div className="metric-trend positive">↑ 5%</div>
-                <button className="quick-action">Manage</button>
-              </div>
-              <div className="metric-card clickable" onClick={() => setInventoryModalOpen(true)}>
-                <h3>Inventory Items</h3>
-                <div className="metric-value">1,234</div>
-                <div className="metric-trend negative">↓ 3%</div>
-                <button className="quick-action">Restock</button>
-              </div>
-              <div className="metric-card clickable" onClick={() => setAlertModalOpen(true)}>
-                <h3>Active Alerts</h3>
-                <div className="metric-value">{alerts.filter(a => !a.resolved).length}</div>
-                <div className="metric-trend neutral">—</div>
-                <button className="quick-action">View All</button>
-              </div>
-            </div>
-            
-            <div className="overview-charts">
-              <div className="chart-container">
-                <h3>Real-Time Performance</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={[
-                    { time: '00:00', deliveries: 45, delays: 5 },
-                    { time: '04:00', deliveries: 65, delays: 8 },
-                    { time: '08:00', deliveries: 120, delays: 12 },
-                    { time: '12:00', deliveries: 150, delays: 15 },
-                    { time: '16:00', deliveries: 135, delays: 10 },
-                    { time: '20:00', deliveries: 95, delays: 7 }
-                  ]}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="time" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="deliveries" stroke="#00b894" name="Deliveries" />
-                    <Line type="monotone" dataKey="delays" stroke="#ff7675" name="Delays" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-              
-              <div className="map-overview">
-                <h3>Live Tracking Overview</h3>
-              <MapContainer
-                center={[39.8283, -98.5795]}
-                zoom={4}
-                  style={{ height: '300px', width: '100%' }}
-                >
-                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                {shipments.map((shipment) => (
-                    <Marker key={shipment.id} position={shipment.coordinates}>
-                    <Popup>
-                        <div className="enhanced-popup">
-                          <h4>Shipment #{shipment.id}</h4>
-                        <p>Status: {shipment.status}</p>
-                          <p>Driver: {shipment.driver}</p>
-                          <p>Temperature: {shipment.temperature}°C</p>
-                          <button onClick={() => setShipmentModalOpen(true)}>View Details</button>
+      <div className="main-content">
+        <div className="content-grid">
+          <div className="fleet-section">
+            <h3>Fleet Management</h3>
+            <div className="fleet-grid">
+              <div className="vehicles-panel">
+                <h4>Vehicles ({vehicles.length})</h4>
+                <div className="vehicles-list">
+                  {vehicles.map(vehicle => (
+                    <div 
+                      key={vehicle.id} 
+                      className="vehicle-card"
+                      onClick={() => {
+                        setSelectedVehicle(vehicle);
+                        setShowVehicleDetailModal(true);
+                      }}
+                    >
+                      <div className="vehicle-header">
+                        <div 
+                          className="vehicle-avatar"
+                          style={{ backgroundColor: vehicle.color }}
+                        >
+                          🚛
+                        </div>
+                        <div className="vehicle-info">
+                          <h5>{vehicle.licensePlate}</h5>
+                          <p>{vehicle.type}</p>
+                        </div>
                       </div>
-                    </Popup>
-                  </Marker>
-                ))}
-              </MapContainer>
-            </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'tracking' && (
-          <div className="tracking-section">
-            <div className="tracking-header">
-              <h3>Real-Time Shipment Tracking</h3>
-              <div className="tracking-controls">
-                <select
-                  className="tracking-status-filter"
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                >
-                  <option value="all">All Shipments</option>
-                  <option value="in-transit">In Transit</option>
-                  <option value="pending">Pending Delivery</option>
-                  <option value="delivered">Delivered</option>
-                </select>
-                <button className="refresh-tracking">🔄 Refresh</button>
-                <button className="export-tracking">📊 Export</button>
-              </div>
-            </div>
-
-            <div className="tracking-stats">
-              <div className="tracking-stat-card in-transit">
-                <h4>In Transit</h4>
-                <div className="stat-number">{shipments.filter(s => s.status === 'in-transit').length}</div>
-                <div className="stat-detail">Active shipments</div>
-              </div>
-              <div className="tracking-stat-card pending">
-                <h4>Pending</h4>
-                <div className="stat-number">{shipments.filter(s => s.status === 'pending').length}</div>
-                <div className="stat-detail">Awaiting dispatch</div>
-              </div>
-              <div className="tracking-stat-card delivered">
-                <h4>Delivered</h4>
-                <div className="stat-number">{shipments.filter(s => s.status === 'delivered').length}</div>
-                <div className="stat-detail">Today completed</div>
-              </div>
-              <div className="tracking-stat-card total">
-                <h4>Total Active</h4>
-                <div className="stat-number">{shipments.filter(s => s.status !== 'delivered').length}</div>
-                <div className="stat-detail">All active shipments</div>
-              </div>
-            </div>
-
-            <div className="map-table-container">
-              <div className="tracking-map">
-                <h4>Live Tracking Map</h4>
-                <MapContainer center={[39.8283, -98.5795]} zoom={4} className="shipment-map">
-                  <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  />
-                  {shipments.map((shipment) => (
-                    <Marker key={shipment.id} position={[shipment.coordinates.lat, shipment.coordinates.lng]}>
-                      <Popup>
-                        <div className="shipment-popup-enhanced">
-                          <div className="popup-header">
-                            <strong>{shipment.id}</strong>
-                            <span className={`status-badge ${shipment.status}`}>
-                              {shipment.status.replace('-', ' ').toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="popup-content">
-                            <div className="route-info">
-                              <p><strong>Route:</strong> {shipment.origin} → {shipment.destination}</p>
-                              <p><strong>Driver:</strong> {shipment.driver}</p>
-                              <p><strong>Cargo:</strong> {shipment.cargo}</p>
-                              <p><strong>Progress:</strong> {shipment.progress}%</p>
-                              <p><strong>ETA:</strong> {shipment.estimatedDelivery}</p>
-                            </div>
-                            <div className="environmental-data">
-                              <p><strong>Temp:</strong> {shipment.temperature}°C</p>
-                              <p><strong>Humidity:</strong> {shipment.humidity}%</p>
-                            </div>
-                          </div>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  ))}
-                </MapContainer>
-              </div>
-
-              <div className="shipments-table-container">
-                <div className="table-controls">
-                  <input
-                    type="text" 
-                    placeholder="Search shipments..."
-                    className="shipment-search"
-                  />
-                  <select className="priority-filter">
-                    <option value="all">All Priorities</option>
-                    <option value="high">High Priority</option>
-                    <option value="medium">Medium Priority</option>
-                    <option value="low">Low Priority</option>
-                  </select>
-              </div>
-                
-                <div className="shipments-table">
-                  <table>
-                  <thead>
-                    <tr>
-                        <th>Shipment ID</th>
-                        <th>Route</th>
-                        <th>Status</th>
-                        <th>Progress</th>
-                        <th>Driver</th>
-                        <th>ETA</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                      {shipments.map((shipment) => (
-                        <tr key={shipment.id}>
-                          <td>
-                            <div className="shipment-id">
-                              <strong>{shipment.id}</strong>
-                              <span className={`priority-indicator ${shipment.priority}`}>
-                                {shipment.priority}
-                          </span>
-                            </div>
-                        </td>
-                          <td>
-                            <div className="route-cell">
-                              <span className="origin">{shipment.origin}</span>
-                              <span className="arrow">→</span>
-                              <span className="destination">{shipment.destination}</span>
-                            </div>
-                          </td>
-                          <td>
-                            <span className={`status-badge ${shipment.status}`}>
-                              {shipment.status.replace('-', ' ').toUpperCase()}
-                            </span>
-                          </td>
-                          <td>
-                            <div className="progress-cell">
-                              <div className="progress-bar-container">
-                                <div 
-                                  className="progress-bar" 
-                                  style={{ width: `${shipment.progress}%` }}
-                                ></div>
-                              </div>
-                              <span className="progress-text">{shipment.progress}%</span>
-                            </div>
-                          </td>
-                          <td>
-                            <div className="driver-cell">
-                              <strong>{shipment.driver}</strong>
-                              <br />
-                              <small>{shipment.vehicle}</small>
-                            </div>
-                          </td>
-                          <td>
-                            <div className="eta-cell">
-                              <strong>{shipment.estimatedDelivery}</strong>
-                              <br />
-                              <small>{shipment.cargo}</small>
-                            </div>
-                          </td>
-                          <td>
-                            <div className="shipment-actions">
-                              <button className="action-btn track">Track</button>
-                              <button className="action-btn details">Details</button>
-                            </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'inventory' && (
-          <div className="inventory-section">
-            <div className="inventory-header">
-              <h3>Inventory Management</h3>
-              <div className="inventory-header-actions">
-                <button className="export-button">Export Data</button>
-                <button className="add-item-button" onClick={() => setInventoryModalOpen(true)}>
-                  Add New Item
-                </button>
-                  </div>
-                </div>
-            
-            <div className="inventory-stats">
-              <div className="inventory-stat-card">
-                <h4>Total Items</h4>
-                <div className="stat-value">{inventory.reduce((acc, item) => acc + item.quantity, 0)}</div>
-                <div className="stat-trend positive">↑ 5%</div>
-                </div>
-              <div className="inventory-stat-card">
-                <h4>Low Stock Items</h4>
-                <div className="stat-value">{inventory.filter(i => i.quantity < i.minStock).length}</div>
-                <div className="stat-trend negative">↑ 2</div>
-              </div>
-              <div className="inventory-stat-card">
-                <h4>Total Value</h4>
-                <div className="stat-value">${inventory.reduce((acc, item) => acc + item.value, 0).toLocaleString()}</div>
-                <div className="stat-trend positive">↑ 8%</div>
-                </div>
-              <div className="inventory-stat-card">
-                <h4>Categories</h4>
-                <div className="stat-value">{new Set(inventory.map(i => i.category)).size}</div>
-                <div className="stat-trend neutral">—</div>
-              </div>
-                </div>
-
-            <div className="inventory-overview">
-              <div className="inventory-charts">
-              <div className="chart-container">
-                  <h4>Inventory by Category</h4>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { name: 'Electronics', value: 35, fill: '#3b82f6' },
-                          { name: 'Healthcare', value: 25, fill: '#10b981' },
-                          { name: 'Automotive', value: 28, fill: '#f59e0b' },
-                          { name: 'Textiles', value: 12, fill: '#ef4444' }
-                        ]}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        dataKey="value"
-                        label
-                      >
-                        {[
-                          { name: 'Electronics', value: 35, fill: '#3b82f6' },
-                          { name: 'Healthcare', value: 25, fill: '#10b981' },
-                          { name: 'Automotive', value: 28, fill: '#f59e0b' },
-                          { name: 'Textiles', value: 12, fill: '#ef4444' }
-                        ].map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Pie>
-                    <Tooltip />
-                    <Legend />
-                    </PieChart>
-                </ResponsiveContainer>
-              </div>
-                
-              <div className="chart-container">
-                  <h4>Stock Levels vs Targets</h4>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={inventory.map(item => ({
-                      name: item.name.split(' ')[0],
-                      current: item.quantity,
-                      minimum: item.minStock,
-                      maximum: item.maxStock
-                    }))}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                      <Bar dataKey="current" fill="#3b82f6" name="Current Stock" />
-                      <Bar dataKey="minimum" fill="#ef4444" name="Min Stock" />
-                      <Bar dataKey="maximum" fill="#10b981" name="Max Stock" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-
-            <div className="inventory-table">
-              <div className="table-header">
-                <h4>Detailed Inventory</h4>
-                <div className="table-filters">
-                  <select className="category-filter">
-                  <option value="all">All Categories</option>
-                    <option value="electronics">Electronics</option>
-                    <option value="healthcare">Healthcare</option>
-                    <option value="automotive">Automotive</option>
-                    <option value="textiles">Textiles</option>
-                </select>
-                  <input type="text" placeholder="Search items..." className="search-input" />
-              </div>
-            </div>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Item Details</th>
-                    <th>Category</th>
-                    <th>Stock Status</th>
-                    <th>Location & Storage</th>
-                    <th>Financial</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {inventory.map(item => (
-                    <tr key={item.id}>
-                      <td>
-                        <div className="item-details">
-                          <strong>{item.name}</strong>
-                          <br />
-                          <small>Supplier: {item.supplier}</small>
-                          <br />
-                          <small>Weight: {item.weight}kg | {item.dimensions}</small>
-                        </div>
-                      </td>
-                      <td>
-                        <span className="category-badge">{item.category}</span>
-                        <br />
-                        <small>Storage: {item.temperature}</small>
-                      </td>
-                      <td>
-                        <div className="stock-info">
-                          <strong>{item.quantity} units</strong>
-                          <br />
-                          <span className={`status-badge ${item.quantity < item.minStock ? 'low-stock' : 'in-stock'}`}>
-                            {item.quantity < item.minStock ? 'Low Stock' : 'In Stock'}
+                      <div className="vehicle-status">
+                        <span className={`status-badge ${vehicle.status}`}>
+                          {vehicle.status}
                         </span>
-                          <br />
-                          <small>Min: {item.minStock} | Max: {item.maxStock}</small>
-                        </div>
-                      </td>
-                      <td>
-                        <strong>{item.location}</strong>
-                        <br />
-                        <small>Last Restocked: {item.lastRestocked}</small>
-                        {item.expiryDate !== 'N/A' && (
-                          <>
-                            <br />
-                            <small>Expires: {item.expiryDate}</small>
-                          </>
-                        )}
-                      </td>
-                      <td>
-                        <strong>${item.value.toLocaleString()}</strong>
-                        <br />
-                        <small>${(item.value / item.quantity).toFixed(2)} per unit</small>
-                      </td>
-                      <td>
-                        <div className="item-actions">
-                          <button className="action-button restock" onClick={() => setInventoryModalOpen(true)}>
-                          Restock
-                        </button>
-                          <button className="action-button edit">Edit</button>
-                          <button className="action-button move">Move</button>
-                        </div>
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              </div>
+
+              <div className="drivers-panel">
+                <h4>Drivers ({drivers.length})</h4>
+                <div className="drivers-list">
+                  {drivers.map(driver => (
+                    <div 
+                      key={driver.id} 
+                      className="driver-card"
+                      onClick={() => {
+                        setSelectedDriver(driver);
+                        setShowDriverDetailModal(true);
+                      }}
+                    >
+                      <div className="driver-header">
+                        <div 
+                          className="driver-avatar"
+                          style={{ backgroundColor: driver.color }}
+                        >
+                          {driver.name.charAt(0)}
+                        </div>
+                        <div className="driver-info">
+                          <h5>{driver.name}</h5>
+                          <p>{driver.licenseClass}</p>
+                        </div>
+                      </div>
+                      <div className="driver-status">
+                        <span className={`status-badge ${driver.status}`}>
+                          {driver.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
-        )}
 
-        {activeTab === 'drivers' && (
-          <div className="drivers-section">
-            <div className="drivers-header">
-              <h3>Driver Management</h3>
-              <button className="add-driver-button" onClick={() => setDriverModalOpen(true)}>
-                Add New Driver
-              </button>
+          <div className="operations-section">
+            <h3>Operations</h3>
+            <div className="operations-grid">
+              <div className="shipments-panel">
+                <h4>Active Shipments ({shipments.filter(s => s.status !== 'delivered').length})</h4>
+                <div className="shipments-list">
+                  {shipments.filter(s => s.status !== 'delivered').map(shipment => (
+                    <div key={shipment.id} className="shipment-card">
+                      <div className="shipment-header">
+                        <span className="shipment-id">{shipment.id}</span>
+                        <span className={`priority-badge ${shipment.priority}`}>
+                          {shipment.priority}
+                        </span>
+                      </div>
+                      <div className="shipment-route">
+                        <span className="origin">{shipment.origin}</span>
+                        <span className="arrow">→</span>
+                        <span className="destination">{shipment.destination}</span>
+                      </div>
+                      <div className="shipment-details">
+                        <p><strong>Cargo:</strong> {shipment.cargo}</p>
+                        <p><strong>Weight:</strong> {shipment.weight} kg</p>
+                        <p><strong>ETA:</strong> {shipment.estimatedDelivery}</p>
+                      </div>
+                      <div className="shipment-status">
+                        <span className={`status-badge ${shipment.status}`}>
+                          {shipment.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="routes-panel">
+                <h4>Active Routes ({routes.filter(r => r.status === 'active').length})</h4>
+                <div className="routes-list">
+                  {routes.filter(r => r.status === 'active').map(route => (
+                    <div key={route.id} className="route-card">
+                      <div className="route-header">
+                        <h5>{route.name}</h5>
+                        <span className={`status-badge ${route.status}`}>
+                          {route.status}
+                        </span>
+                      </div>
+                      <div className="route-details">
+                        <p><strong>Route:</strong> {route.origin} → {route.destination}</p>
+                        <p><strong>Distance:</strong> {route.distance} km</p>
+                        <p><strong>Est. Time:</strong> {route.estimatedTime} hrs</p>
+                        <p><strong>Cost:</strong> ${route.fuelCost + route.tollCost}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-            <div className="drivers-stats">
-              <div className="driver-stat-card">
-                <h4>Total Drivers</h4>
-                <div className="stat-value">{drivers.length}</div>
+      {/* Modal Components */}
+      
+      {/* Add Vehicle Modal */}
+      {showVehicleModal && (
+        <div className="log-modal-backdrop" onClick={() => setShowVehicleModal(false)}>
+          <div className="log-modal-container large-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="log-modal-head">
+              <h3 className="log-modal-title">Add New Vehicle</h3>
+              <button 
+                className="log-close-button"
+                onClick={() => setShowVehicleModal(false)}
+              >
+                ✕
+              </button>
             </div>
-              <div className="driver-stat-card">
-                <h4>Active Now</h4>
-                <div className="stat-value">{drivers.filter(d => d.status === 'active').length}</div>
-          </div>
-              <div className="driver-stat-card">
-                <h4>Available</h4>
-                <div className="stat-value">{drivers.filter(d => d.status === 'available').length}</div>
-        </div>
-              <div className="driver-stat-card">
-                <h4>Avg Rating</h4>
-                <div className="stat-value">{(drivers.reduce((acc, d) => acc + d.rating, 0) / drivers.length).toFixed(1)}</div>
+            <div className="log-modal-body">
+              <div className="log-form-field">
+                <label className="log-field-label">License Plate</label>
+                <input
+                  type="text"
+                  className="log-field-input"
+                  value={vehicleForm.licensePlate}
+                  onChange={(e) => setVehicleForm({...vehicleForm, licensePlate: e.target.value})}
+                  placeholder="Enter license plate"
+                />
               </div>
-            </div>
-
-            <div className="drivers-grid">
-              {drivers.map(driver => (
-                <div key={driver.id} className="driver-card-expanded">
-                  <div className="driver-header">
-                    <h4>{driver.name}</h4>
-                    <span className={`status ${driver.status}`}>{driver.status}</span>
-            </div>
-                  <div className="driver-details">
-                    <p><strong>Experience:</strong> {driver.experience}</p>
-                    <p><strong>Rating:</strong> {driver.rating}/5</p>
-                    <p><strong>Deliveries:</strong> {driver.totalDeliveries}</p>
-                    <p><strong>Vehicle:</strong> {driver.vehicleType}</p>
-                    <p><strong>Phone:</strong> {driver.phone}</p>
-                    {driver.currentShipment && (
-                      <p><strong>Current Shipment:</strong> #{driver.currentShipment}</p>
-                    )}
-                  </div>
-                  <div className="driver-actions">
-                    <button onClick={() => setDriverModalOpen(true)}>Assign Route</button>
-                    <button>Contact</button>
-                    <button>View Performance</button>
-                  </div>
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
-
-        {activeTab === 'analytics' && (
-          <div className="analytics-section">
-            <div className="analytics-header">
-              <h3>Performance Analytics & Business Intelligence</h3>
-              <div className="analytics-controls">
-                <select className="time-range-selector">
-                  <option value="7d">Last 7 Days</option>
-                  <option value="30d">Last 30 Days</option>
-                  <option value="90d">Last 90 Days</option>
-                  <option value="1y">Last Year</option>
+              <div className="log-form-field">
+                <label className="log-field-label">Vehicle Type</label>
+                <select
+                  className="log-field-select"
+                  value={vehicleForm.type}
+                  onChange={(e) => setVehicleForm({...vehicleForm, type: e.target.value})}
+                >
+                  <option value="Semi-Truck">Semi-Truck</option>
+                  <option value="Box Truck">Box Truck</option>
+                  <option value="Delivery Van">Delivery Van</option>
+                  <option value="Cargo Van">Cargo Van</option>
+                  <option value="Flatbed Truck">Flatbed Truck</option>
                 </select>
-                <button className="export-analytics">Export Report</button>
+              </div>
+              <div className="log-form-field">
+                <label className="log-field-label">Location</label>
+                <input
+                  type="text"
+                  className="log-field-input"
+                  value={vehicleForm.location}
+                  onChange={(e) => setVehicleForm({...vehicleForm, location: e.target.value})}
+                  placeholder="Enter current location"
+                />
+              </div>
+              <div className="log-form-field">
+                <label className="log-field-label">Capacity</label>
+                <input
+                  type="text"
+                  className="log-field-input"
+                  value={vehicleForm.capacity}
+                  onChange={(e) => setVehicleForm({...vehicleForm, capacity: e.target.value})}
+                  placeholder="e.g., 40 tons, 3 tons"
+                />
+              </div>
+              <div className="log-form-field">
+                <label className="log-field-label">Color</label>
+                <input
+                  type="color"
+                  className="log-field-input color-input"
+                  value={vehicleForm.color}
+                  onChange={(e) => setVehicleForm({...vehicleForm, color: e.target.value})}
+                />
               </div>
             </div>
-            
-            <div className="analytics-overview">
-              <div className="analytics-metrics">
-                <h4>Key Performance Indicators</h4>
-                <div className="kpi-grid-expanded">
-                  <div className="kpi-card">
-                    <h5>On-Time Delivery Rate</h5>
-                    <div className="kpi-value">87.3%</div>
-                    <div className="kpi-trend positive">↑ 2.1%</div>
-                    <div className="kpi-target">Target: 90%</div>
-                  </div>
-                  <div className="kpi-card">
-                    <h5>Average Delivery Time</h5>
-                    <div className="kpi-value">2.4 days</div>
-                    <div className="kpi-trend positive">↓ 0.3 days</div>
-                    <div className="kpi-target">Target: 2.0 days</div>
-                  </div>
-                  <div className="kpi-card">
-                    <h5>Customer Satisfaction</h5>
-                    <div className="kpi-value">4.5/5</div>
-                    <div className="kpi-trend positive">↑ 0.2</div>
-                    <div className="kpi-target">Target: 4.8/5</div>
-                  </div>
-                  <div className="kpi-card">
-                    <h5>Fuel Efficiency</h5>
-                    <div className="kpi-value">8.2 L/100km</div>
-                    <div className="kpi-trend positive">↓ 0.3</div>
-                    <div className="kpi-target">Target: 7.5 L/100km</div>
-                  </div>
-                  <div className="kpi-card">
-                    <h5>Weekly Revenue</h5>
-                    <div className="kpi-value">$194K</div>
-                    <div className="kpi-trend positive">↑ 12%</div>
-                    <div className="kpi-target">Target: $200K</div>
-                  </div>
-                  <div className="kpi-card">
-                    <h5>Cost per Delivery</h5>
-                    <div className="kpi-value">$28.50</div>
-                    <div className="kpi-trend negative">↑ $1.20</div>
-                    <div className="kpi-target">Target: $25.00</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="analytics-grid-expanded">
-              <div className="chart-container">
-                <h4>Weekly Performance Trends</h4>
-                <ResponsiveContainer width="100%" height={350}>
-                  <LineChart data={enhancedPerformanceData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="onTime" stroke="#00b894" name="On Time %" />
-                    <Line type="monotone" dataKey="delayed" stroke="#ff7675" name="Delayed %" />
-                    <Line type="monotone" dataKey="returns" stroke="#fdcb6e" name="Returns %" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-
-              <div className="chart-container">
-                <h4>Revenue vs Costs Analysis</h4>
-                <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={enhancedPerformanceData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip formatter={(value, name) => [`$${value}`, name]} />
-                    <Legend />
-                    <Bar dataKey="revenue" fill="#3b82f6" name="Revenue" />
-                    <Bar dataKey="fuelCost" fill="#ef4444" name="Fuel Cost" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-
-              <div className="chart-container">
-                <h4>Customer Satisfaction Trends</h4>
-                <ResponsiveContainer width="100%" height={350}>
-                  <LineChart data={enhancedPerformanceData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis domain={[3.5, 5]} />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="customerSatisfaction" stroke="#8b5cf6" name="Rating" strokeWidth={3} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-
-              <div className="chart-container">
-                <h4>Delivery Volume Distribution</h4>
-                <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={enhancedPerformanceData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="deliveries" fill="#10b981" name="Daily Deliveries" />
-                  </BarChart>
-                </ResponsiveContainer>
+            <div className="log-modal-footer">
+              <button 
+                className="log-cancel-button"
+                onClick={() => setShowVehicleModal(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="log-submit-button"
+                onClick={addVehicle}
+              >
+                Add Vehicle
+              </button>
             </div>
           </div>
         </div>
       )}
 
-        {activeTab === 'alerts' && (
-          <div className="alerts-section">
-            <div className="alerts-header">
-              <h3>System Alerts & Critical Notifications</h3>
-              <div className="alerts-controls">
-                <select className="alert-filter">
-                  <option value="all">All Alerts</option>
-                  <option value="high">High Priority</option>
-                  <option value="medium">Medium Priority</option>
-                  <option value="low">Low Priority</option>
-                  <option value="unresolved">Unresolved Only</option>
+      {/* Add Driver Modal */}
+      {showDriverModal && (
+        <div className="log-modal-backdrop" onClick={() => setShowDriverModal(false)}>
+          <div className="log-modal-container large-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="log-modal-head">
+              <h3 className="log-modal-title">Add New Driver</h3>
+              <button 
+                className="log-close-button"
+                onClick={() => setShowDriverModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="log-modal-body">
+              <div className="log-form-field">
+                <label className="log-field-label">Name</label>
+                <input
+                  type="text"
+                  className="log-field-input"
+                  value={driverForm.name}
+                  onChange={(e) => setDriverForm({...driverForm, name: e.target.value})}
+                  placeholder="Enter driver name"
+                />
+              </div>
+              <div className="log-form-field">
+                <label className="log-field-label">Email</label>
+                <input
+                  type="email"
+                  className="log-field-input"
+                  value={driverForm.email}
+                  onChange={(e) => setDriverForm({...driverForm, email: e.target.value})}
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div className="log-form-field">
+                <label className="log-field-label">Phone</label>
+                <input
+                  type="tel"
+                  className="log-field-input"
+                  value={driverForm.phone}
+                  onChange={(e) => setDriverForm({...driverForm, phone: e.target.value})}
+                  placeholder="Enter phone number"
+                />
+              </div>
+              <div className="log-form-field">
+                <label className="log-field-label">License Class</label>
+                <select
+                  className="log-field-select"
+                  value={driverForm.licenseClass}
+                  onChange={(e) => setDriverForm({...driverForm, licenseClass: e.target.value})}
+                >
+                  <option value="CDL-A">CDL-A</option>
+                  <option value="CDL-B">CDL-B</option>
+                  <option value="CDL-C">CDL-C</option>
                 </select>
-                <button className="clear-all-button">Clear Resolved</button>
-                <button className="export-alerts">Export Alerts</button>
+              </div>
+              <div className="log-form-field">
+                <label className="log-field-label">Experience (years)</label>
+                <input
+                  type="number"
+                  className="log-field-input"
+                  value={driverForm.experience}
+                  onChange={(e) => setDriverForm({...driverForm, experience: parseInt(e.target.value) || 0})}
+                  min="0"
+                />
+              </div>
+              <div className="log-form-field">
+                <label className="log-field-label">Hourly Rate ($)</label>
+                <input
+                  type="number"
+                  className="log-field-input"
+                  value={driverForm.hourlyRate}
+                  onChange={(e) => setDriverForm({...driverForm, hourlyRate: parseInt(e.target.value) || 0})}
+                  min="0"
+                />
+              </div>
+              <div className="log-form-field">
+                <label className="log-field-label">Color</label>
+                <input
+                  type="color"
+                  className="log-field-input color-input"
+                  value={driverForm.color}
+                  onChange={(e) => setDriverForm({...driverForm, color: e.target.value})}
+                />
+              </div>
+            </div>
+            <div className="log-modal-footer">
+              <button 
+                className="log-cancel-button"
+                onClick={() => setShowDriverModal(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="log-submit-button"
+                onClick={addDriver}
+              >
+                Add Driver
+              </button>
             </div>
           </div>
-
-            <div className="alerts-summary">
-              <div className="alert-summary-card high">
-                <div className="summary-icon">🚨</div>
-                <h4>Critical Alerts</h4>
-                <div className="count">{alerts.filter(a => a.severity === 'high' && !a.resolved).length}</div>
-                <div className="summary-detail">Requires immediate attention</div>
         </div>
-              <div className="alert-summary-card medium">
-                <div className="summary-icon">⚠️</div>
-                <h4>Warning Alerts</h4>
-                <div className="count">{alerts.filter(a => a.severity === 'medium' && !a.resolved).length}</div>
-                <div className="summary-detail">Monitor closely</div>
+      )}
+
+      {/* Add Shipment Modal */}
+      {showShipmentModal && (
+        <div className="log-modal-backdrop" onClick={() => setShowShipmentModal(false)}>
+          <div className="log-modal-container extra-large-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="log-modal-head">
+              <h3 className="log-modal-title">Add New Shipment</h3>
+              <button 
+                className="log-close-button"
+                onClick={() => setShowShipmentModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="log-modal-body">
+              <div className="log-form-row">
+                <div className="log-form-field">
+                  <label className="log-field-label">Origin</label>
+                  <input
+                    type="text"
+                    className="log-field-input"
+                    value={shipmentForm.origin}
+                    onChange={(e) => setShipmentForm({...shipmentForm, origin: e.target.value})}
+                    placeholder="Enter origin location"
+                  />
+                </div>
+                <div className="log-form-field">
+                  <label className="log-field-label">Destination</label>
+                  <input
+                    type="text"
+                    className="log-field-input"
+                    value={shipmentForm.destination}
+                    onChange={(e) => setShipmentForm({...shipmentForm, destination: e.target.value})}
+                    placeholder="Enter destination"
+                  />
+                </div>
               </div>
-              <div className="alert-summary-card low">
-                <div className="summary-icon">ℹ️</div>
-                <h4>Info Alerts</h4>
-                <div className="count">{alerts.filter(a => a.severity === 'low' && !a.resolved).length}</div>
-                <div className="summary-detail">For your information</div>
+              <div className="log-form-field">
+                <label className="log-field-label">Cargo Description</label>
+                <input
+                  type="text"
+                  className="log-field-input"
+                  value={shipmentForm.cargo}
+                  onChange={(e) => setShipmentForm({...shipmentForm, cargo: e.target.value})}
+                  placeholder="Describe the cargo"
+                />
+              </div>
+              <div className="log-form-row">
+                <div className="log-form-field">
+                  <label className="log-field-label">Weight (kg)</label>
+                  <input
+                    type="number"
+                    className="log-field-input"
+                    value={shipmentForm.weight}
+                    onChange={(e) => setShipmentForm({...shipmentForm, weight: parseInt(e.target.value) || 0})}
+                    min="0"
+                  />
+                </div>
+                <div className="log-form-field">
+                  <label className="log-field-label">Priority</label>
+                  <select
+                    className="log-field-select"
+                    value={shipmentForm.priority}
+                    onChange={(e) => setShipmentForm({...shipmentForm, priority: e.target.value as 'low' | 'medium' | 'high'})}
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+              </div>
+              <div className="log-form-row">
+                <div className="log-form-field">
+                  <label className="log-field-label">Estimated Delivery</label>
+                  <input
+                    type="date"
+                    className="log-field-input"
+                    value={shipmentForm.estimatedDelivery}
+                    onChange={(e) => setShipmentForm({...shipmentForm, estimatedDelivery: e.target.value})}
+                  />
+                </div>
+                <div className="log-form-field">
+                  <label className="log-field-label">Distance (km)</label>
+                  <input
+                    type="number"
+                    className="log-field-input"
+                    value={shipmentForm.distance}
+                    onChange={(e) => setShipmentForm({...shipmentForm, distance: parseInt(e.target.value) || 0})}
+                    min="0"
+                  />
+                </div>
+              </div>
+              <div className="log-form-row">
+                <div className="log-form-field">
+                  <label className="log-field-label">Cost ($)</label>
+                  <input
+                    type="number"
+                    className="log-field-input"
+                    value={shipmentForm.cost}
+                    onChange={(e) => setShipmentForm({...shipmentForm, cost: parseInt(e.target.value) || 0})}
+                    min="0"
+                  />
+                </div>
+                <div className="log-form-field">
+                  <label className="log-field-label">Assign Driver (Optional)</label>
+                  <select
+                    className="log-field-select"
+                    value={shipmentForm.driver}
+                    onChange={(e) => setShipmentForm({...shipmentForm, driver: e.target.value})}
+                  >
+                    <option value="">Select Driver</option>
+                    {drivers.filter(d => d.status === 'available').map(driver => (
+                      <option key={driver.id} value={driver.id}>{driver.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="log-form-field">
+                <label className="log-field-label">Assign Vehicle (Optional)</label>
+                <select
+                  className="log-field-select"
+                  value={shipmentForm.vehicle}
+                  onChange={(e) => setShipmentForm({...shipmentForm, vehicle: e.target.value})}
+                >
+                  <option value="">Select Vehicle</option>
+                  {vehicles.filter(v => v.status === 'idle' || v.status === 'active').map(vehicle => (
+                    <option key={vehicle.id} value={vehicle.id}>{vehicle.licensePlate} - {vehicle.type}</option>
+                  ))}
+                </select>
               </div>
             </div>
+            <div className="log-modal-footer">
+              <button 
+                className="log-cancel-button"
+                onClick={() => setShowShipmentModal(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="log-submit-button"
+                onClick={addShipment}
+              >
+                Add Shipment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-            <div className="alerts-analytics">
-              <div className="alert-trends">
-                <h4>Alert Trends (Last 7 Days)</h4>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={[
-                    { day: 'Mon', high: 2, medium: 4, low: 1 },
-                    { day: 'Tue', high: 1, medium: 3, low: 2 },
-                    { day: 'Wed', high: 3, medium: 2, low: 1 },
-                    { day: 'Thu', high: 1, medium: 5, low: 3 },
-                    { day: 'Fri', high: 2, medium: 3, low: 2 },
-                    { day: 'Sat', high: 0, medium: 2, low: 1 },
-                    { day: 'Sun', high: 1, medium: 1, low: 0 }
-                  ]}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="day" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="high" stroke="#dc2626" name="Critical" />
-                    <Line type="monotone" dataKey="medium" stroke="#f59e0b" name="Warning" />
-                    <Line type="monotone" dataKey="low" stroke="#3b82f6" name="Info" />
-                  </LineChart>
-                </ResponsiveContainer>
+      {/* Add Route Modal */}
+      {showRouteModal && (
+        <div className="log-modal-backdrop" onClick={() => setShowRouteModal(false)}>
+          <div className="log-modal-container large-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="log-modal-head">
+              <h3 className="log-modal-title">Add New Route</h3>
+              <button 
+                className="log-close-button"
+                onClick={() => setShowRouteModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="log-modal-body">
+              <div className="log-form-field">
+                <label className="log-field-label">Route Name</label>
+                <input
+                  type="text"
+                  className="log-field-input"
+                  value={routeForm.name}
+                  onChange={(e) => setRouteForm({...routeForm, name: e.target.value})}
+                  placeholder="Enter route name"
+                />
+              </div>
+              <div className="log-form-row">
+                <div className="log-form-field">
+                  <label className="log-field-label">Origin</label>
+                  <input
+                    type="text"
+                    className="log-field-input"
+                    value={routeForm.origin}
+                    onChange={(e) => setRouteForm({...routeForm, origin: e.target.value})}
+                    placeholder="Enter origin"
+                  />
+                </div>
+                <div className="log-form-field">
+                  <label className="log-field-label">Destination</label>
+                  <input
+                    type="text"
+                    className="log-field-input"
+                    value={routeForm.destination}
+                    onChange={(e) => setRouteForm({...routeForm, destination: e.target.value})}
+                    placeholder="Enter destination"
+                  />
+                </div>
+              </div>
+              <div className="log-form-row">
+                <div className="log-form-field">
+                  <label className="log-field-label">Distance (km)</label>
+                  <input
+                    type="number"
+                    className="log-field-input"
+                    value={routeForm.distance}
+                    onChange={(e) => setRouteForm({...routeForm, distance: parseInt(e.target.value) || 0})}
+                    min="0"
+                  />
+                </div>
+                <div className="log-form-field">
+                  <label className="log-field-label">Estimated Time (hrs)</label>
+                  <input
+                    type="number"
+                    className="log-field-input"
+                    value={routeForm.estimatedTime}
+                    onChange={(e) => setRouteForm({...routeForm, estimatedTime: parseFloat(e.target.value) || 0})}
+                    min="0"
+                    step="0.5"
+                  />
+                </div>
+              </div>
+              <div className="log-form-row">
+                <div className="log-form-field">
+                  <label className="log-field-label">Fuel Cost ($)</label>
+                  <input
+                    type="number"
+                    className="log-field-input"
+                    value={routeForm.fuelCost}
+                    onChange={(e) => setRouteForm({...routeForm, fuelCost: parseInt(e.target.value) || 0})}
+                    min="0"
+                  />
+                </div>
+                <div className="log-form-field">
+                  <label className="log-field-label">Toll Cost ($)</label>
+                  <input
+                    type="number"
+                    className="log-field-input"
+                    value={routeForm.tollCost}
+                    onChange={(e) => setRouteForm({...routeForm, tollCost: parseInt(e.target.value) || 0})}
+                    min="0"
+                  />
+                </div>
+              </div>
+              <div className="log-form-row">
+                <div className="log-form-field">
+                  <label className="log-field-label">Assign Driver (Optional)</label>
+                  <select
+                    className="log-field-select"
+                    value={routeForm.driver}
+                    onChange={(e) => setRouteForm({...routeForm, driver: e.target.value})}
+                  >
+                    <option value="">Select Driver</option>
+                    {drivers.filter(d => d.status === 'available').map(driver => (
+                      <option key={driver.id} value={driver.id}>{driver.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="log-form-field">
+                  <label className="log-field-label">Assign Vehicle (Optional)</label>
+                  <select
+                    className="log-field-select"
+                    value={routeForm.vehicle}
+                    onChange={(e) => setRouteForm({...routeForm, vehicle: e.target.value})}
+                  >
+                    <option value="">Select Vehicle</option>
+                    {vehicles.filter(v => v.status === 'idle' || v.status === 'active').map(vehicle => (
+                      <option key={vehicle.id} value={vehicle.id}>{vehicle.licensePlate} - {vehicle.type}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
+            <div className="log-modal-footer">
+              <button 
+                className="log-cancel-button"
+                onClick={() => setShowRouteModal(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="log-submit-button"
+                onClick={addRoute}
+              >
+                Add Route
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-            <div className="alerts-list">
-              {alerts.map(alert => (
-                <div key={alert.id} className={`alert-item-expanded ${alert.severity} ${alert.resolved ? 'resolved' : ''}`}>
-                  <div className="alert-icon">
-                    {alert.severity === 'high' && '🚨'}
-                    {alert.severity === 'medium' && '⚠️'}
-                    {alert.severity === 'low' && 'ℹ️'}
+      {/* Statistics Modal */}
+      {showStatisticsModal && (
+        <div className="log-modal-backdrop" onClick={() => setShowStatisticsModal(false)}>
+          <div className="log-modal-container extra-large-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="log-modal-head">
+              <h3 className="log-modal-title">📊 Logistics Statistics & Analytics</h3>
+              <button 
+                className="log-close-button"
+                onClick={() => setShowStatisticsModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="log-modal-body">
+              <div className="stats-grid">
+                {/* Fleet Overview */}
+                <div className="stats-section">
+                  <h4>🚛 Fleet Overview</h4>
+                  <div className="stats-cards">
+                    <div className="stat-card">
+                      <div className="stat-value">{vehicles.length}</div>
+                      <div className="stat-label">Total Vehicles</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-value">{vehicles.filter(v => v.status === 'active').length}</div>
+                      <div className="stat-label">Active Vehicles</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-value">{Math.round(vehicles.reduce((sum, v) => sum + v.fuelLevel, 0) / vehicles.length)}%</div>
+                      <div className="stat-label">Avg Fuel Level</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-value">{Math.round(vehicles.reduce((sum, v) => sum + v.mileage, 0) / vehicles.length).toLocaleString()}</div>
+                      <div className="stat-label">Avg Mileage</div>
+                    </div>
                   </div>
-                  <div className="alert-content">
-                    <div className="alert-header">
-                      <h4>{alert.type.charAt(0).toUpperCase() + alert.type.slice(1)} Alert</h4>
-                      <span className={`severity-badge ${alert.severity}`}>
-                        {alert.severity.toUpperCase()}
+                </div>
+
+                {/* Driver Statistics */}
+                <div className="stats-section">
+                  <h4>👥 Driver Statistics</h4>
+                  <div className="stats-cards">
+                    <div className="stat-card">
+                      <div className="stat-value">{drivers.length}</div>
+                      <div className="stat-label">Total Drivers</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-value">{drivers.filter(d => d.status === 'driving').length}</div>
+                      <div className="stat-label">Currently Driving</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-value">{(drivers.reduce((sum, d) => sum + d.rating, 0) / drivers.length).toFixed(1)}</div>
+                      <div className="stat-label">Avg Rating</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-value">${Math.round(drivers.reduce((sum, d) => sum + d.hourlyRate, 0) / drivers.length)}</div>
+                      <div className="stat-label">Avg Hourly Rate</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Operations Statistics */}
+                <div className="stats-section">
+                  <h4>📦 Operations</h4>
+                  <div className="stats-cards">
+                    <div className="stat-card">
+                      <div className="stat-value">{shipments.length}</div>
+                      <div className="stat-label">Total Shipments</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-value">{shipments.filter(s => s.status === 'in-transit').length}</div>
+                      <div className="stat-label">In Transit</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-value">{shipments.filter(s => s.status === 'delivered').length}</div>
+                      <div className="stat-label">Delivered</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-value">${shipments.reduce((sum, s) => sum + s.cost, 0).toLocaleString()}</div>
+                      <div className="stat-label">Total Revenue</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Financial Summary */}
+                <div className="stats-section">
+                  <h4>💰 Financial Summary</h4>
+                  <div className="stats-cards">
+                    <div className="stat-card">
+                      <div className="stat-value">${routes.reduce((sum, r) => sum + r.fuelCost + r.tollCost, 0).toLocaleString()}</div>
+                      <div className="stat-label">Operating Costs</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-value">${(drivers.reduce((sum, d) => sum + (d.hourlyRate * d.hoursWorked), 0) / 52).toLocaleString()}</div>
+                      <div className="stat-label">Weekly Payroll</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-value">${Math.round((shipments.reduce((sum, s) => sum + s.cost, 0) - routes.reduce((sum, r) => sum + r.fuelCost + r.tollCost, 0)) / shipments.length)}</div>
+                      <div className="stat-label">Avg Profit/Shipment</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-value">{Math.round((shipments.filter(s => s.status === 'delivered').length / shipments.length) * 100)}%</div>
+                      <div className="stat-label">Delivery Success</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Performance Metrics */}
+                <div className="stats-section full-width">
+                  <h4>📈 Performance Metrics</h4>
+                  <div className="performance-grid">
+                    <div className="performance-card">
+                      <h5>Top Performing Drivers</h5>
+                      <div className="driver-rankings">
+                        {drivers
+                          .sort((a, b) => b.rating - a.rating)
+                          .slice(0, 3)
+                          .map((driver, index) => (
+                            <div key={driver.id} className="ranking-item">
+                              <span className="rank">#{index + 1}</span>
+                              <span className="name">{driver.name}</span>
+                              <span className="metric">{driver.rating} ⭐</span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                    <div className="performance-card">
+                      <h5>Most Active Vehicles</h5>
+                      <div className="vehicle-rankings">
+                        {vehicles
+                          .sort((a, b) => b.mileage - a.mileage)
+                          .slice(0, 3)
+                          .map((vehicle, index) => (
+                            <div key={vehicle.id} className="ranking-item">
+                              <span className="rank">#{index + 1}</span>
+                              <span className="name">{vehicle.licensePlate}</span>
+                              <span className="metric">{vehicle.mileage.toLocaleString()} mi</span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                    <div className="performance-card">
+                      <h5>High Priority Shipments</h5>
+                      <div className="shipment-priorities">
+                        {shipments
+                          .filter(s => s.priority === 'high')
+                          .slice(0, 3)
+                          .map((shipment) => (
+                            <div key={shipment.id} className="ranking-item">
+                              <span className="rank">{shipment.id}</span>
+                              <span className="name">{shipment.origin} → {shipment.destination}</span>
+                              <span className="metric">${shipment.cost}</span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Graphs Modal */}
+      {showGraphsModal && (
+        <div className="log-modal-backdrop" onClick={() => setShowGraphsModal(false)}>
+          <div className="log-modal-container extra-large-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="log-modal-head">
+              <h3 className="log-modal-title">📈 Analytics Dashboard & Graphs</h3>
+              <button 
+                className="log-close-button"
+                onClick={() => setShowGraphsModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="log-modal-body">
+              <div className="graphs-container">
+                {/* Fleet Status Distribution */}
+                <div className="graph-section">
+                  <h4>🚛 Fleet Status Distribution</h4>
+                  <div className="chart-container">
+                    <div className="pie-chart">
+                      <div className="pie-segment active" style={{
+                        backgroundColor: '#10b981',
+                        width: `${(vehicles.filter(v => v.status === 'active').length / vehicles.length) * 100}%`
+                      } as React.CSSProperties}>
+                        <span className="pie-label">Active: {vehicles.filter(v => v.status === 'active').length}</span>
+                      </div>
+                      <div className="pie-segment maintenance" style={{
+                        backgroundColor: '#f59e0b',
+                        width: `${(vehicles.filter(v => v.status === 'maintenance').length / vehicles.length) * 100}%`
+                      } as React.CSSProperties}>
+                        <span className="pie-label">Maintenance: {vehicles.filter(v => v.status === 'maintenance').length}</span>
+                      </div>
+                      <div className="pie-segment idle" style={{
+                        backgroundColor: '#6b7280',
+                        width: `${(vehicles.filter(v => v.status === 'idle').length / vehicles.length) * 100}%`
+                      } as React.CSSProperties}>
+                        <span className="pie-label">Idle: {vehicles.filter(v => v.status === 'idle').length}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Driver Performance Chart */}
+                <div className="graph-section">
+                  <h4>👥 Driver Performance Ratings</h4>
+                  <div className="bar-chart">
+                    {drivers.map(driver => (
+                      <div key={driver.id} className="bar-item">
+                        <div className="bar-label">{driver.name.split(' ')[0]}</div>
+                        <div className="bar-container">
+                          <div 
+                            className="bar-fill" 
+                            style={{ 
+                              width: `${(driver.rating / 5) * 100}%`,
+                              backgroundColor: driver.color 
+                            }}
+                          ></div>
+                          <span className="bar-value">{driver.rating}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Shipment Status Timeline */}
+                <div className="graph-section full-width">
+                  <h4>📦 Shipment Status Overview</h4>
+                  <div className="timeline-chart">
+                    <div className="timeline-bar">
+                      <div 
+                        className="timeline-segment pending"
+                        style={{ width: `${(shipments.filter(s => s.status === 'pending').length / shipments.length) * 100}%` }}
+                      >
+                        <span>Pending ({shipments.filter(s => s.status === 'pending').length})</span>
+                      </div>
+                      <div 
+                        className="timeline-segment in-transit"
+                        style={{ width: `${(shipments.filter(s => s.status === 'in-transit').length / shipments.length) * 100}%` }}
+                      >
+                        <span>In Transit ({shipments.filter(s => s.status === 'in-transit').length})</span>
+                      </div>
+                      <div 
+                        className="timeline-segment delivered"
+                        style={{ width: `${(shipments.filter(s => s.status === 'delivered').length / shipments.length) * 100}%` }}
+                      >
+                        <span>Delivered ({shipments.filter(s => s.status === 'delivered').length})</span>
+                      </div>
+                      <div 
+                        className="timeline-segment delayed"
+                        style={{ width: `${(shipments.filter(s => s.status === 'delayed').length / shipments.length) * 100}%` }}
+                      >
+                        <span>Delayed ({shipments.filter(s => s.status === 'delayed').length})</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Revenue vs Costs Analysis */}
+                <div className="graph-section">
+                  <h4>💰 Revenue vs Operating Costs</h4>
+                  <div className="comparison-chart">
+                    <div className="comparison-item">
+                      <div className="comparison-label">Total Revenue</div>
+                      <div className="comparison-bar revenue">
+                        <div className="comparison-fill" style={{ width: '100%' }}>
+                          ${shipments.reduce((sum, s) => sum + s.cost, 0).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="comparison-item">
+                      <div className="comparison-label">Operating Costs</div>
+                      <div className="comparison-bar costs">
+                        <div 
+                          className="comparison-fill" 
+                          style={{ 
+                            width: `${(routes.reduce((sum, r) => sum + r.fuelCost + r.tollCost, 0) / shipments.reduce((sum, s) => sum + s.cost, 0)) * 100}%` 
+                          }}
+                        >
+                          ${routes.reduce((sum, r) => sum + r.fuelCost + r.tollCost, 0).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="comparison-item">
+                      <div className="comparison-label">Net Profit</div>
+                      <div className="comparison-bar profit">
+                        <div 
+                          className="comparison-fill" 
+                          style={{ 
+                            width: `${((shipments.reduce((sum, s) => sum + s.cost, 0) - routes.reduce((sum, r) => sum + r.fuelCost + r.tollCost, 0)) / shipments.reduce((sum, s) => sum + s.cost, 0)) * 100}%` 
+                          }}
+                        >
+                          ${(shipments.reduce((sum, s) => sum + s.cost, 0) - routes.reduce((sum, r) => sum + r.fuelCost + r.tollCost, 0)).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Route Efficiency Metrics */}
+                <div className="graph-section">
+                  <h4>🛣️ Route Efficiency</h4>
+                  <div className="efficiency-grid">
+                    {routes.slice(0, 4).map(route => (
+                      <div key={route.id} className="efficiency-card">
+                        <h5>{route.name}</h5>
+                        <div className="efficiency-metric">
+                          <span className="metric-label">Distance</span>
+                          <span className="metric-value">{route.distance} km</span>
+                        </div>
+                        <div className="efficiency-metric">
+                          <span className="metric-label">Time</span>
+                          <span className="metric-value">{route.estimatedTime} hrs</span>
+                        </div>
+                        <div className="efficiency-metric">
+                          <span className="metric-label">Cost</span>
+                          <span className="metric-value">${route.fuelCost + route.tollCost}</span>
+                        </div>
+                        <div className="efficiency-score">
+                          <span>Efficiency: {Math.round((route.distance / (route.fuelCost + route.tollCost)) * 10)}/10</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Vehicle Detail Modal */}
+      {showVehicleDetailModal && selectedVehicle && (
+        <div className="log-modal-backdrop" onClick={() => setShowVehicleDetailModal(false)}>
+          <div className="log-modal-container large-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="log-modal-head">
+              <h3 className="log-modal-title">🚛 Vehicle Details - {selectedVehicle.licensePlate}</h3>
+              <button 
+                className="log-close-button"
+                onClick={() => setShowVehicleDetailModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="log-modal-body">
+              <div className="detail-grid">
+                <div className="detail-section">
+                  <div className="detail-header">
+                    <div 
+                      className="detail-avatar large"
+                      style={{ backgroundColor: selectedVehicle.color }}
+                    >
+                      🚛
+                    </div>
+                    <div className="detail-info">
+                      <h4>{selectedVehicle.licensePlate}</h4>
+                      <p>{selectedVehicle.type}</p>
+                      <span className={`status-badge ${selectedVehicle.status}`}>
+                        {selectedVehicle.status}
                       </span>
                     </div>
-                    <p>{alert.message}</p>
-                    <div className="alert-metadata">
-                      <small>Time: {alert.timestamp}</small>
-                      <small>Impact: {alert.estimatedImpact}</small>
-                      {alert.affectedShipments.length > 0 && (
-                        <small>Affected Shipments: {alert.affectedShipments.join(', ')}</small>
-                      )}
+                  </div>
+                </div>
+
+                <div className="detail-section">
+                  <h5>📍 Location & Status</h5>
+                  <div className="detail-stats">
+                    <div className="stat-item">
+                      <span className="stat-label">Current Location</span>
+                      <span className="stat-value">{selectedVehicle.location}</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-label">Fuel Level</span>
+                      <span className="stat-value">{selectedVehicle.fuelLevel}%</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-label">Total Mileage</span>
+                      <span className="stat-value">{selectedVehicle.mileage.toLocaleString()} miles</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-label">Capacity</span>
+                      <span className="stat-value">{selectedVehicle.capacity}</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-label">Last Service</span>
+                      <span className="stat-value">{selectedVehicle.lastService}</span>
+                    </div>
+                    {selectedVehicle.driver && (
+                      <div className="stat-item">
+                        <span className="stat-label">Assigned Driver</span>
+                        <span className="stat-value">
+                          {drivers.find(d => d.id === selectedVehicle.driver)?.name || 'Unknown'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="detail-section">
+                  <h5>📊 Performance Metrics</h5>
+                  <div className="performance-metrics">
+                    <div className="metric-card">
+                      <div className="metric-value">{Math.round(selectedVehicle.mileage / 12)}</div>
+                      <div className="metric-label">Miles/Month</div>
+                    </div>
+                    <div className="metric-card">
+                      <div className="metric-value">{selectedVehicle.fuelLevel > 50 ? 'Good' : 'Low'}</div>
+                      <div className="metric-label">Fuel Status</div>
+                    </div>
+                    <div className="metric-card">
+                      <div className="metric-value">{selectedVehicle.status === 'maintenance' ? 'Due' : 'Current'}</div>
+                      <div className="metric-label">Maintenance</div>
                     </div>
                   </div>
-                  <div className="alert-actions">
-                    {!alert.resolved && (
-                      <>
-                        <button className="resolve-btn">Resolve</button>
-                        <button className="snooze-btn">Snooze 1h</button>
-                        <button className="escalate-btn">Escalate</button>
-                      </>
-                    )}
-                    <button className="dismiss-btn">Dismiss</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Driver Detail Modal */}
+      {showDriverDetailModal && selectedDriver && (
+        <div className="log-modal-backdrop" onClick={() => setShowDriverDetailModal(false)}>
+          <div className="log-modal-container large-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="log-modal-head">
+              <h3 className="log-modal-title">👤 Driver Profile - {selectedDriver.name}</h3>
+              <button 
+                className="log-close-button"
+                onClick={() => setShowDriverDetailModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="log-modal-body">
+              <div className="detail-grid">
+                <div className="detail-section">
+                  <div className="detail-header">
+                    <div 
+                      className="detail-avatar large"
+                      style={{ backgroundColor: selectedDriver.color }}
+                    >
+                      {selectedDriver.name.charAt(0)}
+                    </div>
+                    <div className="detail-info">
+                      <h4>{selectedDriver.name}</h4>
+                      <p>{selectedDriver.licenseClass} License</p>
+                      <span className={`status-badge ${selectedDriver.status}`}>
+                        {selectedDriver.status}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
 
-      {/* Enhanced Modals */}
-      <Modal isOpen={shipmentModalOpen} onClose={() => setShipmentModalOpen(false)} title="Shipment Management">
-        <div className="shipment-form">
-          <h4>Create New Shipment</h4>
-          <div className="form-grid">
-            <input placeholder="Destination" />
-            <select><option>Select Carrier</option></select>
-            <input placeholder="Weight (kg)" type="number" />
-            <select><option>Priority Level</option></select>
-            <input placeholder="Insurance Value" type="number" />
-            <select><option>Select Driver</option></select>
-          </div>
-            <div className="modal-actions">
-            <button onClick={() => handleCreateShipment({})}>Create Shipment</button>
-            <button onClick={() => setShipmentModalOpen(false)}>Cancel</button>
-            </div>
-          </div>
-      </Modal>
+                <div className="detail-section">
+                  <h5>📞 Contact Information</h5>
+                  <div className="detail-stats">
+                    <div className="stat-item">
+                      <span className="stat-label">Email</span>
+                      <span className="stat-value">{selectedDriver.email}</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-label">Phone</span>
+                      <span className="stat-value">{selectedDriver.phone}</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-label">Experience</span>
+                      <span className="stat-value">{selectedDriver.experience} years</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-label">Rating</span>
+                      <span className="stat-value">{selectedDriver.rating} ⭐</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-label">Hourly Rate</span>
+                      <span className="stat-value">${selectedDriver.hourlyRate}/hr</span>
+                    </div>
+                    {selectedDriver.currentVehicle && (
+                      <div className="stat-item">
+                        <span className="stat-label">Current Vehicle</span>
+                        <span className="stat-value">
+                          {vehicles.find(v => v.id === selectedDriver.currentVehicle)?.licensePlate || 'Unknown'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-      <Modal isOpen={driverModalOpen} onClose={() => setDriverModalOpen(false)} title="Driver Management">
-        <div className="driver-management">
-          <div className="driver-list">
-            {drivers.map(driver => (
-              <div key={driver.id} className="driver-card">
-                <div className="driver-info">
-                  <h4>{driver.name}</h4>
-                  <p>Status: <span className={`status ${driver.status}`}>{driver.status}</span></p>
-                  <p>Rating: {driver.rating}/5</p>
-                  <p>Deliveries: {driver.totalDeliveries}</p>
-        </div>
-                <div className="driver-actions">
-                  <button onClick={() => handleAssignDriver('', driver.id)}>Assign Route</button>
-                  <button>Contact</button>
+                <div className="detail-section">
+                  <h5>📈 Performance Statistics</h5>
+                  <div className="performance-metrics">
+                    <div className="metric-card">
+                      <div className="metric-value">{selectedDriver.totalDeliveries}</div>
+                      <div className="metric-label">Total Deliveries</div>
+                    </div>
+                    <div className="metric-card">
+                      <div className="metric-value">{selectedDriver.hoursWorked.toLocaleString()}</div>
+                      <div className="metric-label">Hours Worked</div>
+                    </div>
+                    <div className="metric-card">
+                      <div className="metric-value">${(selectedDriver.hourlyRate * selectedDriver.hoursWorked).toLocaleString()}</div>
+                      <div className="metric-label">Total Earnings</div>
+                    </div>
+                    <div className="metric-card">
+                      <div className="metric-value">{Math.round(selectedDriver.totalDeliveries / (selectedDriver.hoursWorked / 40))}</div>
+                      <div className="metric-label">Deliveries/Week</div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </Modal>
-
-      <Modal isOpen={inventoryModalOpen} onClose={() => setInventoryModalOpen(false)} title="Inventory Management">
-        <div className="inventory-management">
-          <div className="inventory-stats">
-            <div className="stat">Total Items: 1,234</div>
-            <div className="stat">Low Stock: {inventory.filter(i => i.quantity < i.minStock).length}</div>
-            <div className="stat">Total Value: $170,000</div>
-          </div>
-          <div className="inventory-list">
-            {inventory.map(item => (
-              <div key={item.id} className="inventory-item">
-                <h4>{item.name}</h4>
-                <p>Quantity: {item.quantity}</p>
-                <p>Location: {item.location}</p>
-                <p className={item.quantity < item.minStock ? 'low-stock' : ''}>
-                  {item.quantity < item.minStock ? 'LOW STOCK' : 'In Stock'}
-                </p>
-                <button onClick={() => handleInventoryUpdate(item)}>Restock</button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Modal>
-
-      <Modal isOpen={alertModalOpen} onClose={() => setAlertModalOpen(false)} title="System Alerts">
-        <div className="alerts-management">
-          {alerts.map(alert => (
-            <div key={alert.id} className={`alert-item ${alert.severity}`}>
-              <div className="alert-content">
-                <h4>{alert.type.charAt(0).toUpperCase() + alert.type.slice(1)} Alert</h4>
-                <p>{alert.message}</p>
-                <small>{alert.timestamp}</small>
-              </div>
-              <div className="alert-actions">
-                <button>Resolve</button>
-                <button>Dismiss</button>
-              </div>
             </div>
-          ))}
-        </div>
-      </Modal>
-    </div>
-  );
-};
-
-// Keep the existing MobileDashboard component structure but enhance it similarly...
-const MobileDashboard: React.FC = () => {
-  return (
-    <div className="mobile-dashboard-container">
-      {/* Enhanced mobile interface would go here */}
-      <div className="iphone-frame">
-        <div className="iphone-screen">
-          <div className="mobile-header">
-            <h2>Logistics Hub</h2>
-          </div>
-          <div className="mobile-content">
-            <p>Enhanced mobile dashboard with real-time features...</p>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
-};
-
-const LogisticsDashboard: React.FC<{ view?: 'desktop' | 'mobile' }> = ({ view = 'desktop' }) => {
-  return view === 'desktop' ? <DesktopDashboard /> : <MobileDashboard />;
 };
 
 export default LogisticsDashboard; 
