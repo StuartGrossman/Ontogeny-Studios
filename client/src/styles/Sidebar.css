@@ -25,6 +25,7 @@
   border-bottom: 1px solid #e2e8f0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  min-height: 140px; /* Ensure enough space for content */
 }
 
 .sidebar-user {
@@ -34,6 +35,11 @@
   margin-bottom: 1rem;
 }
 
+.sidebar.collapsed .sidebar-user {
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
 .user-avatar-sidebar {
   width: 40px;
   height: 40px;
@@ -41,6 +47,11 @@
   overflow: hidden;
   border: 2px solid rgba(255, 255, 255, 0.2);
   flex-shrink: 0;
+}
+
+.sidebar.collapsed .user-avatar-sidebar {
+  width: 32px;
+  height: 32px;
 }
 
 .user-avatar-sidebar img {
@@ -61,9 +72,18 @@
   color: white;
 }
 
+.sidebar.collapsed .avatar-placeholder {
+  font-size: 0.875rem;
+}
+
 .user-info-sidebar {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
+}
+
+.sidebar.collapsed .user-info-sidebar {
+  display: none;
 }
 
 .user-name {
@@ -74,6 +94,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
 .user-status {
@@ -82,6 +103,7 @@
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  line-height: 1.2;
 }
 
 .user-status::before {
@@ -91,12 +113,18 @@
   background: #22c55e;
   border-radius: 50%;
   animation: pulse 2s infinite;
+  flex-shrink: 0;
 }
 
 /* Quick Stats */
 .sidebar-quick-stats {
   display: flex;
   gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.sidebar.collapsed .sidebar-quick-stats {
+  display: none;
 }
 
 .quick-stat {
@@ -109,6 +137,10 @@
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+  justify-content: center;
 }
 
 /* Sidebar Navigation */
@@ -327,12 +359,12 @@
 
 /* Sidebar Toggle */
 .sidebar-toggle {
-  position: absolute;
-  top: 50%;
-  right: -12px;
-  transform: translateY(-50%);
-  width: 24px;
-  height: 24px;
+  position: fixed;
+  top: 80px; /* Move down to avoid navbar overlap */
+  left: 250px;
+  transform: none;
+  width: 36px; /* Slightly larger for better visibility */
+  height: 36px;
   border: 1px solid #e2e8f0;
   background: white;
   border-radius: 50%;
@@ -340,19 +372,26 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
   z-index: 1001;
+}
+
+.sidebar.collapsed + .sidebar-toggle {
+  left: 40px;
 }
 
 .sidebar-toggle:hover {
   background: #f8fafc;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  transform: scale(1.05);
 }
 
 .toggle-icon {
   color: #64748b;
-  transition: transform 0.2s ease;
+  transition: transform 0.3s ease;
+  width: 18px;
+  height: 18px;
 }
 
 .toggle-icon.rotated {
@@ -378,6 +417,20 @@
   .sidebar.collapsed {
     width: 60px;
   }
+  
+  .sidebar-header {
+    padding: 1.25rem 0.75rem;
+    min-height: 120px;
+  }
+  
+  .user-name {
+    font-size: 0.8125rem;
+  }
+  
+  .quick-stat {
+    font-size: 0.6875rem;
+    padding: 0.1875rem 0.375rem;
+  }
 }
 
 @media (max-width: 768px) {
@@ -394,6 +447,22 @@
   .sidebar.collapsed {
     width: 100%;
     max-width: 280px;
+  }
+  
+  .sidebar-toggle {
+    top: 70px;
+    width: 40px;
+    height: 40px;
+    left: 20px;
+  }
+  
+  .sidebar.collapsed + .sidebar-toggle {
+    left: 20px;
+  }
+  
+  .toggle-icon {
+    width: 20px;
+    height: 20px;
   }
 }
 
