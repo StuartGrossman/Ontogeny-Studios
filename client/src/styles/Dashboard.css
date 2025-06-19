@@ -46,10 +46,22 @@
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 999;
-  margin-left: 280px;
+  margin-left: 0;
   transition: margin-left 0.3s ease;
+}
+
+/* Navbar adjustments for sidebar states - applies to both admin and user views */
+.dashboard-navbar.with-sidebar {
+  margin-left: 280px;
+}
+
+.dashboard-navbar.with-sidebar-collapsed {
+  margin-left: 70px;
 }
 
 .dashboard-navbar.sidebar-collapsed {
@@ -3469,13 +3481,14 @@
 .user-dashboard-container {
   display: flex;
   height: 100vh;
+  margin-top: 80px; /* Account for fixed navbar */
 }
 
 .user-dashboard {
   flex: 1;
   margin-left: 280px;
   padding: 2rem;
-  padding-top: 6rem;
+  padding-top: 2rem; /* Reduced since container has margin-top */
   overflow-y: auto;
   transition: margin-left 0.3s ease;
 }

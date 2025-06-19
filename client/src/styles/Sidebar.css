@@ -26,6 +26,15 @@
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   min-height: 140px; /* Ensure enough space for content */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.sidebar.collapsed .sidebar-header {
+  min-height: 80px;
+  padding: 1rem 0.5rem;
+  align-items: center;
 }
 
 .sidebar-user {
@@ -37,7 +46,8 @@
 
 .sidebar.collapsed .sidebar-user {
   justify-content: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
+  gap: 0;
 }
 
 .user-avatar-sidebar {
@@ -50,8 +60,9 @@
 }
 
 .sidebar.collapsed .user-avatar-sidebar {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
+  border-width: 1px;
 }
 
 .user-avatar-sidebar img {
@@ -73,17 +84,23 @@
 }
 
 .sidebar.collapsed .avatar-placeholder {
-  font-size: 0.875rem;
+  font-size: 1rem;
 }
 
 .user-info-sidebar {
   flex: 1;
   min-width: 0;
   overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.3s ease;
 }
 
 .sidebar.collapsed .user-info-sidebar {
-  display: none;
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 .user-name {
@@ -121,10 +138,15 @@
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
+  opacity: 1;
+  transition: opacity 0.3s ease;
 }
 
 .sidebar.collapsed .sidebar-quick-stats {
-  display: none;
+  opacity: 0;
+  height: 0;
+  overflow: hidden;
+  margin: 0;
 }
 
 .quick-stat {
@@ -359,12 +381,11 @@
 
 /* Sidebar Toggle */
 .sidebar-toggle {
-  position: fixed;
-  top: 80px; /* Move down to avoid navbar overlap */
-  left: 250px;
-  transform: none;
-  width: 36px; /* Slightly larger for better visibility */
-  height: 36px;
+  position: absolute;
+  top: 20px; /* Positioned relative to sidebar */
+  right: -20px; /* Half outside the sidebar */
+  width: 40px; /* Larger for better usability */
+  height: 40px;
   border: 1px solid #e2e8f0;
   background: white;
   border-radius: 50%;
@@ -374,11 +395,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1001;
-}
-
-.sidebar.collapsed + .sidebar-toggle {
-  left: 40px;
+  z-index: 1002; /* Higher than sidebar */
 }
 
 .sidebar-toggle:hover {
@@ -390,8 +407,8 @@
 .toggle-icon {
   color: #64748b;
   transition: transform 0.3s ease;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
 }
 
 .toggle-icon.rotated {

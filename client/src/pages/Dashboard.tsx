@@ -1673,7 +1673,7 @@ const Dashboard: React.FC = () => {
         </div>
       )}
       {/* Top Navigation Bar */}
-      <nav className="dashboard-navbar">
+      <nav className={`dashboard-navbar ${!isAdmin ? (sidebarCollapsed ? 'with-sidebar-collapsed' : 'with-sidebar') : ''}`}>
         <div className="nav-left">
           <h1 className="nav-brand" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
             <img 
