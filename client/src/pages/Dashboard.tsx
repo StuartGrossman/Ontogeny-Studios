@@ -3,12 +3,210 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import AIChatModal from '../components/AIChatModal';
 import Footer from '../components/Footer';
-import { BarChart3, Users, DollarSign, Rocket, CheckCircle, ChevronDown, Settings, RefreshCw, Plus, User, FolderPlus, Calendar, FileText, Activity, TrendingUp, Clock, AlertCircle, Zap, Target, ArrowUp, ArrowDown, Eye, Edit3, MessageSquare } from 'lucide-react';
+import { BarChart3, Users, DollarSign, Rocket, CheckCircle, ChevronDown, Settings, RefreshCw, Plus, User, FolderPlus, Calendar, FileText, Activity, TrendingUp, Clock, AlertCircle, Zap, Target, ArrowUp, ArrowDown, Eye, Edit3, MessageSquare, Video, ChevronRight } from 'lucide-react';
 import ontogenyIcon from '../assets/otogeny-icon.png';
 import CreateProjectModal, { ProjectFormData } from '../components/modals/CreateProjectModal';
+import { ProjectDetailsModal, MeetingSchedulerModal, FeatureRequestModal, FeatureAssignmentModal } from '../components/modals';
 import '../styles/Dashboard.css';
+import '../styles/ProjectDetailsModal.css';
+import '../styles/MeetingSchedulerModal.css';
+import '../styles/FeatureRequestModal.css';
+import '../styles/FeatureAssignmentModal.css';
 import { doc, setDoc, getDoc, collection, getDocs, query, orderBy, addDoc, where } from 'firebase/firestore';
 import { db } from '../firebase';
+import { UserAvatar } from '../utils/avatarGenerator';
+import EditProjectModal from '../components/modals/EditProjectModal';
+import '../styles/EditProjectModal.css';
+
+// RequestedProjectFeatures component for collapsible feature display
+interface RequestedProjectFeaturesProps {
+  features: string;
+  requestId: string;
+}
+
+const RequestedProjectFeatures: React.FC<RequestedProjectFeaturesProps> = ({ features, requestId }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
+  const parseFeatures = (featuresText: string) => {
+    const featureLines = featuresText.split('\n').filter((f: string) => f.trim());
+    
+    // Enhanced categorization with more intelligent grouping
+    const categorized: { [key: string]: Array<{ text: string; priority: string; complexity: 'simple' | 'moderate' | 'complex' }> } = {
+      '🔐 Authentication & Security': [],
+      '💻 Core Functionality': [],
+      '🎨 User Interface & Design': [],
+      '🔗 Integrations & APIs': [],
+      '📊 Data & Analytics': [],
+      '🚀 Performance & Optimization': [],
+      '📱 Mobile & Responsive': [],
+      '🛠️ Admin & Management': [],
+      '🔔 Notifications & Communication': [],
+      '💳 Payment & Billing': [],
+      '📈 Reporting & Insights': [],
+      '🌐 Other Features': []
+    };
+
+    featureLines.forEach((feature: string) => {
+      const trimmedFeature = feature.trim();
+      const priorityMatch = trimmedFeature.match(/\((high|medium|low) priority\)$/i);
+      const featureText = priorityMatch 
+        ? trimmedFeature.replace(/\s*\((high|medium|low) priority\)$/i, '')
+        : trimmedFeature;
+      const priority = priorityMatch ? priorityMatch[1].toLowerCase() : 'medium';
+
+      // Determine complexity based on feature description
+      const complexity = determineComplexity(featureText);
+
+      // Enhanced categorization with more specific keywords
+      const lowerText = featureText.toLowerCase();
+      
+      if (lowerText.includes('login') || lowerText.includes('auth') || lowerText.includes('security') || 
+          lowerText.includes('password') || lowerText.includes('permission') || lowerText.includes('role') ||
+          lowerText.includes('encrypt') || lowerText.includes('2fa') || lowerText.includes('oauth')) {
+        categorized['🔐 Authentication & Security'].push({ text: featureText, priority, complexity });
+      } else if (lowerText.includes('payment') || lowerText.includes('billing') || lowerText.includes('subscription') ||
+                 lowerText.includes('invoice') || lowerText.includes('stripe') || lowerText.includes('paypal')) {
+        categorized['💳 Payment & Billing'].push({ text: featureText, priority, complexity });
+      } else if (lowerText.includes('notification') || lowerText.includes('email') || lowerText.includes('sms') ||
+                 lowerText.includes('push') || lowerText.includes('alert') || lowerText.includes('message')) {
+        categorized['🔔 Notifications & Communication'].push({ text: featureText, priority, complexity });
+      } else if (lowerText.includes('api') || lowerText.includes('integration') || lowerText.includes('connect') || 
+                 lowerText.includes('sync') || lowerText.includes('webhook') || lowerText.includes('third-party')) {
+        categorized['🔗 Integrations & APIs'].push({ text: featureText, priority, complexity });
+      } else if (lowerText.includes('ui') || lowerText.includes('interface') || lowerText.includes('design') || 
+                 lowerText.includes('theme') || lowerText.includes('layout') || lowerText.includes('style')) {
+        categorized['🎨 User Interface & Design'].push({ text: featureText, priority, complexity });
+      } else if (lowerText.includes('mobile') || lowerText.includes('responsive') || lowerText.includes('tablet') ||
+                 lowerText.includes('ios') || lowerText.includes('android') || lowerText.includes('app')) {
+        categorized['📱 Mobile & Responsive'].push({ text: featureText, priority, complexity });
+      } else if (lowerText.includes('admin') || lowerText.includes('management') || lowerText.includes('control') ||
+                 lowerText.includes('setting') || lowerText.includes('config') || lowerText.includes('moderate')) {
+        categorized['🛠️ Admin & Management'].push({ text: featureText, priority, complexity });
+      } else if (lowerText.includes('report') || lowerText.includes('analytics') || lowerText.includes('insight') ||
+                 lowerText.includes('metric') || lowerText.includes('chart') || lowerText.includes('graph')) {
+        categorized['📊 Data & Analytics'].push({ text: featureText, priority, complexity });
+      } else if (lowerText.includes('performance') || lowerText.includes('optimization') || lowerText.includes('cache') ||
+                 lowerText.includes('speed') || lowerText.includes('load') || lowerText.includes('compress')) {
+        categorized['🚀 Performance & Optimization'].push({ text: featureText, priority, complexity });
+      } else if (lowerText.includes('dashboard') || lowerText.includes('overview') || lowerText.includes('summary') ||
+                 lowerText.includes('status') || lowerText.includes('monitor')) {
+        categorized['📈 Reporting & Insights'].push({ text: featureText, priority, complexity });
+      } else if (lowerText.includes('core') || lowerText.includes('main') || lowerText.includes('primary') || 
+                 lowerText.includes('essential') || lowerText.includes('basic') || lowerText.includes('fundamental')) {
+        categorized['💻 Core Functionality'].push({ text: featureText, priority, complexity });
+      } else {
+        categorized['🌐 Other Features'].push({ text: featureText, priority, complexity });
+      }
+    });
+
+    // Remove empty categories and sort by priority within each category
+    return Object.entries(categorized)
+      .filter(([_, features]) => features.length > 0)
+      .map(([category, features]) => [
+        category, 
+        features.sort((a, b) => {
+          const priorityOrder = { high: 0, medium: 1, low: 2 };
+          return priorityOrder[a.priority as keyof typeof priorityOrder] - priorityOrder[b.priority as keyof typeof priorityOrder];
+        })
+      ]);
+  };
+
+  const determineComplexity = (featureText: string): 'simple' | 'moderate' | 'complex' => {
+    const lowerText = featureText.toLowerCase();
+    
+    // Complex features
+    if (lowerText.includes('ai') || lowerText.includes('machine learning') || lowerText.includes('blockchain') ||
+        lowerText.includes('real-time') || lowerText.includes('video') || lowerText.includes('streaming') ||
+        lowerText.includes('complex algorithm') || lowerText.includes('advanced')) {
+      return 'complex';
+    }
+    
+    // Simple features
+    if (lowerText.includes('button') || lowerText.includes('text') || lowerText.includes('color') ||
+        lowerText.includes('simple') || lowerText.includes('basic') || lowerText.includes('static')) {
+      return 'simple';
+    }
+    
+    // Default to moderate
+    return 'moderate';
+  };
+
+  const categorizedFeatures = parseFeatures(features);
+  const totalFeatures = categorizedFeatures.reduce((sum, [_, features]) => sum + features.length, 0);
+
+  const toggleCategory = (category: string) => {
+    const newExpanded = new Set(expandedCategories);
+    if (newExpanded.has(category)) {
+      newExpanded.delete(category);
+    } else {
+      newExpanded.add(category);
+    }
+    setExpandedCategories(newExpanded);
+  };
+
+  return (
+    <div className="project-features">
+      <div 
+        className="features-header clickable"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="features-title">
+          <Settings size={16} />
+          <strong>Requested Features</strong>
+          <span className="feature-count">({totalFeatures})</span>
+        </div>
+        <ChevronRight 
+          size={16} 
+          className={`expand-icon ${isExpanded ? 'expanded' : ''}`}
+        />
+      </div>
+      
+      {isExpanded && (
+        <div className="features-content">
+          {categorizedFeatures.map(([category, categoryFeatures]) => {
+            const categoryName = category as string;
+            const features = categoryFeatures as Array<{ text: string; priority: string; complexity: 'simple' | 'moderate' | 'complex' }>;
+            
+            return (
+              <div key={categoryName} className="feature-category">
+                <div 
+                  className="category-header"
+                  onClick={() => toggleCategory(categoryName)}
+                >
+                  <div className="category-title">
+                    <span className="category-name">{categoryName}</span>
+                    <span className="category-count">({features.length})</span>
+                  </div>
+                  <ChevronRight 
+                    size={14} 
+                    className={`category-expand-icon ${expandedCategories.has(categoryName) ? 'expanded' : ''}`}
+                  />
+                </div>
+                
+                {expandedCategories.has(categoryName) && (
+                  <div className="category-features">
+                    {features.map((feature, index) => (
+                      <div key={index} className="feature-item">
+                        <span className={`feature-priority priority-${feature.priority}`}>
+                          {feature.priority === 'high' ? '🔴' : feature.priority === 'medium' ? '🟡' : '🟢'}
+                        </span>
+                        <span className="feature-text">{feature.text}</span>
+                        <span className={`feature-complexity complexity-${feature.complexity}`} title={`${feature.complexity} complexity`}>
+                          {feature.complexity === 'complex' ? '⚡' : feature.complexity === 'moderate' ? '⚙️' : '✨'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const Dashboard: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -45,8 +243,28 @@ const Dashboard: React.FC = () => {
   const [requestedProjectsLoading, setRequestedProjectsLoading] = useState(false);
 
   // Feature request modal state
-  const [featureRequestOpen, setFeatureRequestOpen] = useState(false);
+
   const [selectedProjectForFeature, setSelectedProjectForFeature] = useState<any>(null);
+
+  // Edit project modal state
+  const [editProjectModalOpen, setEditProjectModalOpen] = useState(false);
+  const [selectedProjectForEdit, setSelectedProjectForEdit] = useState<any>(null);
+
+  // Three-modal workflow state
+  const [projectDetailsModalOpen, setProjectDetailsModalOpen] = useState(false);
+  const [meetingSchedulerModalOpen, setMeetingSchedulerModalOpen] = useState(false);
+  const [conversationData, setConversationData] = useState<any>(null);
+  const [projectDetails, setProjectDetails] = useState<any>(null);
+
+  // Feature request workflow state
+  const [featureRequestModalOpen, setFeatureRequestModalOpen] = useState(false);
+  const [featureAssignmentModalOpen, setFeatureAssignmentModalOpen] = useState(false);
+  const [featureConversationData, setFeatureConversationData] = useState<any>(null);
+  const [featureRequestData, setFeatureRequestData] = useState<any>(null);
+
+  // Alert system for new requests
+
+  const [showNewRequestsOnly, setShowNewRequestsOnly] = useState(false);
 
   // Check admin status
   React.useEffect(() => {
@@ -87,6 +305,8 @@ const Dashboard: React.FC = () => {
     }
   }, [isAdmin, currentUser]);
 
+
+
   const loadCustomerProjects = async () => {
     if (!currentUser) return;
     
@@ -95,14 +315,21 @@ const Dashboard: React.FC = () => {
       // Load projects assigned to the current user
       const projectsQuery = query(
         collection(db, 'admin_projects'),
-        where('assignedTo', '==', currentUser.uid),
-        orderBy('createdAt', 'desc')
+        where('assignedTo', '==', currentUser.uid)
+        // orderBy('createdAt', 'desc') // Temporarily removed - requires index
       );
       const snapshot = await getDocs(projectsQuery);
       const projects = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
+      
+      // Sort by createdAt on client side (since we removed orderBy for index issues)
+      projects.sort((a: any, b: any) => {
+        const aDate = a.createdAt?.seconds ? new Date(a.createdAt.seconds * 1000) : new Date(a.createdAt);
+        const bDate = b.createdAt?.seconds ? new Date(b.createdAt.seconds * 1000) : new Date(b.createdAt);
+        return bDate.getTime() - aDate.getTime();
+      });
       
       console.log(`Loaded ${projects.length} customer projects:`, projects);
       setCustomerProjects(projects);
@@ -136,14 +363,21 @@ const Dashboard: React.FC = () => {
       // Load projects requested by the current user
       const requestsQuery = query(
         collection(db, 'user_project_requests'),
-        where('requestedBy', '==', currentUser.uid),
-        orderBy('createdAt', 'desc')
+        where('requestedBy', '==', currentUser.uid)
+        // orderBy('createdAt', 'desc') // Temporarily removed - requires index
       );
       const snapshot = await getDocs(requestsQuery);
       const requests = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
+      
+      // Sort by createdAt on client side (since we removed orderBy for index issues)
+      requests.sort((a: any, b: any) => {
+        const aDate = a.createdAt?.seconds ? new Date(a.createdAt.seconds * 1000) : new Date(a.createdAt);
+        const bDate = b.createdAt?.seconds ? new Date(b.createdAt.seconds * 1000) : new Date(b.createdAt);
+        return bDate.getTime() - aDate.getTime();
+      });
       
       console.log(`Loaded ${requests.length} requested projects:`, requests);
       setRequestedProjects(requests);
@@ -193,12 +427,75 @@ const Dashboard: React.FC = () => {
         users.unshift(currentUserData); // Add current user to the beginning
         console.log('Added current user to users list');
       }
-      
-      setAllUsers(users);
+
+      // Check for uncompleted items for each user
+      const usersWithStatus = await Promise.all(
+        users.map(async (user) => {
+          try {
+            // Check for pending project requests
+            const projectRequestsRef = collection(db, 'user_project_requests');
+            const projectRequestsQuery = query(
+              projectRequestsRef,
+              where('requestedBy', '==', user.id),
+              where('status', 'in', ['pending', 'under-review'])
+            );
+            const projectRequestsSnapshot = await getDocs(projectRequestsQuery);
+            
+            // Check for pending feature requests
+            const featureRequestsRef = collection(db, 'feature_requests');
+            const featureRequestsQuery = query(
+              featureRequestsRef,
+              where('requestedBy', '==', user.id),
+              where('status', 'in', ['pending', 'under-review'])
+            );
+            const featureRequestsSnapshot = await getDocs(featureRequestsQuery);
+
+            // Check for in-progress projects
+            const adminProjectsRef = collection(db, 'admin_projects');
+            const adminProjectsQuery = query(
+              adminProjectsRef,
+              where('assignedTo', '==', user.id),
+              where('status', 'in', ['planning', 'in-progress'])
+            );
+            const adminProjectsSnapshot = await getDocs(adminProjectsQuery);
+
+            const pendingProjectRequests = projectRequestsSnapshot.size;
+            const pendingFeatureRequests = featureRequestsSnapshot.size;
+            const activeProjects = adminProjectsSnapshot.size;
+            const totalUncompletedItems = pendingProjectRequests + pendingFeatureRequests + activeProjects;
+
+            return {
+              ...user,
+              uncompletedItems: totalUncompletedItems,
+              hasUncompletedItems: totalUncompletedItems > 0,
+              pendingProjectRequests,
+              pendingFeatureRequests,
+              activeProjects
+            };
+          } catch (error) {
+            console.error(`Error checking uncompleted items for user ${user.id}:`, error);
+            return {
+              ...user,
+              uncompletedItems: 0,
+              hasUncompletedItems: false,
+              pendingProjectRequests: 0,
+              pendingFeatureRequests: 0,
+              activeProjects: 0
+            };
+          }
+        })
+      );
+
+      // Filter users based on showNewRequestsOnly
+      const filteredUsers = showNewRequestsOnly 
+        ? usersWithStatus.filter(user => user.hasUncompletedItems)
+        : usersWithStatus;
+
+      setAllUsers(filteredUsers);
       
       // Auto-select first user if none selected
-      if (users.length > 0 && !selectedUser) {
-        await handleUserSelect(users[0]);
+      if (filteredUsers.length > 0 && !selectedUser) {
+        await handleUserSelect(filteredUsers[0]);
       }
     } catch (error) {
       console.error('Error loading users with orderBy, trying fallback:', error);
@@ -251,8 +548,8 @@ const Dashboard: React.FC = () => {
       // Load admin-created projects assigned to user
       const adminProjectsQuery = query(
         collection(db, 'admin_projects'),
-        where('assignedTo', '==', user.id),
-        orderBy('createdAt', 'desc')
+        where('assignedTo', '==', user.id)
+        // orderBy('createdAt', 'desc') // Temporarily removed - requires index
       );
       const adminSnapshot = await getDocs(adminProjectsQuery);
       const adminProjects = adminSnapshot.docs.map(doc => ({
@@ -264,8 +561,8 @@ const Dashboard: React.FC = () => {
       // Load user-requested projects
       const requestedProjectsQuery = query(
         collection(db, 'user_project_requests'),
-        where('requestedBy', '==', user.id),
-        orderBy('createdAt', 'desc')
+        where('requestedBy', '==', user.id)
+        // orderBy('createdAt', 'desc') // Temporarily removed - requires index
       );
       const requestedSnapshot = await getDocs(requestedProjectsQuery);
       const requestedProjects = requestedSnapshot.docs.map(doc => ({
@@ -480,24 +777,50 @@ const Dashboard: React.FC = () => {
   };
 
   const openCustomerProjectModal = (project: any) => {
-    setModalContent(
-      <div className="modal-details">
-        <h2>{project.name}</h2>
-        <div className="modal-status">Status: {project.status.charAt(0).toUpperCase() + project.status.slice(1)}</div>
-        <div className="modal-progress">Progress: {project.progress}%</div>
-        <div className="modal-deadline">Deadline: {project.deadline}</div>
-        {project.link && <div className="modal-link">Project Link: <a href={project.link} target="_blank" rel="noopener noreferrer">{project.link}</a></div>}
-        {project.description && <div className="modal-description"><strong>Description:</strong> {project.description}</div>}
-        {project.features && <div className="modal-features"><strong>Features:</strong> {project.features}</div>}
-        <div className="modal-meta">Created by: {project.assignedUserName || 'Admin'}</div>
-      </div>
-    );
-    setModalOpen(true);
+    // Check if this is the current user's own project and if they are admin
+    const isOwnProject = project.assignedTo === currentUser?.uid;
+    const canEdit = isAdmin && isOwnProject;
+
+    if (canEdit) {
+      // Open edit modal for admin users editing their own projects
+      setSelectedProjectForEdit(project);
+      setEditProjectModalOpen(true);
+    } else {
+      // Show details modal for regular view
+      setModalContent(
+        <div className="modal-details">
+          <h2>{project.name}</h2>
+          <div className="modal-status">Status: {project.status.charAt(0).toUpperCase() + project.status.slice(1)}</div>
+          <div className="modal-progress">Progress: {project.progress}%</div>
+          <div className="modal-deadline">Deadline: {project.deadline}</div>
+          {project.link && <div className="modal-link">Project Link: <a href={project.link} target="_blank" rel="noopener noreferrer">{project.link}</a></div>}
+          {project.description && <div className="modal-description"><strong>Description:</strong> {project.description}</div>}
+          {project.features && <div className="modal-features"><strong>Features:</strong> {project.features}</div>}
+          <div className="modal-meta">Created by: {project.assignedUserName || 'Admin'}</div>
+          {canEdit && (
+            <div className="modal-actions">
+              <button 
+                className="btn-primary"
+                onClick={() => {
+                  closeModal();
+                  setSelectedProjectForEdit(project);
+                  setEditProjectModalOpen(true);
+                }}
+              >
+                <Edit3 size={16} />
+                Edit Project
+              </button>
+            </div>
+          )}
+        </div>
+      );
+      setModalOpen(true);
+    }
   };
 
   const handleFeatureRequest = (project: any) => {
     setSelectedProjectForFeature(project);
-    setFeatureRequestOpen(true);
+    setAiChatOpen(true); // Start with AI consultation for feature request
   };
 
   const generateProjectMetrics = (project: any) => {
@@ -522,48 +845,198 @@ const Dashboard: React.FC = () => {
 
   const openAdminProjectModal = (project: any) => {
     const isUserRequested = project.type === 'user-requested';
-    const createdDate = project.createdAt?.seconds 
-      ? new Date(project.createdAt.seconds * 1000).toLocaleDateString()
-      : new Date(project.createdAt).toLocaleDateString();
+    
+    if (isUserRequested) {
+      // For user-requested projects, show details modal
+      const createdDate = project.createdAt?.seconds 
+        ? new Date(project.createdAt.seconds * 1000).toLocaleDateString()
+        : new Date(project.createdAt).toLocaleDateString();
 
-    setModalContent(
-      <div className="modal-details">
-        <h2>{project.name || project.projectName}</h2>
-        <div className="modal-type">
-          <strong>Type:</strong> {isUserRequested ? 'User Requested' : 'Admin Created'}
-        </div>
-        <div className="modal-status">Status: {project.status.charAt(0).toUpperCase() + project.status.slice(1)}</div>
-        {!isUserRequested && <div className="modal-progress">Progress: {project.progress}%</div>}
-        {!isUserRequested && project.deadline && <div className="modal-deadline">Deadline: {project.deadline}</div>}
-        {!isUserRequested ? (
-          <div className="modal-assigned">Assigned to: {project.assignedUserName}</div>
-        ) : (
-          <div className="modal-requester">Requested by: {project.requestedByName}</div>
-        )}
-        {project.link && <div className="modal-link">Project Link: <a href={project.link} target="_blank" rel="noopener noreferrer">{project.link}</a></div>}
-        {project.description && <div className="modal-description"><strong>Description:</strong> {project.description}</div>}
-        {project.features && (
-          <div className="modal-features">
-            <strong>Features:</strong>
-            <div className="features-list">
-              {project.features.split('\n').filter((f: string) => f.trim()).map((feature: string, index: number) => (
-                <div key={index} className="feature-line">{feature}</div>
-              ))}
-            </div>
+      setModalContent(
+        <div className="modal-details">
+          <h2>{project.name || project.projectName}</h2>
+          <div className="modal-type">
+            <strong>Type:</strong> User Requested
           </div>
-        )}
-        {isUserRequested && project.priority && (
-          <div className="modal-priority"><strong>Priority:</strong> {project.priority}</div>
-        )}
-        <div className="modal-meta">Created: {createdDate}</div>
-      </div>
-    );
-    setModalOpen(true);
+          <div className="modal-status">Status: {project.status.charAt(0).toUpperCase() + project.status.slice(1)}</div>
+          <div className="modal-requester">Requested by: {project.requestedByName}</div>
+          {project.link && <div className="modal-link">Project Link: <a href={project.link} target="_blank" rel="noopener noreferrer">{project.link}</a></div>}
+          {project.description && <div className="modal-description"><strong>Description:</strong> {project.description}</div>}
+          {project.features && (
+            <div className="modal-features">
+              <strong>Features:</strong>
+              <div className="features-list">
+                {project.features.split('\n').filter((f: string) => f.trim()).map((feature: string, index: number) => (
+                  <div key={index} className="feature-line">{feature}</div>
+                ))}
+              </div>
+            </div>
+          )}
+          {project.priority && (
+            <div className="modal-priority"><strong>Priority:</strong> {project.priority}</div>
+          )}
+          <div className="modal-meta">Created: {createdDate}</div>
+        </div>
+      );
+      setModalOpen(true);
+    } else {
+      // For admin-created projects, open edit modal
+      setSelectedProjectForEdit(project);
+      setEditProjectModalOpen(true);
+    }
   };
 
   const closeModal = () => {
     setModalOpen(false);
     setModalContent(null);
+  };
+
+  const handleProjectUpdate = async () => {
+    // Refresh the projects for the selected user (admin view)
+    if (selectedUser) {
+      await handleUserSelect(selectedUser);
+    }
+    
+    // Also refresh customer projects if this is the current user's project
+    if (!isAdmin || (selectedUser && selectedUser.id === currentUser?.uid)) {
+      await loadCustomerProjects();
+    }
+  };
+
+  const closeEditProjectModal = () => {
+    setEditProjectModalOpen(false);
+    setSelectedProjectForEdit(null);
+  };
+
+  // Three-modal workflow handlers
+  const handleAIConsultationNextStep = (conversationData: any) => {
+    console.log('Moving to project details modal with conversation data:', conversationData);
+    setConversationData(conversationData);
+    setAiChatOpen(false);
+    setProjectDetailsModalOpen(true);
+  };
+
+  const handleProjectDetailsNextStep = (projectDetails: any) => {
+    console.log('Moving to meeting scheduler modal with project details:', projectDetails);
+    setProjectDetails(projectDetails);
+    setProjectDetailsModalOpen(false);
+    setMeetingSchedulerModalOpen(true);
+  };
+
+  const handleMeetingSchedulerComplete = async (meetingData: any) => {
+    console.log('Completing workflow with meeting data:', meetingData);
+    
+    try {
+      if (meetingData.type === 'meeting') {
+        // Save meeting data to Firebase
+        await addDoc(collection(db, 'scheduled_meetings'), {
+          ...meetingData,
+          userId: currentUser?.uid,
+          userEmail: currentUser?.email,
+          userName: currentUser?.displayName,
+          createdAt: new Date()
+        });
+        
+        console.log('Meeting scheduled successfully');
+        alert('Meeting scheduled successfully! You will receive a confirmation email shortly.');
+      } else {
+        // Submit project request directly
+        await addDoc(collection(db, 'user_project_requests'), {
+          projectName: meetingData.projectDetails.name,
+          description: meetingData.projectDetails.description,
+          features: meetingData.projectDetails.features,
+          priority: meetingData.projectDetails.priority,
+          timeline: meetingData.projectDetails.timeline,
+          budget: meetingData.projectDetails.budget,
+          requestedBy: currentUser?.uid,
+          requestedByName: currentUser?.displayName || currentUser?.email,
+          requestedByEmail: currentUser?.email,
+          status: 'requested',
+          conversationData: meetingData.projectDetails.conversationData,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+        
+        console.log('Project request submitted successfully');
+        alert('Project request submitted successfully! We will review your requirements and get back to you within 24 hours.');
+        
+        // Refresh requested projects
+        await loadRequestedProjects();
+      }
+    } catch (error) {
+      console.error('Error completing workflow:', error);
+      alert('There was an error processing your request. Please try again.');
+    }
+    
+    // Close all modals and reset state
+    setMeetingSchedulerModalOpen(false);
+    setProjectDetails(null);
+    setConversationData(null);
+  };
+
+  const handleCloseProjectWorkflow = () => {
+    // Close all modals and reset state
+    setAiChatOpen(false);
+    setProjectDetailsModalOpen(false);
+    setMeetingSchedulerModalOpen(false);
+    setProjectDetails(null);
+    setConversationData(null);
+  };
+
+  // Feature request workflow handlers
+  const handleFeatureConsultationNextStep = (conversationData: any) => {
+    setFeatureConversationData(conversationData);
+    setAiChatOpen(false);
+    setFeatureRequestModalOpen(true);
+  };
+
+  const handleFeatureDetailsNextStep = (featureData: any) => {
+    setFeatureRequestData(featureData);
+    setFeatureRequestModalOpen(false);
+    setFeatureAssignmentModalOpen(true);
+  };
+
+  const handleFeatureAssignmentComplete = async (assignmentData: any) => {
+    try {
+      // Save feature request to Firebase
+      const featureRequest = {
+        ...assignmentData,
+        requestedBy: currentUser?.uid,
+        requestedByName: currentUser?.displayName || currentUser?.email,
+        projectId: selectedProjectForFeature?.id,
+        projectName: selectedProjectForFeature?.name,
+        status: 'pending',
+        createdAt: new Date(),
+        type: 'feature-request'
+      };
+
+      await addDoc(collection(db, 'feature_requests'), featureRequest);
+      
+      alert('Feature request submitted successfully! You will receive updates on its progress.');
+      handleCloseFeatureWorkflow();
+      
+    } catch (error) {
+      console.error('Error submitting feature request:', error);
+      alert('Error submitting feature request. Please try again.');
+    }
+  };
+
+  const handleCloseFeatureWorkflow = () => {
+    setAiChatOpen(false);
+    setFeatureRequestModalOpen(false);
+    setFeatureAssignmentModalOpen(false);
+    setFeatureConversationData(null);
+    setFeatureRequestData(null);
+    setSelectedProjectForFeature(null);
+  };
+
+
+
+  // Toggle filter for users with uncompleted items
+  const toggleNewRequestsFilter = () => {
+    setShowNewRequestsOnly(!showNewRequestsOnly);
+    // Reload users with new filter
+    loadAllUsers();
   };
 
   return (
@@ -610,9 +1083,10 @@ const Dashboard: React.FC = () => {
               onClick={() => setDropdownOpen(!dropdownOpen)}
               style={{ cursor: 'pointer' }}
             >
-              <img 
-                src={currentUser?.photoURL || '/default-avatar.png'} 
-                alt="Profile" 
+              <UserAvatar
+                photoURL={currentUser?.photoURL}
+                displayName={currentUser?.displayName}
+                size={40}
                 className="user-avatar"
               />
               <span className="user-name">{currentUser?.displayName || 'User'}</span>
@@ -661,7 +1135,17 @@ const Dashboard: React.FC = () => {
                   <Users size={20} />
                   All Users
                 </h3>
-                <span className="user-count">{allUsers.length} users</span>
+                <div className="sidebar-controls">
+                  <span className="user-count">{allUsers.length} users</span>
+                  <button 
+                    className={`filter-btn ${showNewRequestsOnly ? 'active' : ''}`}
+                    onClick={toggleNewRequestsFilter}
+                    title="Filter users with uncompleted requests"
+                  >
+                    <AlertCircle size={16} />
+                    {showNewRequestsOnly ? 'Show All' : 'Uncompleted Items'}
+                  </button>
+                </div>
               </div>
               
               {usersLoading ? (
@@ -677,9 +1161,10 @@ const Dashboard: React.FC = () => {
                       className={`user-item ${selectedUser?.id === user.id ? 'selected' : ''}`}
                       onClick={() => handleUserSelect(user)}
                     >
-                      <img 
-                        src={user.photoURL || '/default-avatar.png'} 
-                        alt={user.displayName}
+                      <UserAvatar
+                        photoURL={user.photoURL}
+                        displayName={user.displayName}
+                        size={40}
                         className="user-item-avatar"
                       />
                       <div className="user-item-info">
@@ -689,6 +1174,11 @@ const Dashboard: React.FC = () => {
                           {user.isAdmin ? 'Admin' : 'User'}
                         </span>
                       </div>
+                      {user.hasUncompletedItems && (
+                        <div className="user-alert-badge" title={`${user.uncompletedItems} uncompleted items`}>
+                          {user.uncompletedItems}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -702,9 +1192,10 @@ const Dashboard: React.FC = () => {
                   {/* Selected User Header */}
                   <div className="selected-user-header">
                     <div className="user-profile">
-                      <img 
-                        src={selectedUser.photoURL || '/default-avatar.png'} 
-                        alt={selectedUser.displayName}
+                      <UserAvatar
+                        photoURL={selectedUser.photoURL}
+                        displayName={selectedUser.displayName}
+                        size={80}
                         className="selected-user-avatar"
                       />
                       <div className="user-details">
@@ -752,6 +1243,7 @@ const Dashboard: React.FC = () => {
                               key={project.id} 
                               className={`project-card-admin clickable ${isUserRequested ? 'user-requested' : 'admin-created'}`}
                               onClick={() => openAdminProjectModal(project)}
+                              title={isUserRequested ? 'Click to view details' : 'Click to edit project'}
                             >
                               <div className="project-header">
                                 <h4>{project.name || project.projectName}</h4>
@@ -762,6 +1254,12 @@ const Dashboard: React.FC = () => {
                                   <span className={`type-badge ${isUserRequested ? 'requested' : 'created'}`}>
                                     {isUserRequested ? 'User Request' : 'Admin Created'}
                                   </span>
+                                  {!isUserRequested && (
+                                    <span className="edit-indicator">
+                                      <Edit3 size={12} />
+                                      Editable
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                               
@@ -878,37 +1376,87 @@ const Dashboard: React.FC = () => {
                     <FileText size={20} />
                     Requested Projects
                   </h3>
-                  <span className="project-count">{requestedProjects.length} requests</span>
+                  <div className="request-summary">
+                    <span className="summary-item">
+                      <span className="summary-number">{requestedProjects.filter(r => r.status === 'pending').length}</span>
+                      <span className="summary-label">Pending</span>
+                    </span>
+                    <span className="summary-item">
+                      <span className="summary-number">{requestedProjects.filter(r => r.status === 'under-review').length}</span>
+                      <span className="summary-label">Under Review</span>
+                    </span>
+                    <span className="summary-item">
+                      <span className="summary-number">{requestedProjects.filter(r => r.status === 'approved').length}</span>
+                      <span className="summary-label">Approved</span>
+                    </span>
+                  </div>
                 </div>
-                <div className="requested-projects-grid">
-                  {requestedProjects.map((request) => (
-                    <div key={request.id} className="requested-project-card">
-                      <div className="requested-project-header">
-                        <h4>{request.projectName}</h4>
-                        <span className={`status-badge ${request.status}`}>
-                          {request.status}
-                        </span>
+                
+                {/* Group by priority */}
+                {['high', 'medium', 'low'].map(priority => {
+                  const projectsInPriority = requestedProjects.filter(r => r.priority === priority);
+                  if (projectsInPriority.length === 0) return null;
+                  
+                  return (
+                    <div key={priority} className="priority-group">
+                      <div className="priority-header">
+                        <div className="priority-indicator">
+                          <span className={`priority-dot ${priority}`}>
+                            {priority === 'high' ? '🔴' : priority === 'medium' ? '🟡' : '🟢'}
+                          </span>
+                          <h4>{priority.charAt(0).toUpperCase() + priority.slice(1)} Priority</h4>
+                        </div>
+                        <span className="priority-count">{projectsInPriority.length} {projectsInPriority.length === 1 ? 'request' : 'requests'}</span>
                       </div>
-                      <div className="requested-project-content">
-                        <p className="project-description">{request.description}</p>
-                        <div className="project-features">
-                          <strong>Requested Features:</strong>
-                          <div className="features-text">
-                            {request.features.split('\n').map((feature: string, index: number) => (
-                              <div key={index} className="feature-item">
-                                {feature}
+                      
+                      <div className="requested-projects-grid">
+                        {projectsInPriority.map((request) => (
+                          <div key={request.id} className={`requested-project-card priority-${priority}`}>
+                            <div className="requested-project-header">
+                              <div className="project-title-group">
+                                <h4>{request.projectName}</h4>
+                                <span className={`status-badge ${request.status}`}>
+                                  {request.status === 'pending' && <Clock size={12} />}
+                                  {request.status === 'under-review' && <Eye size={12} />}
+                                  {request.status === 'approved' && <CheckCircle size={12} />}
+                                  {request.status.replace('-', ' ')}
+                                </span>
                               </div>
-                            ))}
+                              <div className="request-timeline">
+                                <Calendar size={14} />
+                                <span>{new Date(request.createdAt.seconds * 1000).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                            
+                            <div className="requested-project-content">
+                              <div className="project-description">
+                                <p>{request.description}</p>
+                              </div>
+                              
+                              <RequestedProjectFeatures 
+                                features={request.features}
+                                requestId={request.id}
+                              />
+                              
+                              <div className="request-meta">
+                                <div className="meta-item">
+                                  <User size={14} />
+                                  <span>Requested by You</span>
+                                </div>
+                                {request.meetingScheduled && (
+                                  <div className="meta-item">
+                                    <Video size={14} />
+                                    <span>Meeting Scheduled</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        <div className="request-meta">
-                          <span>Requested: {new Date(request.createdAt.seconds * 1000).toLocaleDateString()}</span>
-                          <span>Priority: {request.priority}</span>
-                        </div>
+                        ))}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             ) : null}
 
@@ -958,9 +1506,9 @@ const Dashboard: React.FC = () => {
                               <button 
                                 className="action-btn-icon"
                                 onClick={() => openCustomerProjectModal(project)}
-                                title="View Details"
+                                title={isAdmin && project.assignedTo === currentUser?.uid ? "Edit Project" : "View Details"}
                               >
-                                <Eye size={16} />
+                                {isAdmin && project.assignedTo === currentUser?.uid ? <Edit3 size={16} /> : <Eye size={16} />}
                               </button>
                               <button 
                                 className="action-btn-icon feature-request"
@@ -1179,10 +1727,13 @@ const Dashboard: React.FC = () => {
       </div>
       
       {/* AI Chat Modal */}
-      <AIChatModal 
-        isOpen={aiChatOpen}
-        onClose={() => setAiChatOpen(false)}
-      />
+              <AIChatModal
+          isOpen={aiChatOpen}
+          onClose={selectedProjectForFeature ? handleCloseFeatureWorkflow : handleCloseProjectWorkflow}
+          onNextStep={selectedProjectForFeature ? handleFeatureConsultationNextStep : handleAIConsultationNextStep}
+          mode={selectedProjectForFeature ? 'feature-request' : 'project-request'}
+          project={selectedProjectForFeature}
+        />
 
       {/* Create Project Modal */}
       <CreateProjectModal
@@ -1192,13 +1743,53 @@ const Dashboard: React.FC = () => {
         userDisplayName={selectedUser?.displayName || ''}
       />
 
-      {/* Feature Request Modal (AI Chat for specific project) */}
-      <AIChatModal 
-        isOpen={featureRequestOpen}
-        onClose={() => {
-          setFeatureRequestOpen(false);
-          setSelectedProjectForFeature(null);
+      {/* Feature Request Workflow Modals */}
+      <FeatureRequestModal
+        isOpen={featureRequestModalOpen}
+        onClose={handleCloseFeatureWorkflow}
+        onNext={handleFeatureDetailsNextStep}
+        onBack={() => {
+          setFeatureRequestModalOpen(false);
+          setAiChatOpen(true);
         }}
+        conversationData={featureConversationData}
+        project={selectedProjectForFeature}
+      />
+
+      <FeatureAssignmentModal
+        isOpen={featureAssignmentModalOpen}
+        onClose={handleCloseFeatureWorkflow}
+        onSubmit={handleFeatureAssignmentComplete}
+        onBack={() => {
+          setFeatureAssignmentModalOpen(false);
+          setFeatureRequestModalOpen(true);
+        }}
+        featureData={featureRequestData}
+      />
+
+      {/* Edit Project Modal */}
+      {editProjectModalOpen && selectedProjectForEdit && (
+        <EditProjectModal
+          project={selectedProjectForEdit}
+          onClose={closeEditProjectModal}
+          onUpdate={handleProjectUpdate}
+        />
+      )}
+
+      {/* Project Details Modal */}
+      <ProjectDetailsModal
+        isOpen={projectDetailsModalOpen}
+        onClose={handleCloseProjectWorkflow}
+        onNextStep={handleProjectDetailsNextStep}
+        conversationData={conversationData}
+      />
+
+      {/* Meeting Scheduler Modal */}
+      <MeetingSchedulerModal
+        isOpen={meetingSchedulerModalOpen}
+        onClose={handleCloseProjectWorkflow}
+        onComplete={handleMeetingSchedulerComplete}
+        projectDetails={projectDetails}
       />
 
     </div>
