@@ -6,4 +6,5 @@ export { default as EditProjectModal } from './EditProjectModal';
 export { default as ProjectDetailsModal } from './ProjectDetailsModal';
 export { default as MeetingSchedulerModal } from './MeetingSchedulerModal';
 export { default as FeatureRequestModal } from './FeatureRequestModal';
-export { default as FeatureAssignmentModal } from './FeatureAssignmentModal'; 
+export { default as FeatureAssignmentModal } from './FeatureAssignmentModal';
+export { default as UserRequestedProjectModal } from './UserRequestedProjectModal'; 

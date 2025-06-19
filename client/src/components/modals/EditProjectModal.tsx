@@ -67,6 +67,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
   const [newTaskDueDate, setNewTaskDueDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
 
   // Generate task ID
   const generateTaskId = () => {
@@ -91,9 +92,40 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
     }));
   };
 
-  // Add new task
+  // Calculate progress based on completed tasks
+  const calculateProgressFromTasks = () => {
+    if (tasks.length === 0) return formData.progress;
+    const completedTasks = tasks.filter(task => task.completed).length;
+    return Math.round((completedTasks / tasks.length) * 100);
+  };
+
+  // Auto-update progress when tasks change
+  useEffect(() => {
+    if (tasks.length > 0) {
+      const autoProgress = calculateProgressFromTasks();
+      // Only auto-update if the difference is significant (more than 5%)
+      if (Math.abs(autoProgress - formData.progress) > 5) {
+        setFormData(prev => ({
+          ...prev,
+          progress: autoProgress
+        }));
+      }
+    }
+  }, [tasks]);
+
+  // Add new task with validation
   const addTask = () => {
     if (!newTaskTitle.trim()) return;
+    
+    // Check for duplicate task titles
+    const isDuplicate = tasks.some(task => 
+      task.title.toLowerCase().trim() === newTaskTitle.toLowerCase().trim()
+    );
+    
+    if (isDuplicate) {
+      setError('A task with this title already exists');
+      return;
+    }
 
     const newTask: Task = {
       id: generateTaskId(),
@@ -108,6 +140,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
     setNewTaskTitle('');
     setNewTaskDescription('');
     setNewTaskDueDate('');
+    setError(''); // Clear any existing errors
   };
 
   // Remove task
@@ -116,29 +149,40 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
   };
 
   // Toggle task completion
-  const toggleTaskCompletion = (taskId: string) => {
-    setTasks(prev => prev.map(task => 
+  const toggleTaskCompletion = async (taskId: string) => {
+    if (updatingTaskId === taskId) return; // Prevent double-clicks
+    
+    setUpdatingTaskId(taskId);
+    setError('');
+    
+    // Optimistic update
+    const updatedTasks = tasks.map(task => 
       task.id === taskId ? { ...task, completed: !task.completed } : task
-    ));
-  };
+    );
+    setTasks(updatedTasks);
 
-  // Calculate progress based on completed tasks
-  const calculateProgressFromTasks = () => {
-    if (tasks.length === 0) return formData.progress;
-    const completedTasks = tasks.filter(task => task.completed).length;
-    return Math.round((completedTasks / tasks.length) * 100);
-  };
-
-  // Auto-update progress when tasks change
-  useEffect(() => {
-    if (tasks.length > 0) {
-      const autoProgress = calculateProgressFromTasks();
+    try {
+      // Update progress based on new task completion
+      const completedTasks = updatedTasks.filter(task => task.completed).length;
+      const newProgress = updatedTasks.length > 0 ? Math.round((completedTasks / updatedTasks.length) * 100) : 0;
+      
       setFormData(prev => ({
         ...prev,
-        progress: autoProgress
+        progress: newProgress
       }));
+
+      // Here you could add Firebase update if needed
+      // await updateDoc(doc(db, 'admin_projects', project.id), { tasks: updatedTasks });
+      
+    } catch (error) {
+      console.error('Error updating task:', error);
+      setError('Failed to update task. Please try again.');
+      // Revert optimistic update
+      setTasks(tasks);
+    } finally {
+      setUpdatingTaskId(null);
     }
-  }, [tasks]);
+  };
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -146,11 +190,33 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
     setIsSubmitting(true);
     setError('');
 
+    // Form validation
+    if (!formData.name.trim()) {
+      setError('Project name is required');
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!formData.description.trim()) {
+      setError('Project description is required');
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (formData.deadline && new Date(formData.deadline) < new Date()) {
+      setError('Deadline cannot be in the past');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const projectRef = doc(db, 'admin_projects', project.id);
       
       const updateData = {
         ...formData,
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        features: formData.features.trim(),
         tasks: tasks,
         updatedAt: new Date(),
         progress: Math.min(100, Math.max(0, formData.progress))
@@ -399,15 +465,21 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
             {/* Tasks List */}
             <div className="tasks-list">
               {tasks.map((task) => (
-                <div key={task.id} className={`task-item ${task.completed ? 'completed' : ''}`}>
+                <div key={task.id} className={`task-item ${task.completed ? 'completed' : ''} ${updatingTaskId === task.id ? 'updating' : ''}`}>
                   <div className="task-content">
                     <button
                       type="button"
                       onClick={() => toggleTaskCompletion(task.id)}
                       className="task-checkbox"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || updatingTaskId === task.id}
                     >
-                      {task.completed ? <Check size={16} /> : <div className="checkbox-empty" />}
+                      {updatingTaskId === task.id ? (
+                        <div className="spinner" />
+                      ) : task.completed ? (
+                        <Check size={16} />
+                      ) : (
+                        <div className="checkbox-empty" />
+                      )}
                     </button>
                     <div className="task-details">
                       <div className="task-title">{task.title}</div>
