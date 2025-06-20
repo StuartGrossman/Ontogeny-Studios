@@ -6,7 +6,7 @@ const plansRoutes = require('./routes/plans');
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 3005; // Use port 3005
 
 // Middleware
 app.use(cors());
@@ -21,6 +21,8 @@ app.get('/api/health', (req, res) => {
 });
 
 // Start server
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+const server = app.listen(port, () => {
+  const actualPort = server.address().port;
+  console.log(`Server is running on port ${actualPort}`);
+  console.log(`Health check: http://localhost:${actualPort}/api/health`);
 }); 

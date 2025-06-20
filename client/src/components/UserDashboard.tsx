@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import ProjectRequestSection from './ProjectRequestSection';
 import RequestedProjectsSection from './RequestedProjectsSection';
 import ActiveProjectsSection from './ActiveProjectsSection';
+import MessagesSection from './MessagesSection';
 
 interface Project {
   id: string;
@@ -28,6 +30,7 @@ interface UserDashboardProps {
   onOpenAIChat: () => void;
   onOpenCustomerProject: (project: Project) => void;
   onFeatureRequest: (project: Project) => void;
+  onSidebarStateChange?: (collapsed: boolean) => void;
 }
 
 const UserDashboard: React.FC<UserDashboardProps> = ({
@@ -38,9 +41,11 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
   onOpenAIChat,
   onOpenCustomerProject,
   onFeatureRequest,
+  onSidebarStateChange,
 }) => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const navigate = useNavigate();
 
   const handleSectionChange = (section: string) => {
     setActiveSection(section);
@@ -48,6 +53,9 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
 
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
+    if (onSidebarStateChange) {
+      onSidebarStateChange(!sidebarCollapsed);
+    }
   };
 
   const renderSectionContent = () => {
@@ -132,12 +140,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
         );
       
       case 'messages':
-        return (
-          <div className="section-content">
-            <h2>Messages</h2>
-            <p>Communication and project updates will be displayed here.</p>
-          </div>
-        );
+        return <MessagesSection />;
       
       case 'profile':
         return (

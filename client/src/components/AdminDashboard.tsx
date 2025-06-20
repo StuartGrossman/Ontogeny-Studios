@@ -1,6 +1,8 @@
-import React from 'react';
-import { Users, RefreshCw, ArrowUp, ArrowDown, FolderPlus, Calendar, FileText, CheckCircle, Edit3 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Users, RefreshCw, ArrowUp, ArrowDown, FolderPlus, Calendar, FileText, CheckCircle, Edit3, MessageCircle } from 'lucide-react';
 import { UserAvatar } from '../utils/avatarGenerator';
+import { ChatModal } from './modals';
+import { useAuth } from '../contexts/AuthContext';
 
 interface User {
   id: string;
@@ -55,14 +57,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onCreateProject,
   onOpenAdminProject,
 }) => {
+  const { currentUser } = useAuth();
+  const [showMessageModal, setShowMessageModal] = useState(false);
   return (
     <div className="admin-dashboard">
       {/* User Management Sidebar (1/4 screen) */}
       <div className="admin-sidebar">
-        <div className="admin-sidebar-header">
+        <div className="sidebar-header">
           <div className="sidebar-title">
             <Users size={20} />
             <h3>User Management</h3>
+            {allUsers.some(user => user.hasUncompletedItems) && (
+              <span className="alert-badge">
+                {allUsers.filter(user => user.hasUncompletedItems).length}
+              </span>
+            )}
+          </div>
+          <div className="sidebar-controls">
             <span className="user-count">{allUsers.length} users</span>
             <div className="user-controls">
               <div className="search-container">
@@ -152,6 +163,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 >
                   <FolderPlus size={16} />
                   Create Project
+                </button>
+                <button 
+                  className="action-btn primary"
+                  onClick={() => setShowMessageModal(true)}
+                >
+                  <MessageCircle size={16} />
+                  Message
                 </button>
                 <button className="action-btn secondary">
                   <Calendar size={16} />
@@ -293,6 +311,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
       </div>
+
+      {/* Chat Modal */}
+      {selectedUser && currentUser && (
+        <ChatModal
+          isOpen={showMessageModal}
+          onClose={() => setShowMessageModal(false)}
+          recipient={{
+            id: selectedUser.id,
+            displayName: selectedUser.displayName,
+            email: selectedUser.email,
+            photoURL: selectedUser.photoURL
+          }}
+          currentUser={{
+            uid: currentUser.uid,
+            displayName: currentUser.displayName || undefined,
+            email: currentUser.email || undefined,
+            photoURL: currentUser.photoURL || undefined
+          }}
+        />
+      )}
     </div>
   );
 };

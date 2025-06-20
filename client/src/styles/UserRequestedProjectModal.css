@@ -3,8 +3,8 @@
   background: white;
   border-radius: 16px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-  max-width: 1200px;
-  width: 95vw;
+  max-width: 1400px;
+  width: 98vw;
   max-height: 95vh;
   overflow: hidden;
   display: flex;
@@ -65,6 +65,8 @@
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Project Overview */
@@ -304,12 +306,158 @@
   border-color: #dc2626;
 }
 
+/* Features Section Enhancements */
+.user-requested-modal .features-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.user-requested-modal .features-count {
+  background: #f1f5f9;
+  color: #64748b;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.user-requested-modal .add-feature-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.user-requested-modal .add-feature-input {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.user-requested-modal .new-feature-input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease;
+}
+
+.user-requested-modal .new-feature-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.user-requested-modal .add-feature-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.user-requested-modal .add-feature-btn:hover:not(:disabled) {
+  background: #5a67d8;
+}
+
+.user-requested-modal .add-feature-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.user-requested-modal .feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.user-requested-modal .delete-feature-btn {
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+}
+
+.user-requested-modal .delete-feature-btn:hover {
+  background: #fecaca;
+  transform: scale(1.05);
+}
+
+.user-requested-modal .feature-checkbox {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.user-requested-modal .feature-checkbox:hover {
+  transform: scale(1.1);
+}
+
 /* Notes Section */
 .user-requested-modal .notes-section {
   background: #fefefe;
   padding: 1.5rem;
   border-radius: 12px;
   border: 1px solid #e5e7eb;
+}
+
+.user-requested-modal .notes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.user-requested-modal .notes-info {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.user-requested-modal .notes-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.user-requested-modal .notes-status {
+  font-size: 0.75rem;
+  font-style: italic;
+  transition: color 0.2s ease;
+  color: #6b7280;
+}
+
+.user-requested-modal .notes-status.success {
+  color: #10b981;
+}
+
+.user-requested-modal .notes-status.warning {
+  color: #f59e0b;
 }
 
 .user-requested-modal .notes-section h3 {
@@ -397,6 +545,22 @@
   color: #dc2626;
   font-size: 0.875rem;
   margin-bottom: 1rem;
+  position: relative;
+}
+
+.user-requested-modal .error-dismiss {
+  background: none;
+  border: none;
+  color: #dc2626;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  margin-left: auto;
+  transition: background-color 0.2s ease;
+}
+
+.user-requested-modal .error-dismiss:hover {
+  background: rgba(220, 38, 38, 0.1);
 }
 
 /* Loading Spinner */

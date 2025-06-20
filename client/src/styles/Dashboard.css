@@ -110,6 +110,7 @@
 .nav-center {
   display: flex;
   gap: 1rem;
+  align-items: center;
 }
 
 .nav-tab {
@@ -222,13 +223,17 @@
 }
 
 .admin-toggle-item {
+  display: flex;
   justify-content: space-between;
-  padding: 1rem;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  gap: 0.75rem;
 }
 
 .dropdown-label {
   font-weight: 500;
-  color: #666;
+  color: #333;
+  font-size: 0.9rem;
 }
 
 .admin-toggle {
@@ -305,6 +310,10 @@
   display: flex;
   min-height: calc(100vh - 100px);
   gap: 2rem;
+  padding-top: 6rem; /* Account for fixed navbar height */
+  padding-left: 2rem;
+  padding-right: 2rem;
+  padding-bottom: 2rem;
 }
 
 /* Admin Sidebar (Fixed width for better project view) */
@@ -1511,6 +1520,123 @@
   letter-spacing: 0.5px;
 }
 
+/* Project Metrics Grid (Alternative layout) */
+.project-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.project-metrics-grid .metric-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.project-metrics-grid .metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.project-metrics-grid .metric-icon {
+  margin-bottom: 0.5rem;
+  color: #667eea;
+}
+
+.project-metrics-grid .metric-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.project-metrics-grid .metric-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.project-metrics-grid .metric-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+/* Risk level styling */
+.metric-icon.risk-low {
+  color: #10b981;
+}
+
+.metric-icon.risk-medium {
+  color: #f59e0b;
+}
+
+.metric-icon.risk-high {
+  color: #ef4444;
+}
+
+.metric-value.risk-low {
+  color: #10b981;
+}
+
+.metric-value.risk-medium {
+  color: #f59e0b;
+}
+
+.metric-value.risk-high {
+  color: #ef4444;
+}
+
+/* Enhanced project description */
+.enhanced-project-description {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 3px solid #667eea;
+}
+
+.enhanced-project-description p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.6;
+  font-size: 0.9rem;
+}
+
+/* Project timeline */
+.project-timeline {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem 0;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 1rem;
+}
+
+.timeline-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.timeline-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.timeline-date {
+  font-size: 0.875rem;
+  color: #1e293b;
+  font-weight: 500;
+}
+
 /* Enhanced Progress Section */
 .enhanced-progress-section {
   margin-bottom: 2rem;
@@ -1852,6 +1978,106 @@
   gap: 0.5rem;
   font-size: 0.875rem;
   color: #64748b;
+}
+
+/* Empty completed projects state */
+.empty-completed-projects {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  text-align: center;
+  color: #64748b;
+  margin-top: 1rem;
+}
+
+.empty-completed-projects .empty-state-icon {
+  margin-bottom: 1rem;
+  opacity: 0.6;
+}
+
+.empty-completed-projects h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.empty-completed-projects p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* Action buttons for project cards */
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.action-button.primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.action-button.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+}
+
+.action-button.secondary {
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.action-button.secondary:hover {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+/* View completed project button */
+.view-completed-btn {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 1rem;
+}
+
+.view-completed-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+/* Completed badge styling */
+.completed-badge {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 /* Requested Projects Section */
@@ -2885,12 +3111,13 @@
 .create-project-modal {
   background: white;
   border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   max-width: 600px;
   width: 90vw;
   max-height: 90vh;
   overflow-y: auto;
   animation: slideUp 0.3s ease-out;
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 @keyframes slideUp {
@@ -2980,18 +3207,20 @@
 .form-textarea {
   width: 100%;
   padding: 0.75rem 1rem;
-  border: 2px solid #e5e7eb;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
   font-size: 0.875rem;
   transition: all 0.3s ease;
   background: #ffffff;
+  font-family: inherit;
 }
 
 .form-input:focus,
 .form-textarea:focus {
   outline: none;
   border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.15);
+  background: #fefefe;
 }
 
 .form-input::placeholder,
@@ -3388,6 +3617,72 @@
 
 .project-form {
   padding: 0 2rem 2rem 2rem;
+}
+
+/* Professional Modal Styling - Remove Unwanted Highlighting */
+.create-project-modal *:not(input):not(textarea):not(button) {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.create-project-modal input,
+.create-project-modal textarea {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* Remove unwanted autofill highlighting */
+.create-project-modal input:-webkit-autofill,
+.create-project-modal input:-webkit-autofill:hover,
+.create-project-modal input:-webkit-autofill:focus,
+.create-project-modal input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px white inset !important;
+  -webkit-text-fill-color: #374151 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Improve focus states and remove unwanted highlighting */
+.create-project-modal .btn-primary:focus,
+.create-project-modal .btn-secondary:focus,
+.create-project-modal .modal-close-btn:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3) !important;
+}
+
+/* Remove default browser styling and div highlighting */
+.create-project-modal input:focus,
+.create-project-modal textarea:focus {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  outline: none !important;
+}
+
+/* Prevent text highlighting on all non-input elements */
+.create-project-modal .modal-title,
+.create-project-modal .modal-subtitle,
+.create-project-modal .form-label,
+.create-project-modal .modal-header,
+.create-project-modal .modal-actions {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Remove any div selection highlighting */
+.create-project-modal div:not(.form-group) {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 /* Progress Bars for Accepted Projects */

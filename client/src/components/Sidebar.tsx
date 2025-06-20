@@ -24,11 +24,13 @@ import {
   Target,
   TrendingUp,
   Zap,
-  Award
+  Award,
+  MessageCircle
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
+import { getUnreadMessageCount } from '../services/messagingService';
 import '../styles/Sidebar.css';
 
 interface SidebarProps {
@@ -66,11 +68,13 @@ const Sidebar: React.FC<SidebarProps> = ({
   });
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['projects']));
   const [notifications, setNotifications] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   useEffect(() => {
     if (currentUser) {
       loadProjectStats();
       loadNotifications();
+      loadUnreadMessages();
     }
   }, [currentUser]);
 
@@ -129,6 +133,16 @@ const Sidebar: React.FC<SidebarProps> = ({
     setNotifications(3);
   };
 
+  const loadUnreadMessages = () => {
+    if (!currentUser?.uid) return;
+
+    const unsubscribe = getUnreadMessageCount(currentUser.uid, (count) => {
+      setUnreadMessages(count);
+    });
+
+    return unsubscribe;
+  };
+
   const toggleSection = (section: string) => {
     const newExpanded = new Set(expandedSections);
     if (newExpanded.has(section)) {
@@ -180,6 +194,14 @@ const Sidebar: React.FC<SidebarProps> = ({
           badgeColor: 'green'
         }
       ]
+    },
+    {
+      id: 'messages',
+      label: 'Messages',
+      icon: MessageCircle,
+      description: 'Direct messages and conversations',
+      badge: unreadMessages > 0 ? unreadMessages : null,
+      badgeColor: 'red'
     },
     {
       id: 'statistics',

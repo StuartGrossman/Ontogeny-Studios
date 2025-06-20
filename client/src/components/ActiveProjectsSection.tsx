@@ -199,9 +199,9 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
       </div>
 
       {/* Completed Projects (Compact Cards) */}
-      {customerProjects.filter(p => p.status === 'completed').length > 0 && (
-        <div className="completed-projects-section">
-          <h3>Completed Projects</h3>
+      <div className="completed-projects-section">
+        <h3>Completed Projects</h3>
+        {customerProjects.filter(p => p.status === 'completed').length > 0 ? (
           <div className="completed-projects-grid">
             {customerProjects
               .filter(project => project.status === 'completed')
@@ -232,8 +232,16 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
                 </div>
               ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="empty-completed-projects">
+            <div className="empty-state-icon">
+              <Target size={48} />
+            </div>
+            <h4>No Completed Projects</h4>
+            <p>You don't have any completed projects yet. Once your active projects are finished, they'll appear here.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
