@@ -6,6 +6,17 @@
   backdrop-filter: blur(10px);
   position: relative;
   overflow: hidden;
+  margin-left: 0;
+  transition: margin-left 0.3s ease;
+}
+
+/* Footer adjustments for sidebar */
+.user-dashboard-container ~ .footer {
+  margin-left: 280px;
+}
+
+.user-dashboard-container.sidebar-collapsed ~ .footer {
+  margin-left: 70px;
 }
 
 .footer::before {

@@ -1,4 +1,12 @@
 export { default as LoginModal } from './LoginModal';
 export { default as SignupModal } from './SignupModal';
 export { default as CreateProjectModal } from './CreateProjectModal';
-export { default as UserManagementModal } from './UserManagementModal'; 
+export { default as UserManagementModal } from './UserManagementModal';
+export { default as EditProjectModal } from './EditProjectModal';
+export { default as ProjectDetailsModal } from './ProjectDetailsModal';
+export { default as MeetingSchedulerModal } from './MeetingSchedulerModal';
+export { default as FeatureRequestModal } from './FeatureRequestModal';
+export { default as FeatureAssignmentModal } from './FeatureAssignmentModal';
+export { default as UserRequestedProjectModal } from './UserRequestedProjectModal';
+export { default as SendMessageModal } from './SendMessageModal';
+export { default as ChatModal } from './ChatModal'; 

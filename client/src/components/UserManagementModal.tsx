@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { UserAvatar } from '../utils/avatarGenerator';
 import './UserManagementModal.css';
 
 interface User {
@@ -67,9 +68,12 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({ onClose }) =>
               {users.map(user => (
                 <div key={user.id} className="user-card">
                   <div className="user-info">
-                    {user.photoURL && (
-                      <img src={user.photoURL} alt={user.displayName} className="user-avatar" />
-                    )}
+                    <UserAvatar
+                      photoURL={user.photoURL}
+                      displayName={user.displayName}
+                      size={40}
+                      className="user-avatar"
+                    />
                     <div>
                       <h3 className="user-name">{user.displayName}</h3>
                       <p className="user-email">{user.email}</p>

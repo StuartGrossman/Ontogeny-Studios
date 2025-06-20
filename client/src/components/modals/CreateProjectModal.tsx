@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, FolderPlus, Link, FileText, User } from 'lucide-react';
+import { X, FolderPlus, Link, FileText, User, AlertCircle } from 'lucide-react';
 
 interface CreateProjectModalProps {
   isOpen: boolean;
@@ -29,6 +29,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -40,9 +41,15 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     
     if (!formData.name.trim()) {
-      alert('Project name is required');
+      setError('Project name is required');
+      return;
+    }
+
+    if (!formData.description.trim()) {
+      setError('Project description is required');
       return;
     }
 
@@ -56,10 +63,11 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         description: '',
         features: ''
       });
+      setError('');
       onClose();
     } catch (error) {
       console.error('Error creating project:', error);
-      alert('Failed to create project. Please try again.');
+      setError('Failed to create project. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -94,6 +102,14 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
           <User size={16} />
           <span>Creating project for: <strong>{userDisplayName}</strong></span>
         </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="error-message">
+            <AlertCircle size={16} />
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="project-form">
           <div className="form-group">
