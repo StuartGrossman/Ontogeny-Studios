@@ -296,6 +296,10 @@ const Examples: React.FC = () => {
     navigate(project.route);
   };
 
+  const filteredProjects = projects.filter(project => project.id !== 5 && project.id !== 6);
+  console.log('Filtered projects count:', filteredProjects.length);
+  console.log('Filtered projects:', filteredProjects.map(p => ({ id: p.id, title: p.title })));
+
   return (
     <>
       <div className="examples-page">
@@ -313,7 +317,7 @@ const Examples: React.FC = () => {
 
         {/* Projects Grid */}
         <div className="projects-grid">
-          {projects.map((project) => (
+          {filteredProjects.map((project) => (
             <div
               key={project.id}
               className="project-preview-card"
@@ -402,7 +406,7 @@ const Examples: React.FC = () => {
                   >
                     Go to Dashboard
                   </button>
-                  <button className="contact-button secondary">Schedule a Consultation</button>
+                  <button className="contact-button secondary">Login to Request a Project</button>
                 </>
               ) : (
                 <>
@@ -418,7 +422,7 @@ const Examples: React.FC = () => {
                     </svg>
                     Sign in with Google
                   </button>
-                  <button className="contact-button secondary">Schedule a Consultation</button>
+                  <button className="contact-button secondary">Login to Request a Project</button>
                 </>
               )}
             </div>

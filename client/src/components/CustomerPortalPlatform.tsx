@@ -7,7 +7,26 @@ import {
   Upload,
   File,
   FileCheck,
-  Folder
+  Folder,
+  Bell,
+  Settings,
+  User,
+  Download,
+  Eye,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  XCircle,
+  Plus,
+  Filter,
+  Star,
+  ThumbsUp,
+  Share2,
+  Printer,
+  Calendar,
+  TrendingUp,
+  BarChart3,
+  Activity
 } from 'lucide-react';
 import '../styles/CustomerPortalPlatform.css';
 
@@ -21,6 +40,9 @@ interface SupportTicket {
   description: string;
   responses: number;
   assignedAgent?: string;
+  category: string;
+  estimatedResolution?: string;
+  satisfaction?: number;
 }
 
 interface KnowledgeArticle {
@@ -32,6 +54,9 @@ interface KnowledgeArticle {
   lastUpdated: string;
   content: string;
   tags: string[];
+  author: string;
+  readTime: number;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
 }
 
 interface ChatMessage {
@@ -40,6 +65,8 @@ interface ChatMessage {
   message: string;
   timestamp: string;
   senderName: string;
+  avatar?: string;
+  type?: 'text' | 'file' | 'system';
 }
 
 interface Document {
@@ -50,6 +77,18 @@ interface Document {
   uploadDate: string;
   category: string;
   file?: File;
+  description?: string;
+  version?: string;
+  downloadCount?: number;
+}
+
+interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  timestamp: string;
+  read: boolean;
 }
 
 const CustomerPortalPlatform: React.FC = () => {
@@ -58,15 +97,21 @@ const CustomerPortalPlatform: React.FC = () => {
   const [knowledgeArticles, setKnowledgeArticles] = useState<KnowledgeArticle[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<KnowledgeArticle | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [newMessage, setNewMessage] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [ticketFilter, setTicketFilter] = useState('all');
+  const [articleCategory, setArticleCategory] = useState('all');
+  const [documentFilter, setDocumentFilter] = useState('all');
   
   // Modal states
   const [isCreateTicketModalOpen, setIsCreateTicketModalOpen] = useState(false);
   const [isUploadDocumentModalOpen, setIsUploadDocumentModalOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   
   // Form states
   const [newTicketForm, setNewTicketForm] = useState({
@@ -78,13 +123,14 @@ const CustomerPortalPlatform: React.FC = () => {
   
   const [uploadForm, setUploadForm] = useState({
     category: 'general',
-    description: ''
+    description: '',
+    version: '1.0'
   });
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  // Mock data
+  // Enhanced mock data
   const mockTickets: SupportTicket[] = [
     {
       id: 'TKT-001',
@@ -93,9 +139,12 @@ const CustomerPortalPlatform: React.FC = () => {
       priority: 'high',
       createdDate: '2024-03-15',
       lastUpdated: '2024-03-15',
-      description: 'Unable to log into the mobile application using my credentials.',
+      description: 'Unable to log into the mobile application using my credentials. The app shows an error message after entering valid login information.',
       responses: 2,
-      assignedAgent: 'Sarah Johnson'
+      assignedAgent: 'Sarah Johnson',
+      category: 'Technical Support',
+      estimatedResolution: '2024-03-16',
+      satisfaction: 4
     },
     {
       id: 'TKT-002',
@@ -104,9 +153,12 @@ const CustomerPortalPlatform: React.FC = () => {
       priority: 'medium',
       createdDate: '2024-03-14',
       lastUpdated: '2024-03-15',
-      description: 'Need clarification on premium plan pricing and features.',
+      description: 'Need clarification on premium plan pricing and features. Would like to understand the difference between plans.',
       responses: 3,
-      assignedAgent: 'Mike Chen'
+      assignedAgent: 'Mike Chen',
+      category: 'Billing',
+      estimatedResolution: '2024-03-17',
+      satisfaction: 5
     },
     {
       id: 'TKT-003',
@@ -115,8 +167,23 @@ const CustomerPortalPlatform: React.FC = () => {
       priority: 'low',
       createdDate: '2024-03-10',
       lastUpdated: '2024-03-14',
-      description: 'Request for dark mode theme option in the application.',
-      responses: 5
+      description: 'Request for dark mode theme option in the application to reduce eye strain during night usage.',
+      responses: 5,
+      category: 'Feature Request',
+      satisfaction: 5
+    },
+    {
+      id: 'TKT-004',
+      subject: 'Data Export Functionality',
+      status: 'closed',
+      priority: 'medium',
+      createdDate: '2024-03-08',
+      lastUpdated: '2024-03-12',
+      description: 'Need ability to export data in CSV format for external analysis.',
+      responses: 4,
+      assignedAgent: 'Lisa Wang',
+      category: 'Feature Request',
+      satisfaction: 4
     }
   ];
 
@@ -128,8 +195,11 @@ const CustomerPortalPlatform: React.FC = () => {
       views: 1205,
       helpful: 45,
       lastUpdated: '2024-03-10',
-      content: 'Step-by-step guide to reset your account password...',
-      tags: ['password', 'security', 'account']
+      content: 'Step-by-step guide to reset your account password securely...',
+      tags: ['password', 'security', 'account'],
+      author: 'Support Team',
+      readTime: 3,
+      difficulty: 'beginner'
     },
     {
       id: 'KB-002',
@@ -138,8 +208,11 @@ const CustomerPortalPlatform: React.FC = () => {
       views: 890,
       helpful: 38,
       lastUpdated: '2024-03-08',
-      content: 'Complete guide to navigating your customer dashboard...',
-      tags: ['dashboard', 'navigation', 'tutorial']
+      content: 'Complete guide to navigating your customer dashboard and utilizing all features...',
+      tags: ['dashboard', 'navigation', 'tutorial'],
+      author: 'Product Team',
+      readTime: 5,
+      difficulty: 'beginner'
     },
     {
       id: 'KB-003',
@@ -148,8 +221,24 @@ const CustomerPortalPlatform: React.FC = () => {
       views: 756,
       helpful: 42,
       lastUpdated: '2024-03-05',
-      content: 'Information about billing cycles and payment methods...',
-      tags: ['billing', 'payment', 'subscription']
+      content: 'Information about billing cycles, payment methods, and subscription management...',
+      tags: ['billing', 'payment', 'subscription'],
+      author: 'Finance Team',
+      readTime: 4,
+      difficulty: 'intermediate'
+    },
+    {
+      id: 'KB-004',
+      title: 'Advanced API Integration',
+      category: 'Technical',
+      views: 324,
+      helpful: 28,
+      lastUpdated: '2024-03-12',
+      content: 'Comprehensive guide for integrating with our API endpoints...',
+      tags: ['api', 'integration', 'technical'],
+      author: 'Engineering Team',
+      readTime: 15,
+      difficulty: 'advanced'
     }
   ];
 
@@ -159,21 +248,27 @@ const CustomerPortalPlatform: React.FC = () => {
       sender: 'agent',
       message: 'Hello! How can I help you today?',
       timestamp: '14:30',
-      senderName: 'Agent Sarah'
+      senderName: 'Agent Sarah',
+      avatar: '👩‍💼',
+      type: 'text'
     },
     {
       id: 'MSG-002',
       sender: 'customer',
       message: 'Hi, I\'m having trouble with my recent order.',
       timestamp: '14:32',
-      senderName: 'You'
+      senderName: 'You',
+      avatar: '👤',
+      type: 'text'
     },
     {
       id: 'MSG-003',
       sender: 'agent',
       message: 'I\'d be happy to help with that! Can you provide your order number?',
       timestamp: '14:33',
-      senderName: 'Agent Sarah'
+      senderName: 'Agent Sarah',
+      avatar: '👩‍💼',
+      type: 'text'
     }
   ];
 
@@ -184,7 +279,10 @@ const CustomerPortalPlatform: React.FC = () => {
       type: 'pdf',
       size: '2.4 MB',
       uploadDate: '2024-03-15',
-      category: 'Contracts'
+      category: 'Contracts',
+      description: 'Master service agreement document',
+      version: '2.1',
+      downloadCount: 15
     },
     {
       id: 'DOC-002',
@@ -192,15 +290,59 @@ const CustomerPortalPlatform: React.FC = () => {
       type: 'pdf',
       size: '5.1 MB',
       uploadDate: '2024-03-12',
-      category: 'Documentation'
+      category: 'Documentation',
+      description: 'Complete product usage manual',
+      version: '3.0',
+      downloadCount: 42
     },
     {
       id: 'DOC-003',
       name: 'Invoice_March_2024.pdf',
       type: 'pdf',
-      size: '1.2 MB',
+      size: '156 KB',
       uploadDate: '2024-03-01',
-      category: 'Billing'
+      category: 'Billing',
+      description: 'Monthly invoice for March 2024',
+      version: '1.0',
+      downloadCount: 8
+    },
+    {
+      id: 'DOC-004',
+      name: 'API_Documentation.pdf',
+      type: 'pdf',
+      size: '3.8 MB',
+      uploadDate: '2024-02-28',
+      category: 'Technical',
+      description: 'API integration documentation',
+      version: '4.2',
+      downloadCount: 23
+    }
+  ];
+
+  const mockNotifications: Notification[] = [
+    {
+      id: 'NOT-001',
+      title: 'Ticket Update',
+      message: 'Your support ticket TKT-001 has been updated',
+      type: 'info',
+      timestamp: '2 hours ago',
+      read: false
+    },
+    {
+      id: 'NOT-002',
+      title: 'Payment Successful',
+      message: 'Your monthly subscription payment has been processed',
+      type: 'success',
+      timestamp: '1 day ago',
+      read: false
+    },
+    {
+      id: 'NOT-003',
+      title: 'New Feature Available',
+      message: 'Dark mode is now available in your settings',
+      type: 'info',
+      timestamp: '3 days ago',
+      read: true
     }
   ];
 
@@ -209,6 +351,7 @@ const CustomerPortalPlatform: React.FC = () => {
     setKnowledgeArticles(mockKnowledgeArticles);
     setChatMessages(mockChatMessages);
     setDocuments(mockDocuments);
+    setNotifications(mockNotifications);
   }, []);
 
   // Handler functions
@@ -226,7 +369,8 @@ const CustomerPortalPlatform: React.FC = () => {
       status: 'open',
       createdDate: new Date().toISOString().split('T')[0],
       lastUpdated: new Date().toISOString().split('T')[0],
-      responses: 0
+      responses: 0,
+      category: newTicketForm.category
     };
 
     setTickets([newTicket, ...tickets]);
@@ -267,14 +411,18 @@ const CustomerPortalPlatform: React.FC = () => {
       size: `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB`,
       uploadDate: new Date().toISOString().split('T')[0],
       category: uploadForm.category,
-      file: selectedFile
+      file: selectedFile,
+      description: uploadForm.description,
+      version: uploadForm.version,
+      downloadCount: 0
     };
 
     setDocuments([newDocument, ...documents]);
     setSelectedFile(null);
     setUploadForm({
       category: 'general',
-      description: ''
+      description: '',
+      version: '1.0'
     });
     setIsUploadDocumentModalOpen(false);
     setActiveTab('documents');
@@ -291,7 +439,9 @@ const CustomerPortalPlatform: React.FC = () => {
         sender: 'customer',
         message: newMessage,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        senderName: 'You'
+        senderName: 'You',
+        avatar: '👤',
+        type: 'text'
       };
       setChatMessages([...chatMessages, message]);
       setNewMessage('');
@@ -303,7 +453,9 @@ const CustomerPortalPlatform: React.FC = () => {
           sender: 'agent',
           message: 'Thank you for your message. Let me look into that for you.',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          senderName: 'Agent Sarah'
+          senderName: 'Agent Sarah',
+          avatar: '👩‍💼',
+          type: 'text'
         };
         setChatMessages(prev => [...prev, agentResponse]);
       }, 2000);
@@ -353,7 +505,7 @@ const CustomerPortalPlatform: React.FC = () => {
           </div>
         </div>
         <div className="stat-card">
-                      <MessageCircle className="stat-icon" size={24} />
+          <MessageCircle className="stat-icon" size={24} />
           <div className="stat-content">
             <h3>Messages</h3>
             <div className="stat-number">5</div>
@@ -399,21 +551,84 @@ const CustomerPortalPlatform: React.FC = () => {
           <h3>Quick Actions</h3>
           <div className="action-buttons">
             <button className="action-btn" onClick={() => setIsCreateTicketModalOpen(true)}>
-              <span className="action-icon">📝</span>
-              Create Ticket
-            </button>
-            <button className="action-btn" onClick={() => setActiveTab('knowledge')}>
-              <Search className="action-icon" size={16} />
-              Search Knowledge Base
-            </button>
-            <button className="action-btn" onClick={() => setIsChatOpen(true)}>
-              <MessageCircle className="action-icon" size={16} />
-              Start Live Chat
+              <Plus className="action-icon" size={20} />
+              <span>Create Ticket</span>
             </button>
             <button className="action-btn" onClick={() => setIsUploadDocumentModalOpen(true)}>
-              <FileText className="action-icon" size={16} />
-              Upload Document
+              <Upload className="action-icon" size={20} />
+              <span>Upload Document</span>
             </button>
+            <button className="action-btn" onClick={() => setActiveTab('knowledge')}>
+              <FileText className="action-icon" size={20} />
+              <span>Browse Knowledge Base</span>
+            </button>
+            <button className="action-btn" onClick={() => setIsChatOpen(true)}>
+              <MessageCircle className="action-icon" size={20} />
+              <span>Start Chat</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="activity-overview">
+          <h3>Recent Activity</h3>
+          <div className="activity-feed">
+            <div className="activity-item">
+              <div className="activity-icon success">
+                <CheckCircle size={16} />
+              </div>
+              <div className="activity-content">
+                <p><strong>Ticket TKT-003</strong> was resolved</p>
+                <span className="activity-time">2 hours ago</span>
+              </div>
+            </div>
+            <div className="activity-item">
+              <div className="activity-icon info">
+                <Upload size={16} />
+              </div>
+              <div className="activity-content">
+                <p>New document <strong>Service Agreement.pdf</strong> uploaded</p>
+                <span className="activity-time">1 day ago</span>
+              </div>
+            </div>
+            <div className="activity-item">
+              <div className="activity-icon warning">
+                <Clock size={16} />
+              </div>
+              <div className="activity-content">
+                <p><strong>Ticket TKT-001</strong> is awaiting response</p>
+                <span className="activity-time">2 days ago</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="performance-metrics">
+          <h3>Account Performance</h3>
+          <div className="metrics-grid">
+            <div className="metric-card">
+              <div className="metric-header">
+                <TrendingUp className="metric-icon" size={20} />
+                <span>Response Time</span>
+              </div>
+              <div className="metric-value">2.3 hrs</div>
+              <div className="metric-change positive">↑ 15% faster</div>
+            </div>
+            <div className="metric-card">
+              <div className="metric-header">
+                <Star className="metric-icon" size={20} />
+                <span>Satisfaction</span>
+              </div>
+              <div className="metric-value">4.8/5</div>
+              <div className="metric-change positive">↑ 0.2 points</div>
+            </div>
+            <div className="metric-card">
+              <div className="metric-header">
+                <Activity className="metric-icon" size={20} />
+                <span>Resolution Rate</span>
+              </div>
+              <div className="metric-value">94%</div>
+              <div className="metric-change positive">↑ 3%</div>
+            </div>
           </div>
         </div>
       </div>
@@ -424,17 +639,58 @@ const CustomerPortalPlatform: React.FC = () => {
     <div className="tickets-section">
       <div className="section-header">
         <h2>Support Tickets</h2>
-        <button className="primary-btn" onClick={() => setIsCreateTicketModalOpen(true)}>Create New Ticket</button>
+        <div className="header-actions">
+          <div className="search-container">
+            <Search size={16} />
+            <input
+              type="text"
+              placeholder="Search tickets..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+          </div>
+          <button className="primary-btn" onClick={() => setIsCreateTicketModalOpen(true)}>
+            <Plus size={16} />
+            Create New Ticket
+          </button>
+        </div>
+      </div>
+
+      <div className="tickets-overview">
+        <div className="ticket-stats">
+          <div className="stat-item">
+            <div className="stat-value">{tickets.filter(t => t.status === 'open').length}</div>
+            <div className="stat-label">Open</div>
+          </div>
+          <div className="stat-item">
+            <div className="stat-value">{tickets.filter(t => t.status === 'in-progress').length}</div>
+            <div className="stat-label">In Progress</div>
+          </div>
+          <div className="stat-item">
+            <div className="stat-value">{tickets.filter(t => t.status === 'resolved').length}</div>
+            <div className="stat-label">Resolved</div>
+          </div>
+          <div className="stat-item">
+            <div className="stat-value">{tickets.filter(t => t.status === 'closed').length}</div>
+            <div className="stat-label">Closed</div>
+          </div>
+        </div>
       </div>
 
       <div className="tickets-container">
         <div className="tickets-list">
           <div className="filter-bar">
-            <select className="filter-select">
-              <option>All Statuses</option>
-              <option>Open</option>
-              <option>In Progress</option>
-              <option>Resolved</option>
+            <select 
+              className="filter-select" 
+              value={ticketFilter} 
+              onChange={(e) => setTicketFilter(e.target.value)}
+            >
+              <option value="all">All Statuses</option>
+              <option value="open">Open</option>
+              <option value="in-progress">In Progress</option>
+              <option value="resolved">Resolved</option>
+              <option value="closed">Closed</option>
             </select>
             <select className="filter-select">
               <option>All Priorities</option>
@@ -443,9 +699,25 @@ const CustomerPortalPlatform: React.FC = () => {
               <option>Medium</option>
               <option>Low</option>
             </select>
+            <select className="filter-select">
+              <option>All Categories</option>
+              <option>Technical Support</option>
+              <option>Billing</option>
+              <option>Feature Request</option>
+              <option>General</option>
+            </select>
           </div>
 
-          {tickets.map(ticket => (
+          {tickets
+            .filter(ticket => {
+              const matchesFilter = ticketFilter === 'all' || ticket.status === ticketFilter;
+              const matchesSearch = searchQuery === '' || 
+                ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                ticket.id.toLowerCase().includes(searchQuery.toLowerCase());
+              return matchesFilter && matchesSearch;
+            })
+            .map(ticket => (
             <div 
               key={ticket.id} 
               className={`ticket-card ${selectedTicket?.id === ticket.id ? 'selected' : ''}`}
@@ -461,13 +733,32 @@ const CustomerPortalPlatform: React.FC = () => {
                     {ticket.priority}
                   </span>
                 </div>
-                <span className="ticket-date">{ticket.createdDate}</span>
+                <div className="ticket-meta-right">
+                  <span className="ticket-category">{ticket.category}</span>
+                  <span className="ticket-date">{ticket.createdDate}</span>
+                </div>
               </div>
               <h4 className="ticket-subject">{ticket.subject}</h4>
-              <p className="ticket-description">{ticket.description}</p>
+              <p className="ticket-description">{ticket.description.substring(0, 120)}...</p>
               <div className="ticket-footer">
-                <span>Responses: {ticket.responses}</span>
-                {ticket.assignedAgent && <span>Assigned to: {ticket.assignedAgent}</span>}
+                <div className="ticket-stats">
+                  <span><MessageCircle size={14} /> {ticket.responses}</span>
+                  {ticket.assignedAgent && <span><User size={14} /> {ticket.assignedAgent}</span>}
+                  {ticket.estimatedResolution && (
+                    <span><Calendar size={14} /> Est: {ticket.estimatedResolution}</span>
+                  )}
+                </div>
+                {ticket.satisfaction && (
+                  <div className="satisfaction-rating">
+                    {[...Array(5)].map((_, i) => (
+                      <Star 
+                        key={i} 
+                        size={12} 
+                        className={i < ticket.satisfaction! ? 'filled' : 'empty'} 
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -528,6 +819,7 @@ const CustomerPortalPlatform: React.FC = () => {
       <div className="section-header">
         <h2>Knowledge Base</h2>
         <div className="search-container">
+          <Search size={16} />
           <input
             type="text"
             placeholder="Search articles..."
@@ -538,41 +830,106 @@ const CustomerPortalPlatform: React.FC = () => {
         </div>
       </div>
 
+      <div className="knowledge-stats">
+        <div className="kb-stat">
+          <BarChart3 className="kb-stat-icon" size={20} />
+          <div className="kb-stat-content">
+            <div className="kb-stat-value">{knowledgeArticles.length}</div>
+            <div className="kb-stat-label">Articles</div>
+          </div>
+        </div>
+        <div className="kb-stat">
+          <Eye className="kb-stat-icon" size={20} />
+          <div className="kb-stat-content">
+            <div className="kb-stat-value">{knowledgeArticles.reduce((sum, article) => sum + article.views, 0).toLocaleString()}</div>
+            <div className="kb-stat-label">Total Views</div>
+          </div>
+        </div>
+        <div className="kb-stat">
+          <ThumbsUp className="kb-stat-icon" size={20} />
+          <div className="kb-stat-content">
+            <div className="kb-stat-value">{knowledgeArticles.reduce((sum, article) => sum + article.helpful, 0)}</div>
+            <div className="kb-stat-label">Helpful Votes</div>
+          </div>
+        </div>
+      </div>
+
       <div className="knowledge-container">
         <div className="articles-list">
           <div className="category-filter">
-            <button className="category-btn active">All Categories</button>
-            <button className="category-btn">Getting Started</button>
-            <button className="category-btn">Account Management</button>
-            <button className="category-btn">Billing</button>
-            <button className="category-btn">Technical</button>
+            <button 
+              className={`category-btn ${articleCategory === 'all' ? 'active' : ''}`}
+              onClick={() => setArticleCategory('all')}
+            >
+              All Categories
+            </button>
+            <button 
+              className={`category-btn ${articleCategory === 'Getting Started' ? 'active' : ''}`}
+              onClick={() => setArticleCategory('Getting Started')}
+            >
+              Getting Started
+            </button>
+            <button 
+              className={`category-btn ${articleCategory === 'Account Management' ? 'active' : ''}`}
+              onClick={() => setArticleCategory('Account Management')}
+            >
+              Account Management
+            </button>
+            <button 
+              className={`category-btn ${articleCategory === 'Billing' ? 'active' : ''}`}
+              onClick={() => setArticleCategory('Billing')}
+            >
+              Billing
+            </button>
+            <button 
+              className={`category-btn ${articleCategory === 'Technical' ? 'active' : ''}`}
+              onClick={() => setArticleCategory('Technical')}
+            >
+              Technical
+            </button>
           </div>
 
           {knowledgeArticles
-            .filter(article => 
-              searchQuery === '' || 
-              article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              article.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-            )
+            .filter(article => {
+              const matchesCategory = articleCategory === 'all' || article.category === articleCategory;
+              const matchesSearch = searchQuery === '' || 
+                article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                article.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                article.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+              return matchesCategory && matchesSearch;
+            })
             .map(article => (
             <div 
               key={article.id} 
               className={`article-card ${selectedArticle?.id === article.id ? 'selected' : ''}`}
               onClick={() => setSelectedArticle(article)}
             >
-              <h4 className="article-title">{article.title}</h4>
+              <div className="article-header">
+                <h4 className="article-title">{article.title}</h4>
+                <div className="article-difficulty">
+                  <span className={`difficulty-badge ${article.difficulty}`}>
+                    {article.difficulty}
+                  </span>
+                </div>
+              </div>
               <div className="article-meta">
                 <span className="article-category">{article.category}</span>
-                <span className="article-stats">
-                  👁️ {article.views} • 👍 {article.helpful}
+                <span className="article-author">By {article.author}</span>
+                <span className="article-read-time">
+                  <Clock size={12} /> {article.readTime} min read
                 </span>
+              </div>
+              <p className="article-preview">{article.content.substring(0, 100)}...</p>
+              <div className="article-stats">
+                <span><Eye size={14} /> {article.views.toLocaleString()}</span>
+                <span><ThumbsUp size={14} /> {article.helpful}</span>
+                <span className="article-updated">Updated {article.lastUpdated}</span>
               </div>
               <div className="article-tags">
                 {article.tags.map(tag => (
-                  <span key={tag} className="tag">{tag}</span>
+                  <span key={tag} className="tag">#{tag}</span>
                 ))}
               </div>
-              <div className="article-updated">Updated: {article.lastUpdated}</div>
             </div>
           ))}
         </div>
@@ -608,27 +965,111 @@ const CustomerPortalPlatform: React.FC = () => {
     <div className="documents-section">
       <div className="section-header">
         <h2>My Documents</h2>
-        <button className="primary-btn" onClick={() => setIsUploadDocumentModalOpen(true)}>Upload Document</button>
+        <div className="header-actions">
+          <div className="search-container">
+            <Search size={16} />
+            <input
+              type="text"
+              placeholder="Search documents..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+          </div>
+          <select 
+            className="filter-select" 
+            value={documentFilter} 
+            onChange={(e) => setDocumentFilter(e.target.value)}
+          >
+            <option value="all">All Categories</option>
+            <option value="Contracts">Contracts</option>
+            <option value="Documentation">Documentation</option>
+            <option value="Billing">Billing</option>
+            <option value="Technical">Technical</option>
+          </select>
+          <button className="primary-btn" onClick={() => setIsUploadDocumentModalOpen(true)}>
+            <Upload size={16} />
+            Upload Document
+          </button>
+        </div>
+      </div>
+
+      <div className="documents-overview">
+        <div className="doc-stats">
+          <div className="doc-stat">
+            <File className="doc-stat-icon" size={20} />
+            <div className="doc-stat-content">
+              <div className="doc-stat-value">{documents.length}</div>
+              <div className="doc-stat-label">Total Documents</div>
+            </div>
+          </div>
+          <div className="doc-stat">
+            <Download className="doc-stat-icon" size={20} />
+            <div className="doc-stat-content">
+              <div className="doc-stat-value">{documents.reduce((sum, doc) => sum + (doc.downloadCount || 0), 0)}</div>
+              <div className="doc-stat-label">Total Downloads</div>
+            </div>
+          </div>
+          <div className="doc-stat">
+            <FolderOpen className="doc-stat-icon" size={20} />
+            <div className="doc-stat-content">
+              <div className="doc-stat-value">{new Set(documents.map(doc => doc.category)).size}</div>
+              <div className="doc-stat-label">Categories</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="documents-grid">
-        {documents.map(doc => (
+        {documents
+          .filter(doc => {
+            const matchesCategory = documentFilter === 'all' || doc.category === documentFilter;
+            const matchesSearch = searchQuery === '' || 
+              doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              (doc.description && doc.description.toLowerCase().includes(searchQuery.toLowerCase()));
+            return matchesCategory && matchesSearch;
+          })
+          .map(doc => (
           <div key={doc.id} className="document-card">
-            <div className="document-icon">
-                              {doc.type === 'pdf' ? <FileText size={16} /> : doc.type === 'doc' ? <FileCheck size={16} /> : <Folder size={16} />}
+            <div className="document-header">
+              <div className="document-icon">
+                {doc.type === 'pdf' ? <FileText size={24} /> : 
+                 doc.type === 'doc' ? <FileCheck size={24} /> : 
+                 doc.type === 'image' ? <File size={24} /> : 
+                 <Folder size={24} />}
+              </div>
+              <div className="document-category-badge">{doc.category}</div>
             </div>
             <div className="document-info">
               <h4 className="document-name">{doc.name}</h4>
+              {doc.description && (
+                <p className="document-description">{doc.description}</p>
+              )}
               <div className="document-meta">
                 <span className="document-size">{doc.size}</span>
-                <span className="document-date">{doc.uploadDate}</span>
+                <span className="document-date">
+                  <Calendar size={12} /> {doc.uploadDate}
+                </span>
+                {doc.version && (
+                  <span className="document-version">v{doc.version}</span>
+                )}
               </div>
-              <span className="document-category">{doc.category}</span>
+              {doc.downloadCount !== undefined && (
+                <div className="document-stats">
+                  <span><Download size={12} /> {doc.downloadCount} downloads</span>
+                </div>
+              )}
             </div>
             <div className="document-actions">
-              <button className="doc-action-btn">👁️</button>
-              <button className="doc-action-btn">⬇️</button>
-              <button className="doc-action-btn">🗑️</button>
+              <button className="doc-action-btn view" title="View">
+                <Eye size={16} />
+              </button>
+              <button className="doc-action-btn download" title="Download">
+                <Download size={16} />
+              </button>
+              <button className="doc-action-btn share" title="Share">
+                <Share2 size={16} />
+              </button>
             </div>
           </div>
         ))}
@@ -645,37 +1086,83 @@ const CustomerPortalPlatform: React.FC = () => {
             Your personalized dashboard for support, resources, and account management
           </p>
         </div>
-        <div className="portal-tabs">
-          <button
-            className={`tab-button ${activeTab === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setActiveTab('dashboard')}
-          >
-            Dashboard
-          </button>
-          <button
-            className={`tab-button ${activeTab === 'tickets' ? 'active' : ''}`}
-            onClick={() => setActiveTab('tickets')}
-          >
-            Support
-          </button>
-          <button
-            className={`tab-button ${activeTab === 'knowledge' ? 'active' : ''}`}
-            onClick={() => setActiveTab('knowledge')}
-          >
-            Knowledge Base
-          </button>
-          <button
-            className={`tab-button ${activeTab === 'documents' ? 'active' : ''}`}
-            onClick={() => setActiveTab('documents')}
-          >
-            Documents
-          </button>
-          <button
-            className={`tab-button ${activeTab === 'analytics' ? 'active' : ''}`}
-            onClick={() => setActiveTab('analytics')}
-          >
-            Analytics
-          </button>
+        <div className="portal-header-actions">
+          <div className="portal-tabs">
+            <button
+              className={`tab-button ${activeTab === 'dashboard' ? 'active' : ''}`}
+              onClick={() => setActiveTab('dashboard')}
+            >
+              Dashboard
+            </button>
+            <button
+              className={`tab-button ${activeTab === 'tickets' ? 'active' : ''}`}
+              onClick={() => setActiveTab('tickets')}
+            >
+              Support
+            </button>
+            <button
+              className={`tab-button ${activeTab === 'knowledge' ? 'active' : ''}`}
+              onClick={() => setActiveTab('knowledge')}
+            >
+              Knowledge Base
+            </button>
+            <button
+              className={`tab-button ${activeTab === 'documents' ? 'active' : ''}`}
+              onClick={() => setActiveTab('documents')}
+            >
+              Documents
+            </button>
+            <button
+              className={`tab-button ${activeTab === 'analytics' ? 'active' : ''}`}
+              onClick={() => setActiveTab('analytics')}
+            >
+              Analytics
+            </button>
+          </div>
+          <div className="portal-user-actions">
+            <div className="notification-center">
+              <button 
+                className={`notification-btn ${notifications.some(n => !n.read) ? 'has-unread' : ''}`}
+                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+              >
+                <Bell size={20} />
+                {notifications.some(n => !n.read) && (
+                  <span className="notification-badge">{notifications.filter(n => !n.read).length}</span>
+                )}
+              </button>
+              {isNotificationsOpen && (
+                <div className="notification-dropdown">
+                  <div className="notification-header">
+                    <h3>Notifications</h3>
+                    <button onClick={() => setIsNotificationsOpen(false)}>×</button>
+                  </div>
+                  <div className="notification-list">
+                    {notifications.map(notification => (
+                      <div key={notification.id} className={`notification-item ${notification.read ? 'read' : 'unread'}`}>
+                        <div className={`notification-icon ${notification.type}`}>
+                          {notification.type === 'success' && <CheckCircle size={16} />}
+                          {notification.type === 'info' && <AlertCircle size={16} />}
+                          {notification.type === 'warning' && <AlertCircle size={16} />}
+                          {notification.type === 'error' && <XCircle size={16} />}
+                        </div>
+                        <div className="notification-content">
+                          <h4>{notification.title}</h4>
+                          <p>{notification.message}</p>
+                          <span className="notification-time">{notification.timestamp}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <button 
+              className="profile-btn"
+              onClick={() => setIsProfileModalOpen(true)}
+            >
+              <User size={20} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -687,16 +1174,27 @@ const CustomerPortalPlatform: React.FC = () => {
         {activeTab === 'analytics' && renderDashboard()}
       </div>
 
-      {/* Live Chat Widget */}
+      {/* Enhanced Live Chat Widget */}
       {isChatOpen && (
         <div className="chat-widget">
           <div className="chat-header">
-            <span>Live Chat Support</span>
-            <button className="chat-close" onClick={() => setIsChatOpen(false)}>✕</button>
+            <div className="chat-agent-info">
+              <div className="agent-avatar">👩‍💼</div>
+              <div className="agent-details">
+                <span className="agent-name">Agent Sarah</span>
+                <span className="agent-status online">Online</span>
+              </div>
+            </div>
+            <button className="chat-close" onClick={() => setIsChatOpen(false)}>
+              <XCircle size={20} />
+            </button>
           </div>
           <div className="chat-messages">
             {chatMessages.map(message => (
               <div key={message.id} className={`chat-message ${message.sender}`}>
+                <div className="message-avatar">
+                  {message.avatar}
+                </div>
                 <div className="message-content">
                   <div className="message-text">{message.message}</div>
                   <div className="message-meta">
@@ -715,15 +1213,21 @@ const CustomerPortalPlatform: React.FC = () => {
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
             />
-            <button onClick={handleSendMessage}>Send</button>
+            <button onClick={handleSendMessage} className="send-btn">
+              <span>Send</span>
+            </button>
+          </div>
+          <div className="chat-footer">
+            <span className="typing-indicator">Agent is typing...</span>
           </div>
         </div>
       )}
 
-      {/* Chat Button */}
+      {/* Enhanced Chat Button */}
       {!isChatOpen && (
         <button className="chat-button" onClick={() => setIsChatOpen(true)}>
-                          <MessageCircle size={16} />
+          <MessageCircle size={20} />
+          <span className="chat-tooltip">Need help? Chat with us!</span>
         </button>
       )}
 

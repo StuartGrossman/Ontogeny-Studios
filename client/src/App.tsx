@@ -52,24 +52,52 @@ const Main: React.FC = () => {
       codeContent.scrollTop = 0;
       
       let scrollInterval: NodeJS.Timeout;
+      let resetTimeout: NodeJS.Timeout;
+      let startTime: number;
       
-      // Force a small delay to ensure DOM is ready
-      const initDelay = setTimeout(() => {
-        // Auto-scroll to a certain point and back to top
+      const startScrolling = () => {
+        startTime = Date.now();
+        
         scrollInterval = setInterval(() => {
           if (codeContentRef.current) {
-            const { scrollTop, scrollHeight, clientHeight } = codeContentRef.current;
-            if (scrollTop < scrollHeight - clientHeight) {
-              codeContentRef.current.scrollTop += 1; // Scroll down by 1 pixel for smoother effect
+            const elapsedTime = Date.now() - startTime;
+            
+            // Check if 25 seconds have passed
+            if (elapsedTime >= 25000) { // 25 seconds = 25000ms
+              // Clear the scrolling interval
+              clearInterval(scrollInterval);
+              
+              // Reset to top and restart after a brief pause
+              resetTimeout = setTimeout(() => {
+                if (codeContentRef.current) {
+                  codeContentRef.current.scrollTop = 0; // Reset to top
+                  // Restart scrolling after a brief delay
+                  setTimeout(() => {
+                    startScrolling();
+                  }, 100);
+                }
+              }, 500); // Brief pause before restarting
             } else {
-              codeContentRef.current.scrollTop = 0; // Reset to top when reaching bottom
+              // Continue scrolling
+              const { scrollTop, scrollHeight, clientHeight } = codeContentRef.current;
+              const maxScroll = scrollHeight - clientHeight;
+              
+              if (scrollTop < maxScroll) {
+                codeContentRef.current.scrollTop += 1; // Scroll down by 1 pixel for smoother effect
+              }
             }
           }
         }, 20); // Faster interval for smoother scrolling
+      };
+      
+      // Force a small delay to ensure DOM is ready, then start scrolling
+      const initDelay = setTimeout(() => {
+        startScrolling();
       }, 100);
 
       return () => {
         clearTimeout(initDelay);
+        clearTimeout(resetTimeout);
         if (scrollInterval) {
           clearInterval(scrollInterval);
         }

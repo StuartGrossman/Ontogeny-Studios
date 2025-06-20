@@ -19,7 +19,7 @@
   align-items: center;
   position: sticky;
   top: 70px; /* Account for main navbar height */
-  z-index: 1001; /* Higher than main navbar */
+  z-index: 100; /* Lower than main navbar dropdown */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 

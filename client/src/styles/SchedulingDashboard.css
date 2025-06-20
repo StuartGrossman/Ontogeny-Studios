@@ -13,7 +13,7 @@
   padding: 16px 24px;
   position: sticky;
   top: 60px; /* Account for main navbar height */
-  z-index: 999; /* Higher than main navbar */
+  z-index: 100; /* Lower than main navbar dropdown */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 

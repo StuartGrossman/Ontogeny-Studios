@@ -232,80 +232,80 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
   };
 
   const EmployeesView = () => (
-    <div className="payroll-employees-section">
-      <div className="payroll-employees-header">
+    <div className="employees-section">
+      <div className="employees-header">
         <h3>Employee Management</h3>
-        <div className="payroll-header-actions">
-                      <button className="payroll-filter-btn"><Search size={16} /> Filter</button>
-          <button className="payroll-add-btn">+ Add Employee</button>
+        <div className="header-actions">
+                      <button className="filter-btn"><Search size={16} /> Filter</button>
+          <button className="add-btn">+ Add Employee</button>
         </div>
       </div>
       
-      <div className="payroll-employees-stats">
-        <div className="payroll-stat-card">
-                        <Users className="payroll-stat-icon" size={24} />
-          <div className="payroll-stat-content">
-            <div className="payroll-stat-value">45</div>
-            <div className="payroll-stat-label">Active Employees</div>
+      <div className="employees-stats">
+        <div className="stat-card">
+                        <Users className="stat-icon" size={24} />
+          <div className="stat-content">
+            <div className="stat-value">45</div>
+            <div className="stat-label">Active Employees</div>
           </div>
         </div>
-        <div className="payroll-stat-card">
-                        <DollarSign className="payroll-stat-icon" size={24} />
-          <div className="payroll-stat-content">
-            <div className="payroll-stat-value">{formatCurrency(4250000)}</div>
-            <div className="payroll-stat-label">Annual Payroll</div>
+        <div className="stat-card">
+                        <DollarSign className="stat-icon" size={24} />
+          <div className="stat-content">
+            <div className="stat-value">{formatCurrency(4250000)}</div>
+            <div className="stat-label">Annual Payroll</div>
           </div>
         </div>
-        <div className="payroll-stat-card">
-                        <TrendingUp className="payroll-stat-icon" size={24} />
-          <div className="payroll-stat-content">
-            <div className="payroll-stat-value">{formatCurrency(85400)}</div>
-            <div className="payroll-stat-label">Avg. Salary</div>
+        <div className="stat-card">
+                        <TrendingUp className="stat-icon" size={24} />
+          <div className="stat-content">
+            <div className="stat-value">{formatCurrency(85400)}</div>
+            <div className="stat-label">Avg. Salary</div>
           </div>
         </div>
       </div>
 
-      <div className="payroll-employees-table">
-        <div className="payroll-table-header">
-          <div className="payroll-header-cell">Employee</div>
-          <div className="payroll-header-cell">Department</div>
-          <div className="payroll-header-cell">Pay Type</div>
-          <div className="payroll-header-cell">Rate/Salary</div>
-          <div className="payroll-header-cell">Status</div>
-          <div className="payroll-header-cell">Actions</div>
+      <div className="employees-table">
+        <div className="table-header">
+          <div className="header-cell">Employee</div>
+          <div className="header-cell">Department</div>
+          <div className="header-cell">Pay Type</div>
+          <div className="header-cell">Rate/Salary</div>
+          <div className="header-cell">Status</div>
+          <div className="header-cell">Actions</div>
         </div>
         
         {employees.map(employee => (
           <div key={employee.id} className={`table-row ${selectedEmployee === employee.id ? 'selected' : ''}`}
                onClick={() => setSelectedEmployee(employee.id)}>
-            <div className="payroll-cell employee-cell">
-              <div className="payroll-employee-info">
-                <div className="payroll-employee-avatar">{employee.name.charAt(0)}</div>
+            <div className="cell employee-cell">
+              <div className="employee-info">
+                <div className="employee-avatar">{employee.name.charAt(0)}</div>
                 <div>
-                  <div className="payroll-employee-name">{employee.name}</div>
-                  <div className="payroll-employee-id">{employee.employeeId}</div>
+                  <div className="employee-name">{employee.name}</div>
+                  <div className="employee-id">{employee.employeeId}</div>
                 </div>
               </div>
             </div>
-            <div className="payroll-cell">{employee.department}</div>
-            <div className="payroll-cell">
+            <div className="cell">{employee.department}</div>
+            <div className="cell">
               <span className={`pay-type ${employee.payType}`}>
                 {employee.payType === 'salary' ? 'Salary' : 'Hourly'}
               </span>
             </div>
-            <div className="payroll-cell">
+            <div className="cell">
               {employee.payType === 'salary' 
                 ? formatCurrency(employee.salary / 26) 
                 : `$${employee.salary.toFixed(2)}/hr`}
             </div>
-            <div className="payroll-cell">
-              <span className="payroll-status-badge" style={{ backgroundColor: getStatusColor(employee.status) }}>
+            <div className="cell">
+              <span className="status-badge" style={{ backgroundColor: getStatusColor(employee.status) }}>
                 {employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}
               </span>
             </div>
-            <div className="payroll-cell actions-cell">
+            <div className="cell actions-cell">
               <button 
-                className="payroll-action-btn" 
+                className="action-btn" 
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowEmployeeDetail(employee);
@@ -315,7 +315,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
                 👁️
               </button>
               <button 
-                className="payroll-action-btn" 
+                className="action-btn" 
                 onClick={(e) => {
                   e.stopPropagation();
                   console.log('Edit employee:', employee.name);
@@ -325,7 +325,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
                 ✏️
               </button>
               <button 
-                className="payroll-action-btn" 
+                className="action-btn" 
                 onClick={(e) => {
                   e.stopPropagation();
                   console.log('View payroll for:', employee.name);
@@ -346,139 +346,139 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
     if (!run) return null;
 
     return (
-      <div className="payroll-main-section">
-        <div className="payroll-main-header">
+      <div className="payroll-section">
+        <div className="payroll-header">
           <h2>Payroll Processing Dashboard</h2>
           <p>Manage and process payroll runs with comprehensive tracking and analytics</p>
-          <div className="payroll-header-actions">
+          <div className="header-actions">
             <select value={selectedPayrollRun || ''} onChange={(e) => setSelectedPayrollRun(e.target.value)}>
               {payrollRuns.map(run => (
                 <option key={run.id} value={run.id}>{run.period}</option>
               ))}
             </select>
-            <button className="payroll-process-btn">▶️ Process Payroll</button>
+            <button className="process-btn">▶️ Process Payroll</button>
           </div>
         </div>
 
-        <div className="payroll-main-summary">
+        <div className="payroll-summary">
           <div 
-            className="payroll-summary-card primary clickable" 
+            className="summary-card primary clickable" 
             onClick={() => setShowPayrollDetail(run)}
             title="Click to view details"
           >
-            <div className="payroll-summary-header">
+            <div className="summary-header">
               <h4>Payroll Summary</h4>
               <span className={`status-badge ${run.status}`} style={{ backgroundColor: getStatusColor(run.status) }}>
                 {run.status.charAt(0).toUpperCase() + run.status.slice(1)}
               </span>
             </div>
-            <div className="payroll-summary-content">
-              <div className="payroll-summary-row">
+            <div className="summary-content">
+              <div className="summary-row">
                 <span>Pay Period:</span>
                 <span>{run.period}</span>
               </div>
-              <div className="payroll-summary-row">
+              <div className="summary-row">
                 <span>Employees:</span>
                 <span>{run.employees}</span>
               </div>
-              <div className="payroll-summary-row">
+              <div className="summary-row">
                 <span>Due Date:</span>
                 <span>{new Date(run.dueDate).toLocaleDateString()}</span>
               </div>
             </div>
           </div>
 
-          <div className="payroll-summary-card">
+          <div className="summary-card">
             <h4>Gross Pay</h4>
-            <div className="payroll-amount">{formatCurrency(run.grossPay)}</div>
-            <div className="payroll-main-breakdown">
+            <div className="amount">{formatCurrency(run.grossPay)}</div>
+            <div className="breakdown">
               <div>Regular: {formatCurrency(run.grossPay * 0.85)}</div>
               <div>Overtime: {formatCurrency(run.grossPay * 0.15)}</div>
             </div>
           </div>
 
-          <div className="payroll-summary-card">
+          <div className="summary-card">
             <h4>Deductions</h4>
-            <div className="payroll-amount">{formatCurrency(run.taxes + run.deductions)}</div>
-            <div className="payroll-main-breakdown">
+            <div className="amount">{formatCurrency(run.taxes + run.deductions)}</div>
+            <div className="breakdown">
               <div>Taxes: {formatCurrency(run.taxes)}</div>
               <div>Benefits: {formatCurrency(run.deductions)}</div>
             </div>
           </div>
 
-          <div className="payroll-summary-card success">
+          <div className="summary-card success">
             <h4>Net Pay</h4>
-            <div className="payroll-amount">{formatCurrency(run.netPay)}</div>
-            <div className="payroll-change">Ready for distribution</div>
+            <div className="amount">{formatCurrency(run.netPay)}</div>
+            <div className="change">Ready for distribution</div>
           </div>
         </div>
 
-        <div className="payroll-main-details">
-          <div className="payroll-main-breakdown">
+        <div className="payroll-details">
+          <div className="payroll-breakdown">
             <h4>Tax Breakdown</h4>
-            <div className="payroll-breakdown-grid">
-              <div className="payroll-breakdown-item">
+            <div className="breakdown-grid">
+              <div className="breakdown-item">
                 <span>Federal Income Tax</span>
                 <span>{formatCurrency(run.taxes * 0.6)}</span>
               </div>
-              <div className="payroll-breakdown-item">
+              <div className="breakdown-item">
                 <span>State Income Tax</span>
                 <span>{formatCurrency(run.taxes * 0.25)}</span>
               </div>
-              <div className="payroll-breakdown-item">
+              <div className="breakdown-item">
                 <span>Social Security</span>
                 <span>{formatCurrency(run.taxes * 0.1)}</span>
               </div>
-              <div className="payroll-breakdown-item">
+              <div className="breakdown-item">
                 <span>Medicare</span>
                 <span>{formatCurrency(run.taxes * 0.05)}</span>
               </div>
             </div>
           </div>
 
-          <div className="payroll-main-actions">
+          <div className="payroll-actions">
             <h4>Actions Required</h4>
-            <div className="payroll-actions-list">
-              <div className="payroll-action-item">
-                <span className="payroll-action-icon">✅</span>
+            <div className="actions-list">
+              <div className="action-item">
+                <span className="action-icon">✅</span>
                 <span>Calculate gross pay</span>
-                <span className="payroll-action-status completed">Completed</span>
+                <span className="action-status completed">Completed</span>
               </div>
-              <div className="payroll-action-item">
-                <span className="payroll-action-icon">✅</span>
+              <div className="action-item">
+                <span className="action-icon">✅</span>
                 <span>Apply tax withholdings</span>
-                <span className="payroll-action-status completed">Completed</span>
+                <span className="action-status completed">Completed</span>
               </div>
-              <div className="payroll-action-item">
-                <span className="payroll-action-icon">⏳</span>
+              <div className="action-item">
+                <span className="action-icon">⏳</span>
                 <span>Generate pay stubs</span>
-                <span className="payroll-action-status pending">In Progress</span>
+                <span className="action-status pending">In Progress</span>
               </div>
-              <div className="payroll-action-item">
-                <span className="payroll-action-icon">⏸️</span>
+              <div className="action-item">
+                <span className="action-icon">⏸️</span>
                 <span>Direct deposit transfer</span>
-                <span className="payroll-action-status waiting">Waiting</span>
+                <span className="action-status waiting">Waiting</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="payroll-employee-overview">
+        <div className="employee-overview">
           <h3>Employee Overview</h3>
-          <div className="payroll-employee-grid">
+          <div className="employee-grid">
             {employees.slice(0, 6).map(employee => (
               <div 
                 key={employee.id} 
-                className="payroll-employee-card clickable"
+                className="employee-card clickable"
                 onClick={() => setShowEmployeeDetail(employee)}
                 title="Click to view details"
               >
-                <div className="payroll-employee-avatar">{employee.name.charAt(0)}</div>
-                <div className="payroll-employee-info">
-                  <div className="payroll-employee-name">{employee.name}</div>
-                  <div className="payroll-employee-position">{employee.position}</div>
-                  <div className="payroll-employee-department">{employee.department}</div>
-                  <div className="payroll-employee-pay">
+                <div className="employee-avatar">{employee.name.charAt(0)}</div>
+                <div className="employee-info">
+                  <div className="employee-name">{employee.name}</div>
+                  <div className="employee-position">{employee.position}</div>
+                  <div className="employee-department">{employee.department}</div>
+                  <div className="employee-pay">
                     {employee.payType === 'salary' 
                       ? formatCurrency(employee.salary / 26) 
                       : `$${employee.salary.toFixed(2)}/hr`}
@@ -492,39 +492,39 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
           </div>
         </div>
 
-        <div className="payroll-main-insights">
+        <div className="payroll-insights">
           <h3>Payroll Insights</h3>
-          <div className="payroll-insights-grid">
-            <div className="payroll-insight-card">
-              <div className="payroll-insight-icon">📈</div>
-              <div className="payroll-insight-content">
+          <div className="insights-grid">
+            <div className="insight-card">
+              <div className="insight-icon">📈</div>
+              <div className="insight-content">
                 <h4>Cost Efficiency</h4>
                 <p>Payroll costs are 12% below industry average</p>
-                <div className="payroll-insight-value positive">-12%</div>
+                <div className="insight-value positive">-12%</div>
               </div>
             </div>
-            <div className="payroll-insight-card">
-              <div className="payroll-insight-icon">⏱️</div>
-              <div className="payroll-insight-content">
+            <div className="insight-card">
+              <div className="insight-icon">⏱️</div>
+              <div className="insight-content">
                 <h4>Processing Time</h4>
                 <p>Average payroll processing takes 2.3 hours</p>
-                <div className="payroll-insight-value neutral">2.3h</div>
+                <div className="insight-value neutral">2.3h</div>
               </div>
             </div>
-            <div className="payroll-insight-card">
-              <div className="payroll-insight-icon">✅</div>
-              <div className="payroll-insight-content">
+            <div className="insight-card">
+              <div className="insight-icon">✅</div>
+              <div className="insight-content">
                 <h4>Compliance Rate</h4>
                 <p>Tax compliance maintained at 98.5%</p>
-                <div className="payroll-insight-value positive">98.5%</div>
+                <div className="insight-value positive">98.5%</div>
               </div>
             </div>
-            <div className="payroll-insight-card">
-              <div className="payroll-insight-icon">💰</div>
-              <div className="payroll-insight-content">
+            <div className="insight-card">
+              <div className="insight-icon">💰</div>
+              <div className="insight-content">
                 <h4>Cost Savings</h4>
                 <p>Automated processing saves $15K annually</p>
-                <div className="payroll-insight-value positive">$15K</div>
+                <div className="insight-value positive">$15K</div>
               </div>
             </div>
           </div>
@@ -537,7 +537,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
     <div className="reports-section">
       <div className="reports-header">
         <h3>Reports & Analytics</h3>
-        <div className="payroll-header-actions">
+        <div className="header-actions">
           <select className="period-select">
             <option>Current Quarter</option>
             <option>Year to Date</option>
@@ -555,8 +555,8 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
               <div className="chart-bars">
                 {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'].map((month, index) => (
                   <div key={month} className="trend-bar" style={{ height: `${60 + index * 10}%` }}>
-                    <span className="payroll-bar-label">{month}</span>
-                    <span className="payroll-bar-value">${(150 + index * 15)}K</span>
+                    <span className="bar-label">{month}</span>
+                    <span className="bar-value">${(150 + index * 15)}K</span>
                   </div>
                 ))}
               </div>
@@ -635,92 +635,92 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
   );
 
   const StatisticsView = () => (
-    <div className="payroll-statistics-section">
-      <div className="payroll-stats-header">
+    <div className="statistics-section">
+      <div className="stats-header">
         <h2>Payroll Statistics Dashboard</h2>
         <p>Comprehensive analytics and insights for your payroll operations</p>
       </div>
 
-      <div className="payroll-stats-content">
-        <div className="payroll-stats-section">
+      <div className="stats-content">
+        <div className="stats-section">
           <h3>Employee Overview</h3>
-          <div className="payroll-stats-grid">
-            <div className="payroll-stat-card">
-              <div className="payroll-stat-icon"><Users size={24} /></div>
-              <div className="payroll-stat-info">
-                <div className="payroll-stat-value">{employees.length}</div>
-                <div className="payroll-stat-label">Total Employees</div>
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-icon"><Users size={24} /></div>
+              <div className="stat-info">
+                <div className="stat-value">{employees.length}</div>
+                <div className="stat-label">Total Employees</div>
               </div>
             </div>
-            <div className="payroll-stat-card">
-              <div className="payroll-stat-icon"><Building size={24} /></div>
-              <div className="payroll-stat-info">
-                <div className="payroll-stat-value">{employees.filter(e => e.status === 'active').length}</div>
-                <div className="payroll-stat-label">Active Employees</div>
+            <div className="stat-card">
+              <div className="stat-icon"><Building size={24} /></div>
+              <div className="stat-info">
+                <div className="stat-value">{employees.filter(e => e.status === 'active').length}</div>
+                <div className="stat-label">Active Employees</div>
               </div>
             </div>
-            <div className="payroll-stat-card">
-              <div className="payroll-stat-icon"><Clock size={24} /></div>
-              <div className="payroll-stat-info">
-                <div className="payroll-stat-value">{employees.filter(e => e.status === 'pending').length}</div>
-                <div className="payroll-stat-label">Pending Employees</div>
+            <div className="stat-card">
+              <div className="stat-icon"><Clock size={24} /></div>
+              <div className="stat-info">
+                <div className="stat-value">{employees.filter(e => e.status === 'pending').length}</div>
+                <div className="stat-label">Pending Employees</div>
               </div>
             </div>
-            <div className="payroll-stat-card">
-              <div className="payroll-stat-icon"><DollarSign size={24} /></div>
-              <div className="payroll-stat-info">
-                <div className="payroll-stat-value">{formatCurrency(employees.reduce((sum, e) => sum + (e.payType === 'salary' ? e.salary : e.salary * 2080), 0) / employees.length)}</div>
-                <div className="payroll-stat-label">Avg Annual Salary</div>
+            <div className="stat-card">
+              <div className="stat-icon"><DollarSign size={24} /></div>
+              <div className="stat-info">
+                <div className="stat-value">{formatCurrency(employees.reduce((sum, e) => sum + (e.payType === 'salary' ? e.salary : e.salary * 2080), 0) / employees.length)}</div>
+                <div className="stat-label">Avg Annual Salary</div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="payroll-stats-section">
+        <div className="stats-section">
           <h3>Payroll Summary</h3>
-          <div className="payroll-stats-grid">
-            <div className="payroll-stat-card">
-              <div className="payroll-stat-icon"><BarChart3 size={24} /></div>
-              <div className="payroll-stat-info">
-                <div className="payroll-stat-value">{payrollRuns.length}</div>
-                <div className="payroll-stat-label">Total Payroll Runs</div>
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-icon"><BarChart3 size={24} /></div>
+              <div className="stat-info">
+                <div className="stat-value">{payrollRuns.length}</div>
+                <div className="stat-label">Total Payroll Runs</div>
               </div>
             </div>
-            <div className="payroll-stat-card">
-              <div className="payroll-stat-icon"><TrendingUp size={24} /></div>
-              <div className="payroll-stat-info">
-                <div className="payroll-stat-value">{formatCurrency(payrollRuns.reduce((sum, pr) => sum + pr.grossPay, 0))}</div>
-                <div className="payroll-stat-label">Total Gross Pay</div>
+            <div className="stat-card">
+              <div className="stat-icon"><TrendingUp size={24} /></div>
+              <div className="stat-info">
+                <div className="stat-value">{formatCurrency(payrollRuns.reduce((sum, pr) => sum + pr.grossPay, 0))}</div>
+                <div className="stat-label">Total Gross Pay</div>
               </div>
             </div>
-            <div className="payroll-stat-card">
-              <div className="payroll-stat-icon"><FileText size={24} /></div>
-              <div className="payroll-stat-info">
-                <div className="payroll-stat-value">{formatCurrency(payrollRuns.reduce((sum, pr) => sum + pr.taxes, 0))}</div>
-                <div className="payroll-stat-label">Total Taxes</div>
+            <div className="stat-card">
+              <div className="stat-icon"><FileText size={24} /></div>
+              <div className="stat-info">
+                <div className="stat-value">{formatCurrency(payrollRuns.reduce((sum, pr) => sum + pr.taxes, 0))}</div>
+                <div className="stat-label">Total Taxes</div>
               </div>
             </div>
-            <div className="payroll-stat-card">
-              <div className="payroll-stat-icon"><Award size={24} /></div>
-              <div className="payroll-stat-info">
-                <div className="payroll-stat-value">{formatCurrency(payrollRuns.reduce((sum, pr) => sum + pr.netPay, 0))}</div>
-                <div className="payroll-stat-label">Total Net Pay</div>
+            <div className="stat-card">
+              <div className="stat-icon"><Award size={24} /></div>
+              <div className="stat-info">
+                <div className="stat-value">{formatCurrency(payrollRuns.reduce((sum, pr) => sum + pr.netPay, 0))}</div>
+                <div className="stat-label">Total Net Pay</div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="payroll-stats-section">
+        <div className="stats-section">
           <h3>Department Breakdown</h3>
-          <div className="payroll-stats-grid">
+          <div className="stats-grid">
             {['Engineering', 'Product', 'Marketing', 'Sales', 'Finance', 'Human Resources'].map(dept => {
               const deptEmployees = employees.filter(e => e.department === dept);
               return (
-                <div key={dept} className="payroll-stat-card">
-                  <div className="payroll-stat-icon"><Building size={24} /></div>
-                  <div className="payroll-stat-info">
-                    <div className="payroll-stat-value">{deptEmployees.length}</div>
-                    <div className="payroll-stat-label">{dept}</div>
+                <div key={dept} className="stat-card">
+                  <div className="stat-icon"><Building size={24} /></div>
+                  <div className="stat-info">
+                    <div className="stat-value">{deptEmployees.length}</div>
+                    <div className="stat-label">{dept}</div>
                   </div>
                 </div>
               );
@@ -728,23 +728,23 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
           </div>
         </div>
 
-        <div className="payroll-stats-section">
+        <div className="stats-section">
           <h3>Financial Performance</h3>
-          <div className="payroll-stats-grid">
-            <div className="payroll-stat-card large">
-              <div className="payroll-stat-icon"><DollarSign size={32} /></div>
-              <div className="payroll-stat-info">
-                <div className="payroll-stat-value">{formatCurrency(payrollRuns.reduce((sum, pr) => sum + pr.grossPay, 0) / payrollRuns.length)}</div>
-                <div className="payroll-stat-label">Average Payroll Run</div>
-                <div className="payroll-stat-trend positive">+8.2% from last quarter</div>
+          <div className="stats-grid">
+            <div className="stat-card large">
+              <div className="stat-icon"><DollarSign size={32} /></div>
+              <div className="stat-info">
+                <div className="stat-value">{formatCurrency(payrollRuns.reduce((sum, pr) => sum + pr.grossPay, 0) / payrollRuns.length)}</div>
+                <div className="stat-label">Average Payroll Run</div>
+                <div className="stat-trend positive">+8.2% from last quarter</div>
               </div>
             </div>
-            <div className="payroll-stat-card large">
-              <div className="payroll-stat-icon"><TrendingUp size={32} /></div>
-              <div className="payroll-stat-info">
-                <div className="payroll-stat-value">{((payrollRuns.reduce((sum, pr) => sum + pr.netPay, 0) / payrollRuns.reduce((sum, pr) => sum + pr.grossPay, 0)) * 100).toFixed(1)}%</div>
-                <div className="payroll-stat-label">Net Pay Ratio</div>
-                <div className="payroll-stat-trend neutral">Stable</div>
+            <div className="stat-card large">
+              <div className="stat-icon"><TrendingUp size={32} /></div>
+              <div className="stat-info">
+                <div className="stat-value">{((payrollRuns.reduce((sum, pr) => sum + pr.netPay, 0) / payrollRuns.reduce((sum, pr) => sum + pr.grossPay, 0)) * 100).toFixed(1)}%</div>
+                <div className="stat-label">Net Pay Ratio</div>
+                <div className="stat-trend neutral">Stable</div>
               </div>
             </div>
           </div>
@@ -754,27 +754,27 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
   );
 
   const GraphsView = () => (
-    <div className="payroll-graphs-section">
-      <div className="payroll-graphs-header">
+    <div className="graphs-section">
+      <div className="graphs-header">
         <h2>Payroll Analytics & Graphs</h2>
         <p>Visual data representations and trend analysis</p>
       </div>
 
-      <div className="payroll-graphs-content">
-        <div className="payroll-graph-section">
+      <div className="graphs-content">
+        <div className="graph-section">
           <h3>Employee Status Distribution</h3>
-          <div className="payroll-pie-chart">
-            <div className="payroll-pie-slice active" style={{
+          <div className="pie-chart">
+            <div className="pie-slice active" style={{
               '--percentage': `${(employees.filter(e => e.status === 'active').length / employees.length) * 100}%`
             } as React.CSSProperties}>
               <span>Active: {employees.filter(e => e.status === 'active').length}</span>
             </div>
-            <div className="payroll-pie-slice pending" style={{
+            <div className="pie-slice pending" style={{
               '--percentage': `${(employees.filter(e => e.status === 'pending').length / employees.length) * 100}%`
             } as React.CSSProperties}>
               <span>Pending: {employees.filter(e => e.status === 'pending').length}</span>
             </div>
-            <div className="payroll-pie-slice inactive" style={{
+            <div className="pie-slice inactive" style={{
               '--percentage': `${(employees.filter(e => e.status === 'inactive').length / employees.length) * 100}%`
             } as React.CSSProperties}>
               <span>Inactive: {employees.filter(e => e.status === 'inactive').length}</span>
@@ -782,58 +782,58 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
           </div>
         </div>
 
-        <div className="payroll-graph-section">
+        <div className="graph-section">
           <h3>Department Salary Distribution</h3>
-          <div className="payroll-bar-chart">
+          <div className="bar-chart">
             {['Engineering', 'Product', 'Marketing', 'Sales', 'Finance', 'Human Resources'].map(dept => {
               const deptEmployees = employees.filter(e => e.department === dept);
               const avgSalary = deptEmployees.length > 0 ? 
                 deptEmployees.reduce((sum, e) => sum + (e.payType === 'salary' ? e.salary : e.salary * 2080), 0) / deptEmployees.length : 0;
               const maxSalary = 125000;
               return (
-                <div key={dept} className="payroll-bar-item">
-                  <div className="payroll-bar-label">{dept}</div>
-                  <div className="payroll-bar-container">
+                <div key={dept} className="bar-item">
+                  <div className="bar-label">{dept}</div>
+                  <div className="bar-container">
                     <div 
-                      className="payroll-bar-fill" 
+                      className="bar-fill" 
                       style={{ width: `${(avgSalary / maxSalary) * 100}%` }}
                     ></div>
                   </div>
-                  <div className="payroll-bar-value">{formatCurrency(avgSalary)}</div>
+                  <div className="bar-value">{formatCurrency(avgSalary)}</div>
                 </div>
               );
             })}
           </div>
         </div>
 
-        <div className="payroll-graph-section">
+        <div className="graph-section">
           <h3>Payroll Trends</h3>
-          <div className="payroll-timeline-chart">
+          <div className="timeline-chart">
             {payrollRuns.map((run, index) => (
-              <div key={run.id} className="payroll-timeline-item">
-                <div className="payroll-timeline-period">{run.period}</div>
-                <div className="payroll-timeline-bar">
+              <div key={run.id} className="timeline-item">
+                <div className="timeline-period">{run.period}</div>
+                <div className="timeline-bar">
                   <div 
-                    className="payroll-timeline-fill" 
+                    className="timeline-fill" 
                     style={{ width: `${(run.grossPay / 200000) * 100}%` }}
                   ></div>
                 </div>
-                <div className="payroll-timeline-value">{formatCurrency(run.grossPay)}</div>
+                <div className="timeline-value">{formatCurrency(run.grossPay)}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="payroll-graph-section">
+        <div className="graph-section">
           <h3>Tax Compliance Status</h3>
-          <div className="payroll-compliance-chart">
+          <div className="compliance-chart">
             {taxCompliance.map(tax => (
-              <div key={tax.state} className="payroll-compliance-item">
-                <div className="payroll-compliance-state">{tax.state}</div>
+              <div key={tax.state} className="compliance-item">
+                <div className="compliance-state">{tax.state}</div>
                 <div className={`compliance-status ${tax.status}`}>
                   {tax.status.charAt(0).toUpperCase() + tax.status.slice(1)}
                 </div>
-                <div className="payroll-compliance-amount">{formatCurrency(tax.amount)}</div>
+                <div className="compliance-amount">{formatCurrency(tax.amount)}</div>
               </div>
             ))}
           </div>
@@ -882,45 +882,45 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
   return (
     <div className={`payroll-dashboard ${view}`}>
       {/* Secondary Navigation Bar */}
-      <div className="payroll-secondary-navbar">
-        <div className="payroll-secondary-nav-content">
+      <div className="secondary-navbar">
+        <div className="secondary-nav-content">
           <button 
-            className="payroll-secondary-nav-btn add-employee"
+            className="secondary-nav-btn add-employee"
             onClick={() => setShowAddEmployee(true)}
           >
             <UserPlus size={16} />
             <span>Add Employee</span>
           </button>
           <button 
-            className="payroll-secondary-nav-btn add-payroll"
+            className="secondary-nav-btn add-payroll"
             onClick={() => setShowAddPayrollRun(true)}
           >
             <Plus size={16} />
             <span>Add Payroll Run</span>
           </button>
           <button 
-            className="payroll-secondary-nav-btn statistics"
+            className="secondary-nav-btn statistics"
             onClick={() => setSelectedView('statistics')}
           >
             <BarChart3 size={16} />
             <span>Statistics</span>
           </button>
           <button 
-            className="payroll-secondary-nav-btn graphs"
+            className="secondary-nav-btn graphs"
             onClick={() => setSelectedView('graphs')}
           >
             <TrendingUp size={16} />
             <span>Graphs</span>
           </button>
           <button 
-            className="payroll-secondary-nav-btn payroll"
+            className="secondary-nav-btn payroll"
             onClick={() => setSelectedView('payroll')}
           >
             <DollarSign size={16} />
             <span>Payroll</span>
           </button>
           <button 
-            className="payroll-secondary-nav-btn process-payroll"
+            className="secondary-nav-btn process-payroll"
             onClick={() => console.log('Processing payroll...')}
           >
             <Rocket size={16} />
@@ -929,7 +929,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
         </div>
       </div>
       
-      <div className="payroll-dashboard-content">
+      <div className="dashboard-content">
         {selectedView === 'payroll' && <PayrollView />}
         {selectedView === 'statistics' && <StatisticsView />}
         {selectedView === 'graphs' && <GraphsView />}
@@ -937,11 +937,11 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
 
       {/* Modals */}
       {showAddEmployee && (
-        <div className="payroll-modal-backdrop" onClick={() => setShowAddEmployee(false)}>
-          <div className="payroll-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="payroll-modal-header">
+        <div className="modal-backdrop" onClick={() => setShowAddEmployee(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
               <h3>Add New Employee</h3>
-              <button className="payroll-modal-close" onClick={() => setShowAddEmployee(false)}>
+              <button className="modal-close" onClick={() => setShowAddEmployee(false)}>
                 <X size={20} />
               </button>
             </div>
@@ -950,16 +950,16 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
               const formData = new FormData(e.target as HTMLFormElement);
               handleAddEmployee(Object.fromEntries(formData));
             }}>
-              <div className="payroll-form-grid">
-                <div className="payroll-form-group">
+              <div className="form-grid">
+                <div className="form-group">
                   <label>Full Name</label>
                   <input type="text" name="name" required />
                 </div>
-                <div className="payroll-form-group">
+                <div className="form-group">
                   <label>Position</label>
                   <input type="text" name="position" required />
                 </div>
-                <div className="payroll-form-group">
+                <div className="form-group">
                   <label>Department</label>
                   <select name="department" required>
                     <option value="">Select Department</option>
@@ -971,7 +971,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
                     <option value="Human Resources">Human Resources</option>
                   </select>
                 </div>
-                <div className="payroll-form-group">
+                <div className="form-group">
                   <label>Pay Type</label>
                   <select name="payType" required>
                     <option value="">Select Pay Type</option>
@@ -979,16 +979,16 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
                     <option value="hourly">Hourly</option>
                   </select>
                 </div>
-                <div className="payroll-form-group">
+                <div className="form-group">
                   <label>Salary/Rate</label>
                   <input type="number" name="salary" step="0.01" required />
                 </div>
-                <div className="payroll-form-group">
+                <div className="form-group">
                   <label>Location</label>
                   <input type="text" name="location" required />
                 </div>
               </div>
-              <div className="payroll-modal-actions">
+              <div className="modal-actions">
                 <button type="button" onClick={() => setShowAddEmployee(false)}>Cancel</button>
                 <button type="submit" className="primary">Add Employee</button>
               </div>
@@ -998,11 +998,11 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
       )}
 
       {showAddPayrollRun && (
-        <div className="payroll-modal-backdrop" onClick={() => setShowAddPayrollRun(false)}>
-          <div className="payroll-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="payroll-modal-header">
+        <div className="modal-backdrop" onClick={() => setShowAddPayrollRun(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
               <h3>Create New Payroll Run</h3>
-              <button className="payroll-modal-close" onClick={() => setShowAddPayrollRun(false)}>
+              <button className="modal-close" onClick={() => setShowAddPayrollRun(false)}>
                 <X size={20} />
               </button>
             </div>
@@ -1011,33 +1011,33 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
               const formData = new FormData(e.target as HTMLFormElement);
               handleAddPayrollRun(Object.fromEntries(formData));
             }}>
-              <div className="payroll-form-grid">
-                <div className="payroll-form-group">
+              <div className="form-grid">
+                <div className="form-group">
                   <label>Pay Period</label>
                   <input type="text" name="period" placeholder="e.g., January 1-15, 2024" required />
                 </div>
-                <div className="payroll-form-group">
+                <div className="form-group">
                   <label>Due Date</label>
                   <input type="date" name="dueDate" required />
                 </div>
-                <div className="payroll-form-group">
+                <div className="form-group">
                   <label>Gross Pay</label>
                   <input type="number" name="grossPay" step="0.01" required />
                 </div>
-                <div className="payroll-form-group">
+                <div className="form-group">
                   <label>Net Pay</label>
                   <input type="number" name="netPay" step="0.01" required />
                 </div>
-                <div className="payroll-form-group">
+                <div className="form-group">
                   <label>Taxes</label>
                   <input type="number" name="taxes" step="0.01" required />
                 </div>
-                <div className="payroll-form-group">
+                <div className="form-group">
                   <label>Deductions</label>
                   <input type="number" name="deductions" step="0.01" required />
                 </div>
               </div>
-              <div className="payroll-modal-actions">
+              <div className="modal-actions">
                 <button type="button" onClick={() => setShowAddPayrollRun(false)}>Cancel</button>
                 <button type="submit" className="primary">Create Payroll Run</button>
               </div>
@@ -1049,11 +1049,11 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
 
 
       {showEmployeeDetail && (
-        <div className="payroll-modal-backdrop" onClick={() => setShowEmployeeDetail(null)}>
+        <div className="modal-backdrop" onClick={() => setShowEmployeeDetail(null)}>
           <div className="modal-content detail-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="payroll-modal-header">
+            <div className="modal-header">
               <h3>Employee Details</h3>
-              <button className="payroll-modal-close" onClick={() => setShowEmployeeDetail(null)}>
+              <button className="modal-close" onClick={() => setShowEmployeeDetail(null)}>
                 <X size={20} />
               </button>
             </div>
@@ -1135,11 +1135,11 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
       )}
 
       {showPayrollDetail && (
-        <div className="payroll-modal-backdrop" onClick={() => setShowPayrollDetail(null)}>
+        <div className="modal-backdrop" onClick={() => setShowPayrollDetail(null)}>
           <div className="modal-content detail-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="payroll-modal-header">
+            <div className="modal-header">
               <h3>Payroll Run Details</h3>
-              <button className="payroll-modal-close" onClick={() => setShowPayrollDetail(null)}>
+              <button className="modal-close" onClick={() => setShowPayrollDetail(null)}>
                 <X size={20} />
               </button>
             </div>

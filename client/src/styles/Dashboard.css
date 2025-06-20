@@ -1769,14 +1769,14 @@
   padding-left: 1rem;
 }
 
-.feature-item {
+.dashboard .feature-item {
   color: #64748b;
   font-size: 0.875rem;
   line-height: 1.5;
   position: relative;
 }
 
-.feature-item:before {
+.dashboard .feature-item:before {
   content: '•';
   color: #667eea;
   font-weight: bold;
