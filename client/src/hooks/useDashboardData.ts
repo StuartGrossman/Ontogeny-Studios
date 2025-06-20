@@ -98,8 +98,8 @@ export const useDashboardData = (currentUser: any) => {
     setRequestedProjectsLoading(true);
     try {
       const requestsQuery = query(
-        collection(db, 'project-requests'),
-        where('userId', '==', currentUser.uid),
+        collection(db, 'user_project_requests'),
+        where('requestedBy', '==', currentUser.uid),
         orderBy('createdAt', 'desc')
       );
       
@@ -147,8 +147,8 @@ export const useDashboardData = (currentUser: any) => {
           orderBy('createdAt', 'desc')
         )),
         getDocs(query(
-          collection(db, 'project-requests'),
-          where('userId', '==', userId),
+          collection(db, 'user_project_requests'),
+          where('requestedBy', '==', userId),
           orderBy('createdAt', 'desc')
         ))
       ]);
@@ -165,7 +165,18 @@ export const useDashboardData = (currentUser: any) => {
         ...doc.data()
       }));
 
-      setUserProjects([...projects, ...requests] as Project[]);
+      // Filter out any projects without proper IDs
+      const validProjects = projects.filter(p => p.id && p.id.trim());
+      const validRequests = requests.filter(r => r.id && r.id.trim());
+      
+      console.log('Loaded projects:', {
+        totalProjects: validProjects.length,
+        totalRequests: validRequests.length,
+        filteredOutProjects: projects.length - validProjects.length,
+        filteredOutRequests: requests.length - validRequests.length
+      });
+
+      setUserProjects([...validProjects, ...validRequests] as Project[]);
     } catch (error) {
       console.error('Error loading user projects:', error);
     }
@@ -195,6 +206,32 @@ export const useDashboardData = (currentUser: any) => {
   // Toggle alert sorting
   const toggleAlertSort = () => {
     setSortByAlerts(!sortByAlerts);
+  };
+
+  // Toggle admin status (for UI switching)
+  const toggleAdminStatus = () => {
+    setIsAdmin(!isAdmin);
+    setLoading(true);
+    
+    // Reset states when switching modes
+    setSelectedUser(null);
+    setUserProjects([]);
+    setCustomerProjects([]);
+    setRequestedProjects([]);
+    setAllUsers([]);
+    
+    // Load appropriate data after a brief delay
+    setTimeout(() => {
+      if (!isAdmin) {
+        // Switching to admin mode
+        loadAllUsers();
+      } else {
+        // Switching to user mode
+        loadCustomerProjects();
+        loadRequestedProjects();
+      }
+      setLoading(false);
+    }, 100);
   };
 
   // Initialize data
@@ -236,6 +273,7 @@ export const useDashboardData = (currentUser: any) => {
     setUserSearchQuery,
     handleUserSelect,
     toggleAlertSort,
+    toggleAdminStatus,
     loadCustomerProjects,
     loadRequestedProjects,
     loadAllUsers

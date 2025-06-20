@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, CheckCircle, Circle, Clock, User, Calendar, Target, MessageSquare, AlertCircle, Check, Play, FileText, Activity, Edit3 } from 'lucide-react';
-import { doc, updateDoc, addDoc, collection } from 'firebase/firestore';
+import { doc, updateDoc, addDoc, collection, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 
 interface Feature {
@@ -40,6 +40,50 @@ const UserRequestedProjectModal: React.FC<UserRequestedProjectModalProps> = ({
   currentUser,
   onOpenAdminProject
 }) => {
+  // Debug logging and document verification
+  React.useEffect(() => {
+    const verifyDocument = async () => {
+      if (isOpen && project && project.id) {
+        console.log('UserRequestedProjectModal opened with project:', {
+          id: project.id,
+          projectName: project.projectName,
+          status: project.status,
+          requestedBy: project.requestedBy,
+          hasFeatures: !!project.features,
+          fullProject: project
+        });
+
+        // Verify the document exists
+        try {
+          const docRef = doc(db, 'user_project_requests', project.id);
+          const docSnap = await getDoc(docRef);
+          
+          if (docSnap.exists()) {
+            console.log('✅ Document exists in user_project_requests:', docSnap.data());
+          } else {
+            console.error('❌ Document does NOT exist in user_project_requests:', project.id);
+            
+            // Check if it might exist in the old collection
+            const oldDocRef = doc(db, 'project-requests', project.id);
+            const oldDocSnap = await getDoc(oldDocRef);
+            
+            if (oldDocSnap.exists()) {
+              console.log('⚠️ Document found in OLD collection (project-requests):', oldDocSnap.data());
+              setError('This project was created in an old format. Please refresh the page or contact support.');
+            } else {
+              console.error('❌ Document not found in either collection');
+              setError('This project document no longer exists. It may have been deleted. Please refresh the page to update your project list.');
+            }
+          }
+        } catch (error) {
+          console.error('Error verifying document:', error);
+          setError('Error verifying project document. Please try again.');
+        }
+      }
+    };
+
+    verifyDocument();
+  }, [isOpen, project]);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [updatingFeature, setUpdatingFeature] = useState<number | null>(null);
   const [error, setError] = useState('');
@@ -77,6 +121,57 @@ const UserRequestedProjectModal: React.FC<UserRequestedProjectModalProps> = ({
   });
 
   const [notes, setNotes] = useState(project?.adminNotes || '');
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [notesSaved, setNotesSaved] = useState(false);
+  const [newFeature, setNewFeature] = useState('');
+  const [addingFeature, setAddingFeature] = useState(false);
+  const [migratingDocument, setMigratingDocument] = useState(false);
+
+  // Migration function for documents in wrong collection
+  const migrateDocument = async () => {
+    if (!project.id || !currentUser) return;
+    
+    try {
+      setMigratingDocument(true);
+      console.log('🔄 Starting document migration...');
+      
+      // Get document from old collection
+      const oldDocRef = doc(db, 'project-requests', project.id);
+      const oldDocSnap = await getDoc(oldDocRef);
+      
+      if (!oldDocSnap.exists()) {
+        throw new Error('Source document not found');
+      }
+      
+      const oldData = oldDocSnap.data();
+      console.log('📄 Found old document:', oldData);
+      
+      // Create new document in correct collection with same ID
+      const newDocData = {
+        ...oldData,
+        // Ensure correct field names for new collection
+        requestedBy: oldData.requestedBy || oldData.userId,
+        requestedByName: oldData.requestedByName || oldData.userName,
+        requestedByEmail: oldData.requestedByEmail || oldData.userEmail,
+        migratedAt: new Date(),
+        migratedFrom: 'project-requests'
+      };
+      
+      // Use setDoc to create with specific ID
+      const newDocRef = doc(db, 'user_project_requests', project.id);
+      await setDoc(newDocRef, newDocData);
+      
+      console.log('✅ Document migrated successfully');
+      setError('');
+      onUpdate(); // Refresh the data
+      
+    } catch (error) {
+      console.error('❌ Migration failed:', error);
+      setError('Failed to migrate document. Please contact support.');
+    } finally {
+      setMigratingDocument(false);
+    }
+  };
 
   if (!isOpen || !project) return null;
 
@@ -142,13 +237,34 @@ const UserRequestedProjectModal: React.FC<UserRequestedProjectModalProps> = ({
   const updateStatus = async (newStatus: string) => {
     try {
       setUpdatingStatus(true);
-      await updateDoc(doc(db, 'user_project_requests', project.id), {
+      setError(''); // Clear any previous errors
+      
+      // Validate project ID
+      if (!project.id) {
+        throw new Error('Project ID is missing');
+      }
+      
+      const docRef = doc(db, 'user_project_requests', project.id);
+      await updateDoc(docRef, {
         status: newStatus,
         lastUpdated: new Date()
       });
       onUpdate();
     } catch (error) {
       console.error('Error updating status:', error);
+      let errorMessage = 'Failed to update project status. Please try again.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('No document to update')) {
+          errorMessage = 'Document not found. The project may have been deleted or you may not have permission to edit it.';
+        } else if (error.message.includes('permission')) {
+          errorMessage = 'You don\'t have permission to edit this project.';
+        } else if (error.message.includes('Project ID is missing')) {
+          errorMessage = 'Project ID is missing. Please refresh the page and try again.';
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setUpdatingStatus(false);
     }
@@ -156,13 +272,108 @@ const UserRequestedProjectModal: React.FC<UserRequestedProjectModalProps> = ({
 
   const saveNotes = async () => {
     try {
+      setSavingNotes(true);
+      setNotesSaved(false);
       await updateDoc(doc(db, 'user_project_requests', project.id), {
         adminNotes: notes,
         lastUpdated: new Date()
       });
       onUpdate();
+      setError(''); // Clear any previous errors
+      setNotesSaved(true);
+      // Clear success message after 3 seconds
+      setTimeout(() => setNotesSaved(false), 3000);
     } catch (error) {
       console.error('Error saving notes:', error);
+      setError('Failed to save notes. Please try again.');
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
+  const addNewFeature = async () => {
+    if (!newFeature.trim()) return;
+    
+    try {
+      setAddingFeature(true);
+      setError('');
+      
+      // Validate project ID
+      if (!project.id) {
+        throw new Error('Project ID is missing');
+      }
+      
+      const newFeatureObj: Feature = {
+        id: features.length,
+        text: newFeature.trim(),
+        completed: false,
+        priority: determinePriority(newFeature.trim()),
+        startedAt: null,
+        completedAt: null,
+        workLog: ''
+      };
+
+      const updatedFeatures = [...features, newFeatureObj];
+      setFeatures(updatedFeatures);
+
+      // Update database
+      const featuresString = updatedFeatures.map((f: Feature) => 
+        `${f.completed ? '✓' : '[ ]'} ${f.text}`
+      ).join('\n');
+
+      const docRef = doc(db, 'user_project_requests', project.id);
+      await updateDoc(docRef, {
+        features: featuresString,
+        lastUpdated: new Date()
+      });
+
+      setNewFeature('');
+      onUpdate();
+    } catch (error) {
+      console.error('Error adding feature:', error);
+      let errorMessage = 'Failed to add feature. Please try again.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('No document to update')) {
+          errorMessage = 'Document not found. The project may have been deleted or you may not have permission to edit it.';
+        } else if (error.message.includes('permission')) {
+          errorMessage = 'You don\'t have permission to edit this project.';
+        } else if (error.message.includes('Project ID is missing')) {
+          errorMessage = 'Project ID is missing. Please refresh the page and try again.';
+        }
+      }
+      
+      setError(errorMessage);
+      // Revert optimistic update
+      setFeatures(features);
+    } finally {
+      setAddingFeature(false);
+    }
+  };
+
+  const deleteFeature = async (featureId: number) => {
+    try {
+      const updatedFeatures = features.filter((f: Feature) => f.id !== featureId);
+      // Reassign IDs to maintain consistency
+      const reindexedFeatures = updatedFeatures.map((f: Feature, index: number) => ({ ...f, id: index }));
+      setFeatures(reindexedFeatures);
+
+      // Update database
+      const featuresString = reindexedFeatures.map((f: Feature) => 
+        `${f.completed ? '✓' : '[ ]'} ${f.text}`
+      ).join('\n');
+
+      await updateDoc(doc(db, 'user_project_requests', project.id), {
+        features: featuresString,
+        lastUpdated: new Date()
+      });
+
+      onUpdate();
+    } catch (error) {
+      console.error('Error deleting feature:', error);
+      setError('Failed to delete feature. Please try again.');
+      // Revert optimistic update
+      setFeatures(features);
     }
   };
 
@@ -384,6 +595,35 @@ const UserRequestedProjectModal: React.FC<UserRequestedProjectModalProps> = ({
             <div className="error-message">
               <AlertCircle size={16} />
               {error}
+              {error.includes('old format') && (
+                <button 
+                  className="migrate-btn"
+                  onClick={migrateDocument}
+                  disabled={migratingDocument}
+                  style={{ marginLeft: '10px', padding: '4px 8px', fontSize: '12px' }}
+                >
+                  {migratingDocument ? 'Migrating...' : 'Fix Now'}
+                </button>
+              )}
+              {error.includes('no longer exists') && (
+                <button 
+                  className="refresh-btn"
+                  onClick={() => {
+                    onUpdate();
+                    onClose();
+                  }}
+                  style={{ marginLeft: '10px', padding: '4px 8px', fontSize: '12px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px' }}
+                >
+                  Refresh Data
+                </button>
+              )}
+              <button 
+                className="error-dismiss"
+                onClick={() => setError('')}
+                title="Dismiss error"
+              >
+                <X size={14} />
+              </button>
             </div>
           )}
 
@@ -475,15 +715,46 @@ const UserRequestedProjectModal: React.FC<UserRequestedProjectModalProps> = ({
 
           {/* Features List */}
           <div className="features-section">
-            <h3>Features & Requirements</h3>
+            <div className="features-header">
+              <h3>Features & Requirements</h3>
+              <span className="features-count">{features.length} features</span>
+            </div>
+            
+            {/* Add New Feature */}
+            <div className="add-feature-section">
+              <div className="add-feature-input">
+                <input
+                  type="text"
+                  value={newFeature}
+                  onChange={(e) => setNewFeature(e.target.value)}
+                  placeholder="Add a new feature or requirement..."
+                  className="new-feature-input"
+                  onKeyPress={(e) => e.key === 'Enter' && addNewFeature()}
+                />
+                <button 
+                  className="add-feature-btn"
+                  onClick={addNewFeature}
+                  disabled={!newFeature.trim() || addingFeature}
+                >
+                  {addingFeature ? (
+                    <div className="loading-spinner" />
+                  ) : (
+                    '+ Add Feature'
+                  )}
+                </button>
+              </div>
+            </div>
+
             <div className="features-list">
               {features.map((feature: Feature) => (
                 <div 
                   key={feature.id} 
                   className={`feature-item ${feature.completed ? 'completed' : ''} ${updatingFeature === feature.id ? 'updating' : ''}`}
-                  onClick={() => toggleFeatureCompletion(feature.id)}
                 >
-                  <div className="feature-checkbox">
+                  <div 
+                    className="feature-checkbox"
+                    onClick={() => toggleFeatureCompletion(feature.id)}
+                  >
                     {updatingFeature === feature.id ? (
                       <div className="loading-spinner" />
                     ) : feature.completed ? (
@@ -501,6 +772,13 @@ const UserRequestedProjectModal: React.FC<UserRequestedProjectModalProps> = ({
                       {feature.priority}
                     </span>
                   </div>
+                  <button 
+                    className="delete-feature-btn"
+                    onClick={() => deleteFeature(feature.id)}
+                    title="Delete feature"
+                  >
+                    <X size={14} />
+                  </button>
                 </div>
               ))}
             </div>
@@ -665,7 +943,10 @@ const UserRequestedProjectModal: React.FC<UserRequestedProjectModalProps> = ({
 
           {/* Admin Notes */}
           <div className="notes-section">
-            <h3>Admin Notes</h3>
+            <div className="notes-header">
+              <h3>Admin Notes</h3>
+              <span className="notes-info">Internal notes - visible only to admins</span>
+            </div>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -673,9 +954,26 @@ const UserRequestedProjectModal: React.FC<UserRequestedProjectModalProps> = ({
               className="notes-textarea"
               rows={4}
             />
-            <button className="save-notes-btn" onClick={saveNotes}>
-              Save Notes
-            </button>
+            <div className="notes-actions">
+              <button 
+                className="save-notes-btn" 
+                onClick={saveNotes}
+                disabled={savingNotes}
+              >
+                {savingNotes ? (
+                  <>
+                    <div className="loading-spinner" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Notes'
+                )}
+              </button>
+              <span className={`notes-status ${notesSaved ? 'success' : notes !== (project?.adminNotes || '') && !savingNotes ? 'warning' : ''}`}>
+                {notesSaved && '✓ Notes saved successfully'}
+                {notes !== (project?.adminNotes || '') && !savingNotes && !notesSaved && 'Unsaved changes'}
+              </span>
+            </div>
           </div>
         </div>
       </div>

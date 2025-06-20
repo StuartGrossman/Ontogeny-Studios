@@ -172,7 +172,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
       }));
 
       // Here you could add Firebase update if needed
-      // await updateDoc(doc(db, 'admin_projects', project.id), { tasks: updatedTasks });
+      // await updateDoc(doc(db, 'projects', project.id), { tasks: updatedTasks });
       
     } catch (error) {
       console.error('Error updating task:', error);
@@ -210,7 +210,8 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
     }
 
     try {
-      const projectRef = doc(db, 'admin_projects', project.id);
+      // Use the correct collection - admin-created projects are stored in 'projects' collection
+      const projectRef = doc(db, 'projects', project.id);
       
       const updateData = {
         ...formData,

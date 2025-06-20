@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Settings, LogOut } from 'lucide-react';
@@ -38,6 +38,9 @@ const Dashboard: React.FC = () => {
   const dashboardData = useDashboardData(currentUser);
   const modals = useProjectModals();
 
+  // Sidebar state for user dashboard
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   // Check authentication
   useEffect(() => {
     if (!currentUser) {
@@ -65,14 +68,30 @@ const Dashboard: React.FC = () => {
         userId: dashboardData.selectedUser.id,
         createdAt: new Date(),
         status: 'planning',
-        progress: 0
+        progress: 0,
+        type: 'admin-created',
+        createdBy: currentUser?.uid,
+        createdByAdmin: true,
+        tasks: [],
+        deadline: null
       });
       
       modals.closeCreateProjectModal();
-      // Refresh user projects
-      dashboardData.handleUserSelect(dashboardData.selectedUser);
+      
+      // Refresh user projects for admin view
+      if (dashboardData.selectedUser) {
+        await dashboardData.handleUserSelect(dashboardData.selectedUser);
+      }
+      
+      // If we're in user mode and the project was created for the current user, refresh user data too
+      if (!dashboardData.isAdmin && dashboardData.selectedUser?.id === currentUser?.uid) {
+        await dashboardData.loadCustomerProjects();
+      }
+      
+      console.log('Project created successfully for user:', dashboardData.selectedUser.displayName);
     } catch (error) {
       console.error('Error creating project:', error);
+      throw error; // Re-throw to show error in modal
     }
   };
 
@@ -85,10 +104,28 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  // Handle admin project modal opening
-  const handleOpenAdminProject = async (adminProjectId: string) => {
-    // Implementation for opening admin project details
-    console.log('Opening admin project:', adminProjectId);
+  // Handle admin project modal opening - route to correct modal based on project type
+  const handleOpenAdminProject = (project: any) => {
+    console.log('Opening admin project with type:', project.type, project);
+    
+    if (project.type === 'user-requested') {
+      // Open UserRequestedProjectModal for user-requested projects
+      modals.openUserRequestedModal(project);
+    } else if (project.type === 'admin-created') {
+      // Open EditProjectModal for admin-created projects
+      modals.openEditProjectModal(project);
+    } else {
+      console.error('Unknown project type:', project.type);
+      // Default to edit modal for admin-created projects
+      modals.openEditProjectModal(project);
+    }
+  };
+
+  // Handle opening admin project from UserRequestedProjectModal (receives ID string)
+  const handleOpenAdminProjectById = (adminProjectId: string) => {
+    console.log('Opening admin project by ID:', adminProjectId);
+    // This would need to fetch the project data by ID and open the appropriate modal
+    // For now, just log it since this feature isn't fully implemented yet
   };
 
   // Handle meeting scheduler completion
@@ -151,6 +188,11 @@ const Dashboard: React.FC = () => {
     console.log('Opening customer project:', project);
   };
 
+  // Handle sidebar state change
+  const handleSidebarStateChange = (collapsed: boolean) => {
+    setSidebarCollapsed(collapsed);
+  };
+
   // Show loading state
   if (dashboardData.loading) {
     return (
@@ -165,17 +207,40 @@ const Dashboard: React.FC = () => {
     <>
       <div className="dashboard">
         {/* Top Navigation Bar */}
-                 <nav className={`dashboard-navbar ${!dashboardData.isAdmin ? 'with-sidebar' : ''}`}>
-          <div className="navbar-left">
-            <img src={ontogenyIcon} alt="Ontogeny" className="navbar-logo" />
-            <h1>Ontogeny Studios</h1>
+        <nav className={`dashboard-navbar ${!dashboardData.isAdmin ? (sidebarCollapsed ? 'sidebar-collapsed' : 'with-sidebar') : ''}`}>
+          <div className="nav-left">
+            <div className="nav-brand">
+              <img src={ontogenyIcon} alt="Ontogeny" className="brand-icon" />
+              <div className="brand-text">
+                <span className="gradient-text">Ontogeny Studios</span>
+              </div>
+            </div>
           </div>
           
-          <div className="navbar-right">
-            <button className="navbar-btn">
+          <div className="nav-center">
+            <div className="user-dropdown-container">
+              <div className="admin-toggle-item">
+                <span className="dropdown-label">View Mode:</span>
+                <button 
+                  className={`admin-toggle ${dashboardData.isAdmin ? 'admin-active' : 'user-active'}`}
+                  onClick={dashboardData.toggleAdminStatus}
+                  disabled={dashboardData.loading}
+                >
+                  {dashboardData.loading ? (
+                    <span className="spinning">⟳</span>
+                  ) : (
+                    <span>{dashboardData.isAdmin ? 'Admin' : 'User'}</span>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div className="nav-right">
+            <button className="nav-tab" title="Settings">
               <Settings size={20} />
             </button>
-            <button className="navbar-btn" onClick={handleLogout}>
+            <button className="nav-tab" onClick={handleLogout} title="Logout">
               <LogOut size={20} />
             </button>
           </div>
@@ -194,7 +259,7 @@ const Dashboard: React.FC = () => {
             onUserSearchChange={dashboardData.setUserSearchQuery}
             onToggleAlertSort={dashboardData.toggleAlertSort}
             onCreateProject={modals.openCreateProjectModal}
-            onOpenAdminProject={modals.openUserRequestedModal}
+            onOpenAdminProject={handleOpenAdminProject}
           />
         ) : (
           <UserDashboard
@@ -205,6 +270,7 @@ const Dashboard: React.FC = () => {
             onOpenAIChat={modals.openAIChat}
             onOpenCustomerProject={handleOpenCustomerProject}
             onFeatureRequest={handleFeatureRequest}
+            onSidebarStateChange={handleSidebarStateChange}
           />
         )}
       </div>
@@ -270,7 +336,7 @@ const Dashboard: React.FC = () => {
           }
         }}
         currentUser={currentUser}
-        onOpenAdminProject={handleOpenAdminProject}
+        onOpenAdminProject={handleOpenAdminProjectById}
       />
 
       {/* Project Details Modal */}

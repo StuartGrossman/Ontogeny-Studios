@@ -93,6 +93,19 @@ export const useProjectModals = () => {
   };
 
   const openUserRequestedModal = (project: any) => {
+    // Validate project data before opening modal
+    if (!project || !project.id) {
+      console.error('Cannot open modal: Invalid project data', project);
+      return;
+    }
+    
+    console.log('Opening UserRequestedProjectModal with project:', {
+      id: project.id,
+      name: project.projectName || project.name,
+      status: project.status,
+      type: project.type
+    });
+    
     updateModalData('selectedUserProject', project);
     updateModalState('showUserRequestedModal', true);
   };
