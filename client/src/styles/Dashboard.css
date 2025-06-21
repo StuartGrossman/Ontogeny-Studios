@@ -1945,6 +1945,91 @@
   transform: translateY(-1px);
 }
 
+/* Empty Projects State */
+.empty-projects-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.empty-state-icon {
+  color: #cbd5e1;
+  margin-bottom: 1.5rem;
+}
+
+.empty-projects-state h3 {
+  margin: 0 0 1rem 0;
+  color: #1e293b;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.empty-projects-state p {
+  margin: 0 0 2rem 0;
+  color: #64748b;
+  font-size: 1rem;
+  line-height: 1.6;
+  max-width: 500px;
+}
+
+.empty-state-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.primary-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+
+.primary-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.secondary-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+
+.secondary-action-btn:hover {
+  background: #667eea;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
 /* Completed Projects Section */
 .completed-projects-section {
   margin-top: 3rem;
@@ -2412,10 +2497,6 @@
   gap: 0.5rem;
 }
 
-<<<<<<< HEAD
-.dashboard .feature-item {
-  color: #64748b;
-=======
 .feature-item {
   display: flex;
   align-items: center;
@@ -2424,19 +2505,10 @@
   background: #ffffff;
   border-radius: 6px;
   border: 1px solid #e2e8f0;
->>>>>>> dashboard-only
   font-size: 0.875rem;
   line-height: 1.5;
 }
 
-<<<<<<< HEAD
-.dashboard .feature-item:before {
-  content: '•';
-  color: #667eea;
-  font-weight: bold;
-  position: absolute;
-  left: -1rem;
-=======
 .feature-priority {
   font-size: 0.875rem;
   flex-shrink: 0;
@@ -2468,7 +2540,6 @@
 
 .feature-complexity.complexity-complex {
   color: #ef4444;
->>>>>>> dashboard-only
 }
 
 .request-meta {
@@ -3816,16 +3887,17 @@
 .user-dashboard-container {
   display: flex;
   height: 100vh;
-  margin-top: 80px; /* Account for fixed navbar */
+  margin-top: 0; /* Remove top margin */
 }
 
 .user-dashboard {
   flex: 1;
-  margin-left: 280px;
-  padding: 2rem;
-  padding-top: 2rem; /* Reduced since container has margin-top */
+  margin-left: 0; /* Remove left margin */
+  padding: 1.5rem;
+  padding-top: 1.5rem;
   overflow-y: auto;
   transition: margin-left 0.3s ease;
+  background: #f7f8fa;
 }
 
 .user-dashboard.sidebar-collapsed {
@@ -3948,3 +4020,6 @@
   border-radius: 4px;
   transition: width 0.3s ease;
 }
+
+/* ===== PROJECT MANAGEMENT INTERFACE MOVED TO ActiveProjectsSection.css ===== */
+

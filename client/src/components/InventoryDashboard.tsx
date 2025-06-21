@@ -197,7 +197,7 @@ const InventoryDashboard: React.FC = () => {
   const getFilteredItems = () => {
     return inventoryItems.filter(item => {
       const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           item.id.toLowerCase().includes(searchQuery.toLowerCase());
+                          item.id.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
       const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
       
@@ -302,18 +302,18 @@ const InventoryDashboard: React.FC = () => {
       </div>
 
       {/* Items Section */}
-      <div className="inventory-items-section">
-        <div className="inventory-items-header">
-          <h3>Inventory Items</h3>
+    <div className="inventory-items-section">
+      <div className="inventory-items-header">
+        <h3>Inventory Items</h3>
           <div className="inventory-controls">
             <div className="inventory-search">
               <Search size={16} />
-              <input
-                type="text"
-                placeholder="Search items..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+            <input
+              type="text"
+              placeholder="Search items..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
             </div>
             <select
               value={categoryFilter}
@@ -340,21 +340,21 @@ const InventoryDashboard: React.FC = () => {
             <button className="inventory-add-btn" onClick={() => setShowItemModal(true)}>
               <Plus size={16} />
               Add Item
-            </button>
-          </div>
+              </button>
         </div>
+      </div>
 
-        <div className="inventory-items-grid">
+      <div className="inventory-items-grid">
           {getFilteredItems().map((item) => (
             <div key={item.id} className="inventory-item-card">
-              <div className="inventory-item-header">
+            <div className="inventory-item-header">
                 <div className="inventory-item-icon">
                   <Package size={24} />
-                </div>
+              </div>
                 <div className="inventory-item-info">
                   <div className="inventory-item-name">{item.name}</div>
                   <div className="inventory-item-type">{item.category}</div>
-                </div>
+              </div>
                 <div
                   className="inventory-item-status"
                   style={{
@@ -363,8 +363,8 @@ const InventoryDashboard: React.FC = () => {
                   }}
                 >
                   {item.status.replace('-', ' ').toUpperCase()}
+            </div>
                 </div>
-              </div>
               <div className="inventory-item-metrics">
                 <div className="inventory-metric">
                   <span>Quantity</span>
@@ -381,29 +381,29 @@ const InventoryDashboard: React.FC = () => {
                 <div className="inventory-metric">
                   <span>Total Value</span>
                   <span>${(item.quantity * item.price).toFixed(2)}</span>
-                </div>
               </div>
-              <div className="inventory-item-actions">
-                <button
+            </div>
+            <div className="inventory-item-actions">
+              <button 
                   className="inventory-action-btn"
                   onClick={() => setShowQRModal(true)}
-                >
+              >
                   <QrCode size={16} />
-                </button>
-                <button
+              </button>
+            <button 
                   className="inventory-action-btn"
                   onClick={() => {
                     setSelectedItem(item);
                     setShowItemModal(true);
                   }}
-                >
+            >
                   <Edit3 size={16} />
-                </button>
+            </button>
+          </div>
               </div>
-            </div>
           ))}
-        </div>
-      </div>
+            </div>
+          </div>
 
       {/* Warehouses Section */}
       <div className="inventory-warehouses-section">
@@ -413,7 +413,7 @@ const InventoryDashboard: React.FC = () => {
             <Plus size={16} />
             Add Warehouse
           </button>
-        </div>
+      </div>
 
         <div className="inventory-warehouses-list">
           {warehouses.map((warehouse) => (
@@ -421,11 +421,11 @@ const InventoryDashboard: React.FC = () => {
               <div className="inventory-warehouse-header">
                 <div className="inventory-warehouse-icon">
                   <Warehouse size={24} />
-                </div>
+          </div>
                 <div className="inventory-warehouse-info">
                   <div className="inventory-warehouse-name">{warehouse.name}</div>
                   <div className="inventory-warehouse-location">{warehouse.location}</div>
-                </div>
+        </div>
                 <div
                   className="inventory-warehouse-status"
                   style={{
@@ -434,60 +434,60 @@ const InventoryDashboard: React.FC = () => {
                   }}
                 >
                   {warehouse.status.toUpperCase()}
-                </div>
-              </div>
+            </div>
+          </div>
               <div className="inventory-warehouse-details">
                 <div className="inventory-warehouse-metrics">
                   <div className="inventory-metric">
                     <span>Utilization</span>
                     <span>{warehouse.utilization}%</span>
-                  </div>
+      </div>
                   <div className="inventory-metric">
                     <span>Capacity</span>
                     <span>{warehouse.capacity.toLocaleString()} sq ft</span>
-                  </div>
+    </div>
                   <div className="inventory-metric">
                     <span>Manager</span>
                     <span>{warehouse.manager}</span>
-                  </div>
+        </div>
                   <div className="inventory-metric">
                     <span>Type</span>
                     <span>{warehouse.type}</span>
-                  </div>
-                </div>
+      </div>
+          </div>
                 <div className="inventory-warehouse-progress">
                   <div className="progress-bar">
-                    <div 
+                <div 
                       className="progress-fill" 
                       style={{ 
                         width: `${warehouse.utilization}%`,
                         backgroundColor: warehouse.utilization > 80 ? '#ef4444' : '#10b981'
                       }}
                     />
+            </div>
+          </div>
+        </div>
+              </div>
+            ))}
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+            );
 
   const renderAnalytics = () => (
     <div className="inventory-analytics-section">
       <div className="inventory-analytics-header">
         <h2>Inventory Analytics</h2>
         <p>Comprehensive analytics and insights for your inventory operations</p>
-        <button 
+            <button 
           className="inventory-back-btn"
           onClick={() => setCurrentView('main')}
-        >
+            >
           <RefreshCw size={16} />
           Back to Dashboard
-        </button>
-      </div>
-
+            </button>
+              </div>
+              
       <div className="inventory-analytics-content">
         <div className="inventory-analytics-grid">
           <div className="inventory-analytics-card">
@@ -495,76 +495,76 @@ const InventoryDashboard: React.FC = () => {
             <div className="inventory-chart-placeholder">
               <BarChart3 size={48} />
               <p>Stock level analytics chart will be displayed here</p>
-            </div>
-          </div>
+                </div>
+                </div>
           <div className="inventory-analytics-card">
             <h3>Movement Trends</h3>
             <div className="inventory-chart-placeholder">
               <TrendingUp size={48} />
               <p>Movement trends chart will be displayed here</p>
-            </div>
-          </div>
+              </div>
+                </div>
           <div className="inventory-analytics-card">
             <h3>Warehouse Utilization</h3>
             <div className="inventory-chart-placeholder">
               <Warehouse size={48} />
               <p>Warehouse utilization chart will be displayed here</p>
-            </div>
-          </div>
+                </div>
+                </div>
           <div className="inventory-analytics-card">
             <h3>Category Distribution</h3>
             <div className="inventory-chart-placeholder">
               <Package size={48} />
               <p>Category distribution chart will be displayed here</p>
-            </div>
+              </div>
+                </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
 
   const renderReports = () => (
     <div className="inventory-reports-section">
       <div className="inventory-reports-header">
         <h2>Inventory Reports</h2>
         <p>Generate and manage comprehensive inventory reports</p>
-        <button 
+            <button 
           className="inventory-back-btn"
           onClick={() => setCurrentView('main')}
-        >
+            >
           <RefreshCw size={16} />
           Back to Dashboard
-        </button>
-      </div>
-
+            </button>
+              </div>
+              
       <div className="inventory-reports-content">
         <div className="inventory-reports-grid">
           <div className="inventory-report-card">
             <div className="inventory-report-icon">
               <FileText size={32} />
-            </div>
+                </div>
             <h4>Stock Report</h4>
             <p>Detailed stock levels and inventory status</p>
             <button className="inventory-report-btn">
               <Download size={16} />
               Generate Report
             </button>
-          </div>
+              </div>
           <div className="inventory-report-card">
             <div className="inventory-report-icon">
               <TrendingUp size={32} />
-            </div>
+                </div>
             <h4>Movement Report</h4>
             <p>Inventory movements and transaction history</p>
             <button className="inventory-report-btn">
               <Download size={16} />
               Generate Report
-            </button>
-          </div>
+                </button>
+              </div>
           <div className="inventory-report-card">
             <div className="inventory-report-icon">
               <AlertTriangle size={32} />
-            </div>
+          </div>
             <h4>Low Stock Alert</h4>
             <p>Items below reorder level threshold</p>
             <button className="inventory-report-btn">
@@ -575,18 +575,18 @@ const InventoryDashboard: React.FC = () => {
           <div className="inventory-report-card">
             <div className="inventory-report-icon">
               <DollarSign size={32} />
-            </div>
+              </div>
             <h4>Valuation Report</h4>
             <p>Inventory valuation and financial analysis</p>
             <button className="inventory-report-btn">
               <Download size={16} />
               Generate Report
-            </button>
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
 
   return (
     <div className="inventory-dashboard">

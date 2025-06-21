@@ -70,6 +70,33 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [notifications, setNotifications] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
 
+  // Ensure parent sections are expanded when child sections are active
+  useEffect(() => {
+    const newExpanded = new Set(expandedSections);
+    
+    // If active-projects, requested-projects, or completed-projects is active, expand projects
+    if (['active-projects', 'requested-projects', 'completed-projects'].includes(activeSection)) {
+      newExpanded.add('projects');
+    }
+    
+    // If any statistics sub-item is active, expand statistics
+    if (['project-analytics', 'time-tracking', 'achievements'].includes(activeSection)) {
+      newExpanded.add('statistics');
+    }
+    
+    // If any settings sub-item is active, expand settings
+    if (['profile', 'payment', 'security', 'notifications'].includes(activeSection)) {
+      newExpanded.add('settings');
+    }
+    
+    // If any help sub-item is active, expand help
+    if (['documentation', 'support-tickets', 'feature-requests'].includes(activeSection)) {
+      newExpanded.add('help');
+    }
+    
+    setExpandedSections(newExpanded);
+  }, [activeSection]);
+
   useEffect(() => {
     if (currentUser) {
       loadProjectStats();
@@ -90,10 +117,10 @@ const Sidebar: React.FC<SidebarProps> = ({
       const requestedSnapshot = await getDocs(requestedQuery);
       const requestedProjects = requestedSnapshot.docs.map(doc => doc.data());
 
-      // Load active projects assigned to user
+      // Load regular projects assigned to user (use 'projects' collection instead of 'admin_projects')
       const activeQuery = query(
-        collection(db, 'admin_projects'),
-        where('assignedTo', 'array-contains', currentUser.uid)
+        collection(db, 'projects'),
+        where('userId', '==', currentUser.uid)
       );
       const activeSnapshot = await getDocs(activeQuery);
       const activeProjects = activeSnapshot.docs.map(doc => doc.data());
@@ -125,6 +152,16 @@ const Sidebar: React.FC<SidebarProps> = ({
       });
     } catch (error) {
       console.error('Error loading project stats:', error);
+      // Set default stats if there's an error
+      setProjectStats({
+        totalRequested: 0,
+        pending: 0,
+        accepted: 0,
+        completed: 0,
+        totalActive: 0,
+        inProgress: 0,
+        overdue: 0
+      });
     }
   };
 
@@ -136,11 +173,17 @@ const Sidebar: React.FC<SidebarProps> = ({
   const loadUnreadMessages = () => {
     if (!currentUser?.uid) return;
 
-    const unsubscribe = getUnreadMessageCount(currentUser.uid, (count) => {
-      setUnreadMessages(count);
-    });
+    try {
+      const unsubscribe = getUnreadMessageCount(currentUser.uid, (count) => {
+        setUnreadMessages(count);
+      });
 
-    return unsubscribe;
+      return unsubscribe;
+    } catch (error) {
+      console.error('Error loading unread messages:', error);
+      // Set default value if there's an error
+      setUnreadMessages(0);
+    }
   };
 
   const toggleSection = (section: string) => {
@@ -238,14 +281,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       description: 'Deadlines and meetings',
       badge: projectStats.overdue > 0 ? projectStats.overdue : null,
       badgeColor: 'red'
-    },
-    {
-      id: 'messages',
-      label: 'Messages',
-      icon: MessageSquare,
-      description: 'Communications',
-      badge: notifications > 0 ? notifications : null,
-      badgeColor: 'purple'
     },
     {
       id: 'settings',

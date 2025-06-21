@@ -17,6 +17,10 @@ import UserDashboard from '../components/UserDashboard';
 import Footer from '../components/Footer';
 import AIChatModal from '../components/AIChatModal';
 
+
+// Debug utility
+import '../utils/addTestProject.js';
+
 import { ProjectDetailsModal, MeetingSchedulerModal, FeatureRequestModal, FeatureAssignmentModal } from '../components/modals';
 
 // Styles
@@ -165,8 +169,14 @@ const Dashboard: React.FC = () => {
     );
   }
 
+  // Add logging for dashboard data
+  console.log('🏠 Dashboard component rendered');
+  console.log('📊 dashboardData:', dashboardData);
+  console.log('👤 currentUser:', currentUser?.uid);
+
   return (
     <div className="user-dashboard-page">
+      
       {/* Navigation Bar */}
       <nav className={`user-dashboard-navbar ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         <div className="user-dashboard-nav-left">

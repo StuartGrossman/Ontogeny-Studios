@@ -1,5 +1,6 @@
-import React from 'react';
-import { Activity, RefreshCw, TrendingUp, Clock, AlertCircle, Zap, Target, MessageSquare, Play } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Activity, RefreshCw, TrendingUp, Clock, AlertCircle, Zap, Target, MessageSquare, Play, Calendar, Users, CheckCircle, Settings, BarChart3, FileText, GitBranch } from 'lucide-react';
+import '../styles/ActiveProjectsSection.css';
 
 interface Project {
   id: string;
@@ -25,6 +26,47 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
   onOpenCustomerProject,
   onFeatureRequest,
 }) => {
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [projectDetailsLoading, setProjectDetailsLoading] = useState(false);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+
+  console.log('🎯 ActiveProjectsSection rendered');
+  console.log('📊 customerProjects:', customerProjects);
+  console.log('⏳ customerProjectsLoading:', customerProjectsLoading);
+  console.log('📈 customerProjects.length:', customerProjects?.length || 0);
+
+  // Calculate project arrays
+  const activeProjects = customerProjects.filter(p => p.status === 'in-progress' || p.status === 'planning');
+  const completedProjects = customerProjects.filter(p => p.status === 'completed');
+
+  // Auto-select first project if none selected
+  useEffect(() => {
+    if (!selectedProject && activeProjects.length > 0) {
+      setSelectedProject(activeProjects[0]);
+    }
+  }, [activeProjects, selectedProject]);
+
+  // Simulate loading when project changes
+  useEffect(() => {
+    if (selectedProject) {
+      setProjectDetailsLoading(true);
+      setMetricsLoading(true);
+      
+      const detailsTimer = setTimeout(() => {
+        setProjectDetailsLoading(false);
+      }, 600);
+      
+      const metricsTimer = setTimeout(() => {
+        setMetricsLoading(false);
+      }, 900);
+      
+      return () => {
+        clearTimeout(detailsTimer);
+        clearTimeout(metricsTimer);
+      };
+    }
+  }, [selectedProject]);
+
   // Generate project metrics
   const generateProjectMetrics = (project: Project) => {
     const baseMetrics = {
@@ -41,6 +83,16 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
     };
   };
 
+  // Get project icon based on name or type
+  const getProjectIcon = (project: Project) => {
+    const name = project.name?.toLowerCase() || '';
+    if (name.includes('web') || name.includes('website')) return <BarChart3 size={20} />;
+    if (name.includes('mobile') || name.includes('app')) return <Settings size={20} />;
+    if (name.includes('dashboard') || name.includes('admin')) return <Target size={20} />;
+    if (name.includes('api') || name.includes('backend')) return <GitBranch size={20} />;
+    return <FileText size={20} />;
+  };
+
   if (customerProjectsLoading) {
     return (
       <div className="loading-state">
@@ -51,196 +103,362 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
   }
 
   if (customerProjects.length === 0) {
-    return null;
+    return (
+      <div className="active-projects-section">
+        <div className="active-projects-header">
+          <h2>
+            <Activity size={24} />
+            Active Projects
+          </h2>
+          <div className="project-summary">
+            <span className="summary-item">
+              <span className="summary-number">0</span>
+              <span className="summary-label">Active</span>
+            </span>
+            <span className="summary-item">
+              <span className="summary-number">0</span>
+              <span className="summary-label">Completed</span>
+            </span>
+          </div>
+        </div>
+
+        <div className="empty-projects-state">
+          <div className="empty-state-icon">
+            <Activity size={64} />
+          </div>
+          <h3>No Active Projects</h3>
+          <p>You don't have any active projects yet. Start by requesting a new project or check your requested projects to see if any have been approved.</p>
+          <div className="empty-state-actions">
+            <button className="primary-action-btn">
+              <Play size={16} />
+              Request New Project
+            </button>
+            <button className="secondary-action-btn">
+              <MessageSquare size={16} />
+              View Requested Projects
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="active-projects-section">
-      {/* Active Projects (Large Cards) */}
-      <div className="active-projects-header">
-        <h2>
-          <Activity size={24} />
-          Active Projects
-        </h2>
-        <div className="project-summary">
-          <span className="summary-item">
-            <span className="summary-number">{customerProjects.filter(p => p.status === 'in-progress').length}</span>
-            <span className="summary-label">Active</span>
-          </span>
-          <span className="summary-item">
-            <span className="summary-number">{customerProjects.filter(p => p.status === 'completed').length}</span>
-            <span className="summary-label">Completed</span>
-          </span>
+    <div className="projects-management-container">
+      {/* Header */}
+      <div className="projects-header-section">
+        <div className="projects-title">
+          <h1>
+            <Activity size={28} />
+            Project Management
+          </h1>
+          <p>Manage and track your active and completed projects</p>
+        </div>
+        <div className="projects-stats">
+          <div className="stat-card active">
+            <span className="stat-number">{activeProjects.length}</span>
+            <span className="stat-label">Active Projects</span>
+          </div>
+          <div className="stat-card completed">
+            <span className="stat-number">{completedProjects.length}</span>
+            <span className="stat-label">Completed</span>
+          </div>
+          <div className="stat-card total">
+            <span className="stat-number">{customerProjects.length}</span>
+            <span className="stat-label">Total Projects</span>
+          </div>
         </div>
       </div>
 
-      <div className="enhanced-projects-grid">
-        {customerProjects
-          .filter(project => project.status === 'in-progress' || project.status === 'planning')
-          .map((project) => {
-            const metrics = generateProjectMetrics(project);
-            return (
-              <div key={project.id} className="enhanced-project-card">
-                {/* Project Header */}
-                <div className="enhanced-project-header">
-                  <div className="project-title-section">
-                    <h3>{project.name}</h3>
-                    <span className={`enhanced-status-badge ${project.status}`}>
-                      <Activity size={12} />
-                      {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
-                    </span>
-                  </div>
-                  
-                  <div className="project-actions">
-                    <button 
-                      className="action-button primary"
-                      onClick={() => onOpenCustomerProject(project)}
-                      title="View project details"
-                    >
-                      <Play size={14} />
-                      View Details
-                    </button>
-                    <button 
-                      className="action-button secondary"
-                      onClick={() => onFeatureRequest(project)}
-                      title="Request new feature"
-                    >
-                      <MessageSquare size={14} />
-                      Request Feature
-                    </button>
-                  </div>
+      {/* Main Content Area */}
+      <div className="projects-main-content">
+        {/* Left Sidebar - Project List */}
+        <div className="projects-sidebar">
+          <div className="projects-sidebar-header">
+            <h3>Your Projects</h3>
+            <span className="project-count">{activeProjects.length} active</span>
+          </div>
+          
+          <div className="projects-list">
+            {activeProjects.map((project) => (
+              <div 
+                key={project.id}
+                className={`project-list-item ${selectedProject?.id === project.id ? 'selected' : ''}`}
+                onClick={() => setSelectedProject(project)}
+              >
+                <div className="project-icon">
+                  {getProjectIcon(project)}
                 </div>
-
-                {/* Project Progress */}
-                <div className="enhanced-progress-section">
-                  <div className="progress-info">
-                    <span className="progress-label">Overall Progress</span>
-                    <span className="progress-value">{project.progress || 0}%</span>
+                <div className="project-info">
+                  <h4>{project.name}</h4>
+                  <div className="project-status-mini">
+                    <span className={`status-dot ${project.status}`}></span>
+                    <span className="status-text">{project.status}</span>
                   </div>
-                  <div className="enhanced-progress-bar">
-                    <div 
-                      className="enhanced-progress-fill"
-                      style={{ width: `${project.progress || 0}%` }}
-                    />
-                  </div>
-                  <div className="progress-details">
-                    <span>{metrics.tasksCompleted} of {metrics.totalTasks} tasks completed</span>
-                  </div>
-                </div>
-
-                {/* Project Metrics Grid */}
-                <div className="project-metrics-grid">
-                  <div className="metric-card">
-                    <div className="metric-icon">
-                      <TrendingUp size={16} />
+                  <div className="project-progress-mini">
+                    <div className="progress-bar-mini">
+                      <div 
+                        className="progress-fill-mini"
+                        style={{ width: `${project.progress || 0}%` }}
+                      ></div>
                     </div>
-                    <div className="metric-info">
-                      <span className="metric-value">{metrics.completionRate}%</span>
-                      <span className="metric-label">Completion Rate</span>
-                    </div>
-                  </div>
-                  
-                  <div className="metric-card">
-                    <div className="metric-icon">
-                      <Clock size={16} />
-                    </div>
-                    <div className="metric-info">
-                      <span className="metric-value">{metrics.daysRemaining}</span>
-                      <span className="metric-label">Days Remaining</span>
-                    </div>
-                  </div>
-                  
-                  <div className="metric-card">
-                    <div className="metric-icon">
-                      <Target size={16} />
-                    </div>
-                    <div className="metric-info">
-                      <span className="metric-value">{metrics.teamMembers}</span>
-                      <span className="metric-label">Team Members</span>
-                    </div>
-                  </div>
-                  
-                  <div className="metric-card">
-                    <div className={`metric-icon risk-${metrics.riskLevel}`}>
-                      {metrics.riskLevel === 'low' ? <Zap size={16} /> : 
-                       metrics.riskLevel === 'medium' ? <AlertCircle size={16} /> : 
-                       <AlertCircle size={16} />}
-                    </div>
-                    <div className="metric-info">
-                      <span className={`metric-value risk-${metrics.riskLevel}`}>
-                        {metrics.riskLevel.charAt(0).toUpperCase() + metrics.riskLevel.slice(1)}
-                      </span>
-                      <span className="metric-label">Risk Level</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Project Description */}
-                <div className="enhanced-project-description">
-                  <p>{project.description || 'No description available for this project.'}</p>
-                </div>
-
-                {/* Project Timeline */}
-                <div className="project-timeline">
-                  <div className="timeline-item">
-                    <span className="timeline-label">Started:</span>
-                    <span className="timeline-date">
-                      {project.createdAt ? new Date(project.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}
-                    </span>
-                  </div>
-                  <div className="timeline-item">
-                    <span className="timeline-label">Deadline:</span>
-                    <span className="timeline-date">{project.deadline || 'Not set'}</span>
+                    <span className="progress-text-mini">{project.progress || 0}%</span>
                   </div>
                 </div>
               </div>
-            );
-          })}
-      </div>
-
-      {/* Completed Projects (Compact Cards) */}
-      <div className="completed-projects-section">
-        <h3>Completed Projects</h3>
-        {customerProjects.filter(p => p.status === 'completed').length > 0 ? (
-          <div className="completed-projects-grid">
-            {customerProjects
-              .filter(project => project.status === 'completed')
-              .map((project) => (
-                <div key={project.id} className="completed-project-card">
-                  <div className="completed-project-header">
-                    <h4>{project.name}</h4>
-                    <span className="completed-badge">✅ Completed</span>
-                  </div>
-                  <p className="completed-project-description">
-                    {project.description ? 
-                      (project.description.length > 100 ? 
-                        `${project.description.substring(0, 100)}...` : 
-                        project.description
-                      ) : 
-                      'No description available.'
-                    }
-                  </p>
-                  <div className="completed-project-meta">
-                    <span>Completed: {project.createdAt ? new Date(project.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</span>
-                  </div>
-                  <button 
-                    className="view-completed-btn"
-                    onClick={() => onOpenCustomerProject(project)}
-                  >
-                    View Details
-                  </button>
+            ))}
+            
+            {completedProjects.length > 0 && (
+              <>
+                <div className="projects-divider">
+                  <span>Completed Projects</span>
                 </div>
-              ))}
+                {completedProjects.map((project) => (
+                  <div 
+                    key={project.id}
+                    className={`project-list-item completed ${selectedProject?.id === project.id ? 'selected' : ''}`}
+                    onClick={() => setSelectedProject(project)}
+                  >
+                    <div className="project-icon completed">
+                      <CheckCircle size={20} />
+                    </div>
+                    <div className="project-info">
+                      <h4>{project.name}</h4>
+                      <div className="project-status-mini">
+                        <span className="completed-badge">✅ Completed</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
-        ) : (
-          <div className="empty-completed-projects">
-            <div className="empty-state-icon">
-              <Target size={48} />
+        </div>
+
+        {/* Right Content - Project Details */}
+        <div className="project-details-content">
+          {selectedProject ? (
+            <div className="project-details-view">
+              {/* Project Header */}
+              {projectDetailsLoading ? (
+                <div className="project-details-header">
+                  <div className="project-title-section">
+                    <div className="project-icon-large">
+                      <RefreshCw className="spinning" size={32} />
+                    </div>
+                    <div className="project-title-info">
+                      <div className="loading-placeholder" style={{width: '200px', height: '28px', marginBottom: '8px'}}></div>
+                      <div className="loading-placeholder" style={{width: '100px', height: '20px'}}></div>
+                    </div>
+                  </div>
+                  <div className="project-actions-header">
+                    <div className="loading-placeholder" style={{width: '120px', height: '40px', marginRight: '10px'}}></div>
+                    <div className="loading-placeholder" style={{width: '120px', height: '40px'}}></div>
+                  </div>
+                </div>
+              ) : (
+                <div className="project-details-header">
+                  <div className="project-title-section">
+                    <div className="project-icon-large">
+                      {selectedProject.status === 'completed' ? 
+                        <CheckCircle size={32} /> : 
+                        getProjectIcon(selectedProject)
+                      }
+                    </div>
+                    <div className="project-title-info">
+                      <h2>{selectedProject.name}</h2>
+                      <span className={`project-status-badge ${selectedProject.status}`}>
+                        {selectedProject.status === 'completed' ? 'Completed' : 
+                         selectedProject.status === 'in-progress' ? 'In Progress' :
+                         selectedProject.status === 'planning' ? 'Planning' : selectedProject.status}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="project-actions-header">
+                    <button 
+                      className="action-btn primary"
+                      onClick={() => onOpenCustomerProject(selectedProject)}
+                    >
+                      <Settings size={16} />
+                      Project Details
+                    </button>
+                    {selectedProject.status !== 'completed' && (
+                      <button 
+                        className="action-btn secondary"
+                        onClick={() => onFeatureRequest(selectedProject)}
+                      >
+                        <MessageSquare size={16} />
+                        Request Feature
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Project Overview */}
+              <div className="project-overview-section">
+                {metricsLoading ? (
+                  <div className="overview-cards">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="overview-card">
+                        <div className="card-header">
+                          <RefreshCw className="spinning" size={20} />
+                          <div className="loading-placeholder" style={{width: '80px', height: '16px'}}></div>
+                        </div>
+                        <div className="card-content">
+                          <div className="loading-placeholder" style={{width: '100%', height: '60px', marginBottom: '10px'}}></div>
+                          <div className="loading-placeholder" style={{width: '120px', height: '14px'}}></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="overview-cards">
+                  {selectedProject.status !== 'completed' && (
+                    <>
+                      <div className="overview-card progress">
+                        <div className="card-header">
+                          <TrendingUp size={20} />
+                          <span>Progress</span>
+                        </div>
+                        <div className="card-content">
+                          <div className="progress-circle">
+                            <span className="progress-value">{selectedProject.progress || 0}%</span>
+                          </div>
+                          <div className="progress-details">
+                            <span>{generateProjectMetrics(selectedProject).tasksCompleted} tasks completed</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="overview-card timeline">
+                        <div className="card-header">
+                          <Clock size={20} />
+                          <span>Timeline</span>
+                        </div>
+                        <div className="card-content">
+                          <div className="timeline-info">
+                            <span className="days-remaining">{generateProjectMetrics(selectedProject).daysRemaining}</span>
+                            <span className="days-label">days remaining</span>
+                          </div>
+                          <div className="deadline-info">
+                            <span>Deadline: {selectedProject.deadline || 'Not set'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="overview-card team">
+                        <div className="card-header">
+                          <Users size={20} />
+                          <span>Team</span>
+                        </div>
+                        <div className="card-content">
+                          <div className="team-size">
+                            <span className="team-count">{generateProjectMetrics(selectedProject).teamMembers}</span>
+                            <span className="team-label">team members</span>
+                          </div>
+                          <div className="team-activity">
+                            <span>Active development</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="overview-card risk">
+                        <div className="card-header">
+                          <AlertCircle size={20} />
+                          <span>Risk Level</span>
+                        </div>
+                        <div className="card-content">
+                          <div className={`risk-indicator ${generateProjectMetrics(selectedProject).riskLevel}`}>
+                            <span className="risk-level">{generateProjectMetrics(selectedProject).riskLevel}</span>
+                          </div>
+                          <div className="risk-description">
+                            <span>Project health monitoring</span>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  
+                  {selectedProject.status === 'completed' && (
+                    <div className="overview-card completed-summary">
+                      <div className="card-header">
+                        <CheckCircle size={20} />
+                        <span>Project Completed</span>
+                      </div>
+                      <div className="card-content">
+                        <div className="completion-info">
+                          <span className="completion-date">
+                            Completed: {selectedProject.createdAt ? 
+                              new Date(selectedProject.createdAt.seconds * 1000).toLocaleDateString() : 
+                              'Recently'
+                            }
+                          </span>
+                          <span className="completion-description">
+                            Project successfully delivered and deployed
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                )}
+              </div>
+
+              {/* Project Description */}
+              <div className="project-description-section">
+                <h3>Project Description</h3>
+                <div className="description-content">
+                  <p>{selectedProject.description || 'No description available for this project.'}</p>
+                </div>
+              </div>
+
+              {/* Project Timeline */}
+              {selectedProject.status !== 'completed' && (
+                <div className="project-timeline-section">
+                  <h3>Project Timeline</h3>
+                  <div className="timeline-content">
+                    <div className="timeline-item">
+                      <div className="timeline-marker started"></div>
+                      <div className="timeline-info">
+                        <span className="timeline-title">Project Started</span>
+                        <span className="timeline-date">
+                          {selectedProject.createdAt ? 
+                            new Date(selectedProject.createdAt.seconds * 1000).toLocaleDateString() : 
+                            'Recently'
+                          }
+                        </span>
+                      </div>
+                    </div>
+                    <div className="timeline-item">
+                      <div className="timeline-marker current"></div>
+                      <div className="timeline-info">
+                        <span className="timeline-title">Current Phase</span>
+                        <span className="timeline-date">Development in progress</span>
+                      </div>
+                    </div>
+                    <div className="timeline-item">
+                      <div className="timeline-marker future"></div>
+                      <div className="timeline-info">
+                        <span className="timeline-title">Expected Completion</span>
+                        <span className="timeline-date">{selectedProject.deadline || 'To be determined'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            <h4>No Completed Projects</h4>
-            <p>You don't have any completed projects yet. Once your active projects are finished, they'll appear here.</p>
-          </div>
-        )}
+          ) : (
+            <div className="no-project-selected">
+              <div className="no-selection-content">
+                <Activity size={64} />
+                <h3>Select a Project</h3>
+                <p>Choose a project from the sidebar to view its details and manage its progress.</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

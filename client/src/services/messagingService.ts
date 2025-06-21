@@ -113,24 +113,31 @@ export const getUserConversations = (
     orderBy('updatedAt', 'desc')
   );
 
-  return onSnapshot(q, (querySnapshot) => {
-    const conversations = querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        participants: data.participants,
-        participantNames: data.participantNames,
-        participantPhotos: data.participantPhotos,
-        lastMessage: data.lastMessage,
-        lastMessageTime: data.lastMessageTime?.toDate(),
-        lastMessageSender: data.lastMessageSender,
-        unreadCount: data.unreadCount || 0,
-        createdAt: data.createdAt?.toDate(),
-        updatedAt: data.updatedAt?.toDate()
-      } as Conversation;
-    });
-    callback(conversations);
-  });
+  return onSnapshot(q, 
+    (querySnapshot) => {
+      const conversations = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          participants: data.participants,
+          participantNames: data.participantNames,
+          participantPhotos: data.participantPhotos,
+          lastMessage: data.lastMessage,
+          lastMessageTime: data.lastMessageTime?.toDate(),
+          lastMessageSender: data.lastMessageSender,
+          unreadCount: data.unreadCount || 0,
+          createdAt: data.createdAt?.toDate(),
+          updatedAt: data.updatedAt?.toDate()
+        } as Conversation;
+      });
+      callback(conversations);
+    },
+    (error) => {
+      console.error('Error getting user conversations:', error);
+      // Return empty array on error
+      callback([]);
+    }
+  );
 };
 
 // Get messages for a conversation
@@ -144,25 +151,32 @@ export const getConversationMessages = (
     orderBy('timestamp', 'asc')
   );
 
-  return onSnapshot(q, (querySnapshot) => {
-    const messages = querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        conversationId: data.conversationId,
-        senderId: data.senderId,
-        senderName: data.senderName,
-        senderPhotoURL: data.senderPhotoURL,
-        receiverId: data.receiverId,
-        receiverName: data.receiverName,
-        content: data.content,
-        timestamp: data.timestamp?.toDate(),
-        read: data.read,
-        type: data.type
-      } as Message;
-    });
-    callback(messages);
-  });
+  return onSnapshot(q, 
+    (querySnapshot) => {
+      const messages = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          conversationId: data.conversationId,
+          senderId: data.senderId,
+          senderName: data.senderName,
+          senderPhotoURL: data.senderPhotoURL,
+          receiverId: data.receiverId,
+          receiverName: data.receiverName,
+          content: data.content,
+          timestamp: data.timestamp?.toDate(),
+          read: data.read,
+          type: data.type
+        } as Message;
+      });
+      callback(messages);
+    },
+    (error) => {
+      console.error('Error getting conversation messages:', error);
+      // Return empty array on error
+      callback([]);
+    }
+  );
 };
 
 // Mark messages as read
@@ -203,7 +217,14 @@ export const getUnreadMessageCount = (
     where('read', '==', false)
   );
 
-  return onSnapshot(q, (querySnapshot) => {
-    callback(querySnapshot.size);
-  });
+  return onSnapshot(q, 
+    (querySnapshot) => {
+      callback(querySnapshot.size);
+    },
+    (error) => {
+      console.error('Error getting unread message count:', error);
+      // Return 0 count on error to prevent UI issues
+      callback(0);
+    }
+  );
 }; 

@@ -50,44 +50,80 @@ export const useDashboardData = (currentUser: any) => {
 
   // Check admin status
   const checkAdminStatus = async () => {
-    if (!currentUser?.uid) return;
+    console.log('🔍 checkAdminStatus called');
+    console.log('👤 Current user UID:', currentUser?.uid);
+    
+    if (!currentUser?.uid) {
+      console.log('❌ No current user UID, returning early');
+      return;
+    }
     
     try {
+      console.log('📡 Fetching user document from Firestore...');
       const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      console.log('📄 User doc exists:', userDoc.exists());
+      
       if (userDoc.exists()) {
         const userData = userDoc.data();
+        console.log('👤 User data:', userData);
+        console.log('👑 isAdmin value:', userData.isAdmin);
         setIsAdmin(userData.isAdmin === true);
+      } else {
+        console.log('❌ User document does not exist');
+        setIsAdmin(false);
       }
     } catch (error) {
-      console.error('Error checking admin status:', error);
+      console.error('❌ Error checking admin status:', error);
+      setIsAdmin(false);
     } finally {
+      console.log('✅ Setting loading to false');
       setLoading(false);
     }
   };
 
   // Load customer projects
   const loadCustomerProjects = async () => {
-    if (!currentUser?.uid) return;
+    console.log('🔍 loadCustomerProjects called');
+    console.log('📋 Current user:', currentUser?.uid);
+    
+    if (!currentUser?.uid) {
+      console.log('❌ No current user UID, returning early');
+      return;
+    }
     
     setCustomerProjectsLoading(true);
+    console.log('⏳ Set customerProjectsLoading to true');
+    
     try {
+      console.log('🔎 Creating Firestore query for projects collection');
       const projectsQuery = query(
         collection(db, 'projects'),
         where('userId', '==', currentUser.uid),
         orderBy('createdAt', 'desc')
       );
       
+      console.log('📡 Executing Firestore query...');
       const querySnapshot = await getDocs(projectsQuery);
-      const projects = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Project[];
+      console.log('📊 Query completed, docs found:', querySnapshot.docs.length);
       
+      const projects = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log('📄 Project doc:', { id: doc.id, ...data });
+        return {
+          id: doc.id,
+          ...data
+        };
+      }) as Project[];
+      
+      console.log('✅ Final projects array:', projects);
       setCustomerProjects(projects);
     } catch (error) {
-      console.error('Error loading customer projects:', error);
+      console.error('❌ Error loading customer projects:', error);
+      // Set empty array if there's a permission error
+      setCustomerProjects([]);
     } finally {
       setCustomerProjectsLoading(false);
+      console.log('✅ Set customerProjectsLoading to false');
     }
   };
 
@@ -112,6 +148,8 @@ export const useDashboardData = (currentUser: any) => {
       setRequestedProjects(requests);
     } catch (error) {
       console.error('Error loading requested projects:', error);
+      // Set empty array if there's a permission error
+      setRequestedProjects([]);
     } finally {
       setRequestedProjectsLoading(false);
     }
@@ -236,19 +274,37 @@ export const useDashboardData = (currentUser: any) => {
 
   // Initialize data
   useEffect(() => {
+    console.log('🚀 First useEffect triggered - currentUser:', !!currentUser);
     if (currentUser) {
+      console.log('👤 Current user exists, checking admin status');
       checkAdminStatus();
     }
   }, [currentUser]);
 
   useEffect(() => {
+    console.log('🚀 Second useEffect triggered');
+    console.log('👤 currentUser:', !!currentUser);
+    console.log('⏳ loading:', loading);
+    console.log('👑 isAdmin:', isAdmin);
+    
     if (currentUser && !loading) {
+      console.log('✅ Conditions met, loading data...');
+      
+      // ALWAYS load user's own projects for the user dashboard
+      // Even admins should see their own projects when using the user dashboard
+      console.log('📊 Loading user\'s own customer and requested projects');
+      loadCustomerProjects();
+      loadRequestedProjects();
+      
+      // Additionally load admin data if user is admin (for management features)
       if (isAdmin) {
+        console.log('👑 User is admin, also loading all users for admin features');
         loadAllUsers();
-      } else {
-        loadCustomerProjects();
-        loadRequestedProjects();
       }
+    } else {
+      console.log('❌ Conditions not met for data loading');
+      if (!currentUser) console.log('   - No current user');
+      if (loading) console.log('   - Still loading');
     }
   }, [currentUser, isAdmin, loading]);
 

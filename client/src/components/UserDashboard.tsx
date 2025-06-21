@@ -43,9 +43,15 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
   onFeatureRequest,
   onSidebarStateChange,
 }) => {
-  const [activeSection, setActiveSection] = useState('dashboard');
+  const [activeSection, setActiveSection] = useState('active-projects');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const navigate = useNavigate();
+
+  console.log('🎛️ UserDashboard rendered');
+  console.log('📊 customerProjects received:', customerProjects);
+  console.log('📈 customerProjects.length:', customerProjects?.length || 0);
+  console.log('⏳ customerProjectsLoading:', customerProjectsLoading);
+  console.log('🎯 activeSection:', activeSection);
 
   const handleSectionChange = (section: string) => {
     setActiveSection(section);
@@ -59,6 +65,8 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
   };
 
   const renderSectionContent = () => {
+    console.log('🔄 renderSectionContent called with activeSection:', activeSection);
+    
     switch (activeSection) {
       case 'dashboard':
         return (

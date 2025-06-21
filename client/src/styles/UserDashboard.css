@@ -25,7 +25,7 @@
 }
 
 .user-dashboard-navbar.with-sidebar {
-  margin-left: 280px;
+  margin-left: 0;
 }
 
 .user-dashboard-navbar.sidebar-collapsed {
@@ -148,12 +148,12 @@
 .user-dashboard-container {
   display: flex;
   height: 100vh;
-  margin-top: 80px;
+  margin-top: 0;
 }
 
 .user-dashboard-main {
   flex: 1;
-  margin-left: 280px;
+  margin-left: 0;
   padding: 2rem;
   padding-top: 2rem;
   overflow-y: auto;
@@ -175,19 +175,21 @@
   display: flex;
   width: 100%;
   min-height: calc(100vh - 80px);
+  margin-top: 80px; /* Account for fixed navbar */
+  padding-top: 0; /* Remove extra padding */
 }
 
 .user-dashboard-content-area {
   flex: 1;
-  margin-left: 280px;
-  padding: 2rem;
+  margin-left: 280px; /* Account for sidebar width */
+  padding: 0.5rem 2rem; /* Further reduced top padding */
   overflow-y: auto;
   transition: margin-left 0.3s ease;
   background: #f8fafc;
 }
 
 .user-dashboard-content-area.sidebar-collapsed {
-  margin-left: 70px;
+  margin-left: 70px; /* Account for collapsed sidebar width */
 }
 
 /* Section content styles */

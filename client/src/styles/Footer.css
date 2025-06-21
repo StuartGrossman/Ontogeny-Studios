@@ -12,7 +12,7 @@
 
 /* Footer adjustments for sidebar */
 .user-dashboard-container ~ .footer {
-  margin-left: 280px;
+  margin-left: 0;
 }
 
 .user-dashboard-container.sidebar-collapsed ~ .footer {
