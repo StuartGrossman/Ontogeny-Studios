@@ -3,25 +3,24 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Settings, LogOut } from 'lucide-react';
 import ontogenyIcon from '../assets/otogeny-icon.png';
-import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
+import { doc, setDoc, addDoc, collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebase';
+import { onSnapshot } from 'firebase/firestore';
+import { FaPlus, FaRocket, FaBell, FaUser, FaChartLine, FaCalendar, FaCog, FaProjectDiagram, FaUsers, FaChevronRight, FaSpinner, FaEye, FaCommentAlt, FaHeart, FaBuilding, FaLightbulb, FaExclamationTriangle, FaCheckCircle, FaClock, FaFire, FaUserTie } from 'react-icons/fa';
 
 // Custom hooks
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useProjectModals } from '../hooks/useProjectModals';
 
 // Components
-import AdminDashboard from '../components/AdminDashboard';
 import UserDashboard from '../components/UserDashboard';
 import Footer from '../components/Footer';
 import AIChatModal from '../components/AIChatModal';
-import CreateProjectModal, { ProjectFormData } from '../components/modals/CreateProjectModal';
-import EditProjectModal from '../components/modals/EditProjectModal';
-import UserRequestedProjectModal from '../components/modals/UserRequestedProjectModal';
+
 import { ProjectDetailsModal, MeetingSchedulerModal, FeatureRequestModal, FeatureAssignmentModal } from '../components/modals';
 
 // Styles
-import '../styles/Dashboard.css';
+import '../styles/UserDashboard.css';
 import '../styles/ProjectDetailsModal.css';
 import '../styles/MeetingSchedulerModal.css';
 import '../styles/FeatureRequestModal.css';
@@ -40,6 +39,14 @@ const Dashboard: React.FC = () => {
 
   // Sidebar state for user dashboard
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  interface Notification {
+    id: string;
+    read: boolean;
+    [key: string]: any;
+  }
+
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Check authentication
   useEffect(() => {
@@ -47,6 +54,31 @@ const Dashboard: React.FC = () => {
       navigate('/');
     }
   }, [currentUser, navigate]);
+
+  // Fetch notifications
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const notificationsRef = collection(db, 'notifications');
+    const q = query(
+      notificationsRef,
+      where('userId', '==', currentUser.uid),
+      orderBy('createdAt', 'desc'),
+      limit(20)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const notificationsList = snapshot.docs.map(doc => ({
+        id: doc.id,
+        read: false, // Default value
+        ...doc.data()
+      })) as Notification[];
+      setNotifications(notificationsList);
+      setUnreadCount(notificationsList.filter(n => !n.read).length);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
 
   // Handle logout
   const handleLogout = async () => {
@@ -56,76 +88,6 @@ const Dashboard: React.FC = () => {
     } catch (error) {
       console.error('Error logging out:', error);
     }
-  };
-
-  // Handle project creation (admin)
-  const handleCreateProject = async (projectData: ProjectFormData) => {
-    if (!dashboardData.selectedUser) return;
-
-    try {
-      await addDoc(collection(db, 'projects'), {
-        ...projectData,
-        userId: dashboardData.selectedUser.id,
-        createdAt: new Date(),
-        status: 'planning',
-        progress: 0,
-        type: 'admin-created',
-        createdBy: currentUser?.uid,
-        createdByAdmin: true,
-        tasks: [],
-        deadline: null
-      });
-      
-      modals.closeCreateProjectModal();
-      
-      // Refresh user projects for admin view
-      if (dashboardData.selectedUser) {
-        await dashboardData.handleUserSelect(dashboardData.selectedUser);
-      }
-      
-      // If we're in user mode and the project was created for the current user, refresh user data too
-      if (!dashboardData.isAdmin && dashboardData.selectedUser?.id === currentUser?.uid) {
-        await dashboardData.loadCustomerProjects();
-      }
-      
-      console.log('Project created successfully for user:', dashboardData.selectedUser.displayName);
-    } catch (error) {
-      console.error('Error creating project:', error);
-      throw error; // Re-throw to show error in modal
-    }
-  };
-
-  // Handle project update
-  const handleProjectUpdate = async () => {
-    modals.closeEditProjectModal();
-    // Refresh data as needed
-    if (dashboardData.selectedUser) {
-      dashboardData.handleUserSelect(dashboardData.selectedUser);
-    }
-  };
-
-  // Handle admin project modal opening - route to correct modal based on project type
-  const handleOpenAdminProject = (project: any) => {
-    console.log('Opening admin project with type:', project.type, project);
-    
-    if (project.type === 'user-requested') {
-      // Open UserRequestedProjectModal for user-requested projects
-      modals.openUserRequestedModal(project);
-    } else if (project.type === 'admin-created') {
-      // Open EditProjectModal for admin-created projects
-      modals.openEditProjectModal(project);
-    } else {
-      console.error('Unknown project type:', project.type);
-      // Default to edit modal for admin-created projects
-      modals.openEditProjectModal(project);
-    }
-  };
-
-  // Handle opening admin project from UserRequestedProjectModal (receives ID string)
-  const handleOpenAdminProjectById = (adminProjectId: string) => {
-    console.log('Opening admin project by ID:', adminProjectId);
-    // This would need to fetch the project data by ID and open the appropriate modal
-    // For now, just log it since this feature isn't fully implemented yet
   };
 
   // Handle meeting scheduler completion
@@ -196,85 +158,73 @@ const Dashboard: React.FC = () => {
   // Show loading state
   if (dashboardData.loading) {
     return (
-      <div className="dashboard-loading">
-        <div className="loading-spinner"></div>
-        <p>Loading dashboard...</p>
+      <div className="user-dashboard-loading">
+        <div className="user-dashboard-loading-spinner"></div>
+        <p>Loading your dashboard...</p>
       </div>
     );
   }
 
   return (
-    <>
-      <div className="dashboard">
-        {/* Top Navigation Bar */}
-        <nav className={`dashboard-navbar ${!dashboardData.isAdmin ? (sidebarCollapsed ? 'sidebar-collapsed' : 'with-sidebar') : ''}`}>
-          <div className="nav-left">
-            <div className="nav-brand">
-              <img src={ontogenyIcon} alt="Ontogeny" className="brand-icon" />
-              <div className="brand-text">
-                <span className="gradient-text">Ontogeny Studios</span>
-              </div>
+    <div className="user-dashboard-page">
+      {/* Navigation Bar */}
+      <nav className={`user-dashboard-navbar ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+        <div className="user-dashboard-nav-left">
+          <div className="user-dashboard-nav-brand">
+            <img 
+              src={ontogenyIcon} 
+              alt="Ontogeny" 
+              className="user-dashboard-brand-icon"
+            />
+            <div className="user-dashboard-brand-text">
+              <span className="user-dashboard-gradient-text">Ontogeny</span>
             </div>
           </div>
-          
-          <div className="nav-center">
-            <div className="user-dropdown-container">
-              <div className="admin-toggle-item">
-                <span className="dropdown-label">View Mode:</span>
-                <button 
-                  className={`admin-toggle ${dashboardData.isAdmin ? 'admin-active' : 'user-active'}`}
-                  onClick={dashboardData.toggleAdminStatus}
-                  disabled={dashboardData.loading}
-                >
-                  {dashboardData.loading ? (
-                    <span className="spinning">⟳</span>
-                  ) : (
-                    <span>{dashboardData.isAdmin ? 'Admin' : 'User'}</span>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          <div className="nav-right">
-            <button className="nav-tab" title="Settings">
-              <Settings size={20} />
-            </button>
-            <button className="nav-tab" onClick={handleLogout} title="Logout">
-              <LogOut size={20} />
-            </button>
-          </div>
-        </nav>
+        </div>
 
-        {/* Main Content */}
-        {dashboardData.isAdmin ? (
-          <AdminDashboard
-            allUsers={dashboardData.allUsers}
-            selectedUser={dashboardData.selectedUser}
-            userProjects={dashboardData.userProjects}
-            usersLoading={dashboardData.usersLoading}
-            userSearchQuery={dashboardData.userSearchQuery}
-            sortByAlerts={dashboardData.sortByAlerts}
-            onUserSelect={dashboardData.handleUserSelect}
-            onUserSearchChange={dashboardData.setUserSearchQuery}
-            onToggleAlertSort={dashboardData.toggleAlertSort}
-            onCreateProject={modals.openCreateProjectModal}
-            onOpenAdminProject={handleOpenAdminProject}
-          />
-        ) : (
-          <UserDashboard
-            customerProjects={dashboardData.customerProjects}
-            requestedProjects={dashboardData.requestedProjects}
-            customerProjectsLoading={dashboardData.customerProjectsLoading}
-            requestedProjectsLoading={dashboardData.requestedProjectsLoading}
-            onOpenAIChat={modals.openAIChat}
-            onOpenCustomerProject={handleOpenCustomerProject}
-            onFeatureRequest={handleFeatureRequest}
-            onSidebarStateChange={handleSidebarStateChange}
-          />
-        )}
+        <div className="user-dashboard-nav-center">
+          <div className="user-dashboard-nav-links">
+            {dashboardData.isAdmin && (
+              <a href="/management" className="user-dashboard-nav-link">
+                <FaUserTie />
+                Management
+              </a>
+            )}
+          </div>
+        </div>
+
+        <div className="user-dashboard-nav-right">
+          <button className="user-dashboard-nav-tab" title="Notifications">
+            <FaBell />
+            {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
+          </button>
+          <button className="user-dashboard-nav-tab" title="Settings">
+            <FaCog />
+          </button>
+          <button className="user-dashboard-nav-tab" title="Profile">
+            <FaUser />
+          </button>
+        </div>
+      </nav>
+
+      {/* Main Dashboard Content */}
+      <div className="user-dashboard-container">
+        <main className={`user-dashboard-main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+          <div className="user-dashboard-content">
+            <UserDashboard
+              customerProjects={dashboardData.customerProjects}
+              requestedProjects={dashboardData.requestedProjects}
+              customerProjectsLoading={dashboardData.customerProjectsLoading}
+              requestedProjectsLoading={dashboardData.requestedProjectsLoading}
+              onOpenAIChat={modals.openAIChat}
+              onOpenCustomerProject={handleOpenCustomerProject}
+              onFeatureRequest={handleFeatureRequest}
+              onSidebarStateChange={handleSidebarStateChange}
+            />
+          </div>
+        </main>
       </div>
-      
+
       {/* AI Chat Modal */}
       <AIChatModal
         isOpen={modals.aiChatOpen}
@@ -282,14 +232,6 @@ const Dashboard: React.FC = () => {
         onNextStep={modals.selectedProjectForFeature ? modals.handleFeatureConsultationNextStep : modals.handleAIConsultationNextStep}
         mode={modals.selectedProjectForFeature ? 'feature-request' : 'project-request'}
         project={modals.selectedProjectForFeature}
-      />
-
-      {/* Create Project Modal */}
-      <CreateProjectModal
-        isOpen={modals.createProjectModalOpen}
-        onClose={modals.closeCreateProjectModal}
-        onSubmit={handleCreateProject}
-        userDisplayName={dashboardData.selectedUser?.displayName || ''}
       />
 
       {/* Feature Request Workflow Modals */}
@@ -316,29 +258,6 @@ const Dashboard: React.FC = () => {
         featureData={modals.featureRequestData}
       />
 
-      {/* Edit Project Modal */}
-      {modals.editProjectModalOpen && modals.selectedProjectForEdit && (
-        <EditProjectModal
-          project={modals.selectedProjectForEdit}
-          onClose={modals.closeEditProjectModal}
-          onUpdate={handleProjectUpdate}
-        />
-      )}
-
-      {/* User Requested Project Modal */}
-      <UserRequestedProjectModal
-        isOpen={modals.showUserRequestedModal}
-        onClose={modals.closeUserRequestedModal}
-        project={modals.selectedUserProject}
-        onUpdate={() => {
-          if (dashboardData.selectedUser) {
-            dashboardData.handleUserSelect(dashboardData.selectedUser);
-          }
-        }}
-        currentUser={currentUser}
-        onOpenAdminProject={handleOpenAdminProjectById}
-      />
-
       {/* Project Details Modal */}
       <ProjectDetailsModal
         isOpen={modals.projectDetailsModalOpen}
@@ -356,7 +275,7 @@ const Dashboard: React.FC = () => {
       />
 
       <Footer />
-    </>
+    </div>
   );
 };
 
