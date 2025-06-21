@@ -42,6 +42,7 @@ export const useDashboardData = (currentUser: any) => {
   const [customerProjectsLoading, setCustomerProjectsLoading] = useState(true);
   const [requestedProjectsLoading, setRequestedProjectsLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(true);
+  const [userProjectsLoading, setUserProjectsLoading] = useState(false);
   
   // User management states
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -138,6 +139,7 @@ export const useDashboardData = (currentUser: any) => {
 
   // Load user projects (admin selecting a user)
   const loadUserProjects = async (userId: string) => {
+    setUserProjectsLoading(true);
     try {
       // Load both regular projects and user requests
       const [projectsSnapshot, requestsSnapshot] = await Promise.all([
@@ -179,6 +181,8 @@ export const useDashboardData = (currentUser: any) => {
       setUserProjects([...validProjects, ...validRequests] as Project[]);
     } catch (error) {
       console.error('Error loading user projects:', error);
+    } finally {
+      setUserProjectsLoading(false);
     }
   };
 
@@ -268,6 +272,7 @@ export const useDashboardData = (currentUser: any) => {
     customerProjectsLoading,
     requestedProjectsLoading,
     usersLoading,
+    userProjectsLoading,
     
     // Actions
     setUserSearchQuery,

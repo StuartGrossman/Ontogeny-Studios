@@ -223,6 +223,7 @@ const ManagementPage: React.FC = () => {
           selectedUser={dashboardData.selectedUser}
           userProjects={dashboardData.userProjects}
           usersLoading={dashboardData.usersLoading}
+          userProjectsLoading={dashboardData.userProjectsLoading}
           userSearchQuery={dashboardData.userSearchQuery}
           sortByAlerts={dashboardData.sortByAlerts}
           onUserSelect={dashboardData.handleUserSelect}

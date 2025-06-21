@@ -35,6 +35,7 @@ interface AdminDashboardProps {
   selectedUser: User | null;
   userProjects: Project[];
   usersLoading: boolean;
+  userProjectsLoading: boolean;
   userSearchQuery: string;
   sortByAlerts: boolean;
   onUserSelect: (user: User) => void;
@@ -49,6 +50,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   selectedUser,
   userProjects,
   usersLoading,
+  userProjectsLoading,
   userSearchQuery,
   sortByAlerts,
   onUserSelect,
@@ -189,7 +191,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <span className="project-count">{userProjects?.length || 0} projects</span>
               </div>
               
-              {userProjects && userProjects.length > 0 ? (
+              {userProjectsLoading ? (
+                <div className="loading-state">
+                  <RefreshCw className="spinning" size={24} />
+                  <p>Loading projects...</p>
+                </div>
+              ) : userProjects && userProjects.length > 0 ? (
                 <div className="projects-list">
                   {userProjects.map((project) => {
                     const isUserRequested = project.type === 'user-requested';
