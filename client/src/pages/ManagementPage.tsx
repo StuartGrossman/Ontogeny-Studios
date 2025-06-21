@@ -199,17 +199,17 @@ const ManagementPage: React.FC = () => {
           </div>
           
           <div className="nav-center">
-            <div className="management-nav-links">
-              <button 
-                className="nav-link"
-                onClick={() => navigate('/dashboard')}
-              >
-                User Dashboard
-              </button>
-            </div>
+            {/* Empty center section for better layout */}
           </div>
           
           <div className="nav-right">
+            <button 
+              className="nav-link-button"
+              onClick={() => navigate('/dashboard')}
+              title="Switch to User Dashboard"
+            >
+              User Dashboard
+            </button>
             <button 
               className={`nav-tab ${showChat ? 'active' : ''}`} 
               onClick={() => setShowChat(!showChat)}
@@ -234,6 +234,7 @@ const ManagementPage: React.FC = () => {
               name: currentUser.displayName || 'Admin',
               avatar: currentUser.photoURL || undefined
             } : undefined}
+            allUsers={dashboardData.allUsers}
           />
         ) : (
           <AdminDashboard

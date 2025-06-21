@@ -31,61 +31,83 @@ interface ChatSystemProps {
     name: string;
     avatar?: string;
   };
+  allUsers?: any[]; // Pass in the real users from the management system
   onClose?: () => void;
 }
 
-const ChatSystem: React.FC<ChatSystemProps> = ({ currentUser }) => {
+const ChatSystem: React.FC<ChatSystemProps> = ({ currentUser, allUsers = [] }) => {
   const [selectedChat, setSelectedChat] = useState<ChatUser | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [messageInput, setMessageInput] = useState('');
   const [showUserProfile, setShowUserProfile] = useState(false);
 
-  // Mock data - replace with real data from your backend
-  const [chatUsers] = useState<ChatUser[]>([
-    {
-      id: '1',
-      name: 'Penny Valeria',
-      avatar: '/api/placeholder/40/40',
-      lastMessage: "Let's see the...",
-      timestamp: '12:35',
-      unreadCount: 1,
-      isOnline: true
-    },
-    {
-      id: '2',
-      name: 'Pharah House',
-      avatar: '/api/placeholder/40/40',
-      lastMessage: 'sent',
-      timestamp: '11:52',
-      isOnline: true
-    },
-    {
-      id: '3',
-      name: 'Leonard Kayle',
-      avatar: '/api/placeholder/40/40',
-      lastMessage: 'Already started',
-      timestamp: '11:31',
-      unreadCount: 1,
-      isOnline: false
-    },
-    {
-      id: '4',
-      name: 'Leslie Winkle',
-      avatar: '/api/placeholder/40/40',
-      lastMessage: 'Hello, I have...',
-      timestamp: '11:14',
-      isOnline: true
-    },
-    {
-      id: '5',
-      name: 'Richard Hammon',
-      avatar: '/api/placeholder/40/40',
-      lastMessage: "We'll proceed...",
-      timestamp: '11:09',
-      unreadCount: 11,
-      isOnline: false
+  // Convert real users to chat users format, with fallback to mock data
+  const [chatUsers] = useState<ChatUser[]>(() => {
+    if (allUsers && allUsers.length > 0) {
+      return allUsers.map((user, index) => ({
+        id: user.id || user.uid,
+        name: user.displayName || user.name || 'Unknown User',
+        avatar: user.photoURL || user.avatar,
+        lastMessage: index === 0 ? "Let's discuss the project..." : 
+                    index === 1 ? "Thanks for the update" : 
+                    index === 2 ? "When can we schedule a meeting?" : "Hello there!",
+        timestamp: new Date(Date.now() - Math.random() * 86400000).toLocaleTimeString([], { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }),
+        unreadCount: Math.random() > 0.7 ? Math.floor(Math.random() * 5) + 1 : undefined,
+        isOnline: Math.random() > 0.5,
+        status: Math.random() > 0.5 ? 'active' : 'away'
+      }));
     }
-  ]);
+    
+         // Fallback mock data if no real users provided
+     return [
+       {
+         id: '1',
+         name: 'Penny Valeria',
+         avatar: '/api/placeholder/40/40',
+         lastMessage: "Let's see the...",
+         timestamp: '12:35',
+         unreadCount: 1,
+         isOnline: true
+       },
+       {
+         id: '2',
+         name: 'Pharah House',
+         avatar: '/api/placeholder/40/40',
+         lastMessage: 'sent',
+         timestamp: '11:52',
+         isOnline: true
+       },
+       {
+         id: '3',
+         name: 'Leonard Kayle',
+         avatar: '/api/placeholder/40/40',
+         lastMessage: 'Already started',
+         timestamp: '11:31',
+         unreadCount: 1,
+         isOnline: false
+       },
+       {
+         id: '4',
+         name: 'Leslie Winkle',
+         avatar: '/api/placeholder/40/40',
+         lastMessage: 'Hello, I have...',
+         timestamp: '11:14',
+         isOnline: true
+       },
+       {
+         id: '5',
+         name: 'Richard Hammon',
+         avatar: '/api/placeholder/40/40',
+         lastMessage: "We'll proceed...",
+         timestamp: '11:09',
+         unreadCount: 11,
+         isOnline: false
+       }
+     ];
+   });
 
   const [messages] = useState<Message[]>([
     {
@@ -127,8 +149,27 @@ const ChatSystem: React.FC<ChatSystemProps> = ({ currentUser }) => {
   const handleSendMessage = () => {
     if (messageInput.trim() && selectedChat) {
       // Add message sending logic here
-      console.log('Sending message:', messageInput);
+      const newMessage = {
+        id: Date.now().toString(),
+        senderId: 'current',
+        content: messageInput,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        type: 'text' as const,
+        isOwn: true
+      };
+      
+      // In a real app, you would send this to your backend
+      console.log('Sending message:', newMessage);
       setMessageInput('');
+    }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && selectedChat) {
+      // Handle file upload logic here
+      console.log('Uploading file:', file.name);
+      // In a real app, you would upload to your storage service
     }
   };
 
@@ -239,7 +280,18 @@ const ChatSystem: React.FC<ChatSystemProps> = ({ currentUser }) => {
             {/* Message Input */}
             <div className="chat-input">
               <div className="input-container">
-                <button className="input-action-btn">
+                <input
+                  type="file"
+                  id="file-upload"
+                  style={{ display: 'none' }}
+                  onChange={handleFileUpload}
+                  accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
+                />
+                <button 
+                  className="input-action-btn"
+                  onClick={() => document.getElementById('file-upload')?.click()}
+                  title="Attach file"
+                >
                   <Paperclip size={20} />
                 </button>
                 <input
@@ -250,16 +302,17 @@ const ChatSystem: React.FC<ChatSystemProps> = ({ currentUser }) => {
                   onKeyPress={handleKeyPress}
                   className="message-input"
                 />
-                <button className="input-action-btn">
+                <button className="input-action-btn" title="Add emoji">
                   <Smile size={20} />
                 </button>
-                <button className="input-action-btn">
+                <button className="input-action-btn" title="Voice message">
                   <Mic size={20} />
                 </button>
                 <button 
                   className="send-btn"
                   onClick={handleSendMessage}
                   disabled={!messageInput.trim()}
+                  title="Send message"
                 >
                   <Send size={20} />
                 </button>
