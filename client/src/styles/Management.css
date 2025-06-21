@@ -119,6 +119,12 @@
   color: #1e293b;
 }
 
+.nav-tab.active {
+  background: #667eea;
+  color: white;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
 /* Loading States */
 .management-loading {
   display: flex;

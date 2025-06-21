@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Settings, LogOut } from 'lucide-react';
+import { Settings, LogOut, MessageCircle } from 'lucide-react';
 import ontogenyIcon from '../assets/otogeny-icon.png';
 import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -12,6 +12,7 @@ import { useProjectModals } from '../hooks/useProjectModals';
 
 // Components
 import AdminDashboard from '../components/AdminDashboard';
+import ChatSystem from '../components/ChatSystem';
 import Footer from '../components/Footer';
 import AIChatModal from '../components/AIChatModal';
 import CreateProjectModal, { ProjectFormData } from '../components/modals/CreateProjectModal';
@@ -31,6 +32,7 @@ import '../styles/UserRequestedProjectModal.css';
 const ManagementPage: React.FC = () => {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
+  const [showChat, setShowChat] = useState(false);
 
   // Custom hooks
   const dashboardData = useDashboardData(currentUser);
@@ -208,6 +210,13 @@ const ManagementPage: React.FC = () => {
           </div>
           
           <div className="nav-right">
+            <button 
+              className={`nav-tab ${showChat ? 'active' : ''}`} 
+              onClick={() => setShowChat(!showChat)}
+              title="User Chat"
+            >
+              <MessageCircle size={20} />
+            </button>
             <button className="nav-tab" title="Settings">
               <Settings size={20} />
             </button>
@@ -217,21 +226,31 @@ const ManagementPage: React.FC = () => {
           </div>
         </nav>
 
-        {/* Main Admin Content */}
-        <AdminDashboard
-          allUsers={dashboardData.allUsers}
-          selectedUser={dashboardData.selectedUser}
-          userProjects={dashboardData.userProjects}
-          usersLoading={dashboardData.usersLoading}
-          userProjectsLoading={dashboardData.userProjectsLoading}
-          userSearchQuery={dashboardData.userSearchQuery}
-          sortByAlerts={dashboardData.sortByAlerts}
-          onUserSelect={dashboardData.handleUserSelect}
-          onUserSearchChange={dashboardData.setUserSearchQuery}
-          onToggleAlertSort={dashboardData.toggleAlertSort}
-          onCreateProject={modals.openCreateProjectModal}
-          onOpenAdminProject={handleOpenAdminProject}
-        />
+        {/* Main Content Area */}
+        {showChat ? (
+          <ChatSystem 
+            currentUser={currentUser ? {
+              id: currentUser.uid,
+              name: currentUser.displayName || 'Admin',
+              avatar: currentUser.photoURL || undefined
+            } : undefined}
+          />
+        ) : (
+          <AdminDashboard
+            allUsers={dashboardData.allUsers}
+            selectedUser={dashboardData.selectedUser}
+            userProjects={dashboardData.userProjects}
+            usersLoading={dashboardData.usersLoading}
+            userProjectsLoading={dashboardData.userProjectsLoading}
+            userSearchQuery={dashboardData.userSearchQuery}
+            sortByAlerts={dashboardData.sortByAlerts}
+            onUserSelect={dashboardData.handleUserSelect}
+            onUserSearchChange={dashboardData.setUserSearchQuery}
+            onToggleAlertSort={dashboardData.toggleAlertSort}
+            onCreateProject={modals.openCreateProjectModal}
+            onOpenAdminProject={handleOpenAdminProject}
+          />
+        )}
       </div>
       
       {/* Create Project Modal */}
