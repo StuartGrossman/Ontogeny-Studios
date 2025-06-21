@@ -6,12 +6,8 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   server: {
-<<<<<<< HEAD
-    port: 5177,
-=======
     port: 5199, // Use port 5199 as requested
     host: true, // Allow external connections
->>>>>>> dashboard-only
   },
   resolve: {
     alias: {
