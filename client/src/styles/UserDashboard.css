@@ -1,0 +1,943 @@
+/* UserDashboard.css - User Dashboard Specific Styles */
+
+/* ===== BASE LAYOUT ===== */
+.user-dashboard-page {
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+/* ===== USER DASHBOARD NAVIGATION ===== */
+.user-dashboard-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: margin-left 0.3s ease;
+}
+
+.user-dashboard-navbar.with-sidebar {
+  margin-left: 280px;
+}
+
+.user-dashboard-navbar.sidebar-collapsed {
+  margin-left: 70px;
+}
+
+.user-dashboard-nav-left {
+  display: flex;
+  align-items: center;
+}
+
+.user-dashboard-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-dashboard-brand-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+}
+
+.user-dashboard-brand-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.user-dashboard-gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.user-dashboard-nav-center {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.user-dashboard-nav-links {
+  display: flex;
+  gap: 1rem;
+}
+
+.user-dashboard-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+
+.user-dashboard-nav-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.user-dashboard-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-dashboard-nav-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #64748b;
+}
+
+.user-dashboard-nav-tab:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.user-dashboard-nav-tab {
+  position: relative;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.125rem 0.375rem;
+  border-radius: 12px;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* ===== MAIN CONTENT CONTAINER ===== */
+.user-dashboard-container {
+  display: flex;
+  height: 100vh;
+  margin-top: 80px;
+}
+
+.user-dashboard-main {
+  flex: 1;
+  margin-left: 280px;
+  padding: 2rem;
+  padding-top: 2rem;
+  overflow-y: auto;
+  transition: margin-left 0.3s ease;
+}
+
+.user-dashboard-main.sidebar-collapsed {
+  margin-left: 70px;
+}
+
+.user-dashboard-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* ===== USER DASHBOARD WRAPPER ===== */
+.user-dashboard-wrapper {
+  display: flex;
+  width: 100%;
+  min-height: calc(100vh - 80px);
+}
+
+.user-dashboard-content-area {
+  flex: 1;
+  margin-left: 280px;
+  padding: 2rem;
+  overflow-y: auto;
+  transition: margin-left 0.3s ease;
+  background: #f8fafc;
+}
+
+.user-dashboard-content-area.sidebar-collapsed {
+  margin-left: 70px;
+}
+
+/* Section content styles */
+.section-content {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.section-content h2 {
+  margin: 0 0 1rem 0;
+  color: #1e293b;
+  font-size: 1.75rem;
+}
+
+.section-content p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+/* ===== REQUEST PROJECT SECTION ===== */
+.user-dashboard-request-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px;
+  padding: 2.5rem;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.user-dashboard-request-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1));
+  border-radius: 50%;
+  transform: translateX(50%);
+}
+
+.user-dashboard-request-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: relative;
+  z-index: 1;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.user-dashboard-request-info h2 {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0 0 1rem 0;
+  font-size: 2rem;
+  font-weight: 700;
+  position: relative;
+  z-index: 2;
+}
+
+.user-dashboard-request-info p {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.1rem;
+  opacity: 0.9;
+  line-height: 1.6;
+  max-width: 600px;
+  position: relative;
+  z-index: 2;
+}
+
+.user-dashboard-request-btn {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  position: relative;
+  z-index: 2;
+  align-self: flex-start;
+  min-width: 200px;
+}
+
+.user-dashboard-request-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* ===== PROJECTS OVERVIEW ===== */
+.user-dashboard-projects-overview {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.user-dashboard-projects-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.user-dashboard-projects-header h3 {
+  margin: 0;
+  font-size: 1.75rem;
+  color: #1e293b;
+}
+
+.user-dashboard-project-stats {
+  display: flex;
+  gap: 2rem;
+}
+
+.user-dashboard-stat-item {
+  text-align: center;
+}
+
+.user-dashboard-stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.user-dashboard-stat-label {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ===== ACTIVE PROJECTS SECTION ===== */
+.user-dashboard-active-projects {
+  margin-bottom: 2rem;
+}
+
+.user-dashboard-active-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.user-dashboard-active-header h2 {
+  margin: 0;
+  font-size: 2rem;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-dashboard-project-summary {
+  display: flex;
+  gap: 2rem;
+}
+
+.user-dashboard-summary-item {
+  text-align: center;
+}
+
+.user-dashboard-summary-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.user-dashboard-summary-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ===== ENHANCED PROJECTS GRID ===== */
+.user-dashboard-projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.user-dashboard-project-card {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.user-dashboard-project-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.user-dashboard-project-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.user-dashboard-project-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.user-dashboard-project-title h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.user-dashboard-status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.user-dashboard-status-badge.in-progress {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.user-dashboard-status-badge.planning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.user-dashboard-status-badge.completed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.user-dashboard-project-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.user-dashboard-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #64748b;
+}
+
+.user-dashboard-action-btn:hover {
+  background: #f8fafc;
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.user-dashboard-action-btn.feature-request:hover {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+/* ===== PROJECT METRICS ===== */
+.user-dashboard-project-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.user-dashboard-metric-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.user-dashboard-metric-icon {
+  width: 20px;
+  height: 20px;
+  color: #667eea;
+}
+
+.user-dashboard-metric-content {
+  flex: 1;
+}
+
+.user-dashboard-metric-value {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.user-dashboard-metric-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* ===== PROJECT PROGRESS ===== */
+.user-dashboard-progress-section {
+  margin-bottom: 1.5rem;
+}
+
+.user-dashboard-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.user-dashboard-progress-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.user-dashboard-progress-percentage {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.user-dashboard-progress-bar {
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.user-dashboard-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.user-dashboard-progress-tasks {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+/* ===== PROJECT ACTIVITY ===== */
+.user-dashboard-activity-section {
+  margin-bottom: 1.5rem;
+}
+
+.user-dashboard-activity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.user-dashboard-activity-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.user-dashboard-deployments-count {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.user-dashboard-activity-chart {
+  display: flex;
+  align-items: end;
+  gap: 2px;
+  height: 40px;
+  padding: 0.5rem;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.user-dashboard-activity-bar {
+  flex: 1;
+  background: #e2e8f0;
+  border-radius: 2px;
+  min-height: 4px;
+  transition: all 0.3s ease;
+}
+
+.user-dashboard-activity-fill {
+  height: 100%;
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.user-dashboard-activity-fill:hover {
+  background: linear-gradient(180deg, #5a67d8 0%, #6b46c1 100%);
+}
+
+/* ===== QUICK ACTIONS ===== */
+.user-dashboard-quick-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.user-dashboard-quick-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.user-dashboard-quick-action-btn.primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.user-dashboard-quick-action-btn.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.user-dashboard-quick-action-btn.secondary:hover {
+  background: #f8fafc;
+  border-color: #667eea;
+  color: #667eea;
+}
+
+/* ===== REQUESTED PROJECTS SECTION ===== */
+.user-dashboard-requested-projects {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.user-dashboard-requested-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.user-dashboard-requested-header h3 {
+  margin: 0;
+  font-size: 1.75rem;
+  color: #1e293b;
+}
+
+.user-dashboard-request-summary {
+  display: flex;
+  gap: 2rem;
+}
+
+.user-dashboard-request-summary .user-dashboard-summary-item {
+  text-align: center;
+}
+
+.user-dashboard-request-summary .user-dashboard-summary-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0ea5e9;
+}
+
+.user-dashboard-request-summary .user-dashboard-summary-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ===== REQUESTED PROJECTS GRID ===== */
+.user-dashboard-requested-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2rem;
+}
+
+.user-dashboard-requested-card {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.user-dashboard-requested-card.priority-high {
+  border-left: 4px solid #ef4444;
+}
+
+.user-dashboard-requested-card.priority-medium {
+  border-left: 4px solid #f59e0b;
+}
+
+.user-dashboard-requested-card.priority-low {
+  border-left: 4px solid #10b981;
+}
+
+.user-dashboard-requested-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.user-dashboard-requested-project-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.user-dashboard-project-title-group h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.125rem;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.user-dashboard-request-timeline {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.user-dashboard-requested-status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.user-dashboard-requested-status-badge.requested,
+.user-dashboard-requested-status-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.user-dashboard-requested-status-badge.under-review {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.user-dashboard-requested-status-badge.approved,
+.user-dashboard-requested-status-badge.accepted {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* ===== EMPTY STATES ===== */
+.user-dashboard-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+  color: #64748b;
+  background: white;
+  border-radius: 16px;
+  border: 2px dashed #e2e8f0;
+}
+
+.user-dashboard-empty-state svg {
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.user-dashboard-empty-state h4 {
+  margin: 0 0 0.5rem 0;
+  color: #1e293b;
+  font-size: 1.25rem;
+}
+
+.user-dashboard-empty-state p {
+  margin: 0 0 1.5rem 0;
+  font-size: 0.875rem;
+  max-width: 400px;
+}
+
+/* ===== LOADING STATES ===== */
+.user-dashboard-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #f8fafc;
+  gap: 1rem;
+}
+
+.user-dashboard-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: user-dashboard-spin 1s linear infinite;
+}
+
+@keyframes user-dashboard-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.user-dashboard-loading p {
+  color: #64748b;
+  font-size: 1.1rem;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 1024px) {
+  .user-dashboard-navbar.with-sidebar,
+  .user-dashboard-navbar.sidebar-collapsed {
+    margin-left: 0;
+  }
+  
+  .user-dashboard-main,
+  .user-dashboard-main.sidebar-collapsed {
+    margin-left: 0;
+    padding: 1rem;
+  }
+  
+  .user-dashboard-projects-grid,
+  .user-dashboard-requested-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .user-dashboard-project-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .user-dashboard-navbar {
+    height: 70px;
+    padding: 0 1rem;
+  }
+  
+  .user-dashboard-container {
+    margin-top: 70px;
+  }
+  
+  .user-dashboard-nav-center {
+    display: none;
+  }
+  
+  .user-dashboard-brand-text {
+    display: none;
+  }
+  
+  .user-dashboard-request-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .user-dashboard-request-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .user-dashboard-projects-header,
+  .user-dashboard-requested-header,
+  .user-dashboard-active-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .user-dashboard-project-stats,
+  .user-dashboard-project-summary,
+  .user-dashboard-request-summary {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .user-dashboard-project-card,
+  .user-dashboard-requested-card {
+    padding: 1.5rem;
+  }
+  
+  .user-dashboard-project-header,
+  .user-dashboard-requested-project-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .user-dashboard-quick-actions {
+    flex-direction: column;
+  }
+  
+  .user-dashboard-quick-action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+} 

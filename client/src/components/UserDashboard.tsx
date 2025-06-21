@@ -209,7 +209,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
   };
 
   return (
-    <div className="user-dashboard-container">
+    <div className="user-dashboard-wrapper">
       {/* Left Sidebar */}
       <Sidebar
         activeSection={activeSection}
@@ -219,7 +219,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
       />
       
       {/* Main Content */}
-      <div className={`user-dashboard ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <div className={`user-dashboard-content-area ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         {renderSectionContent()}
       </div>
     </div>

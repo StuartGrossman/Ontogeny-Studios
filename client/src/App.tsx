@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import Examples from './pages/Examples';
 import Dashboard from './pages/Dashboard';
+import ManagementPage from './pages/ManagementPage';
 import MessagesPage from './pages/MessagesPage';
 import InventoryPage from './pages/InventoryPage';
 import CustomerPortalPage from './pages/CustomerPortalPage';
@@ -43,7 +44,7 @@ const Main: React.FC = () => {
   const [isHoveringRightSide] = useState(false);
 
   // Don't show the main navbar on the dashboard pages since they have their own navigation
-  const dashboardPaths = ['/dashboard', '/messages', '/inventory', '/customer-portal', '/api-integration', '/payroll', '/scheduling', '/logistics'];
+  const dashboardPaths = ['/dashboard', '/management', '/messages', '/inventory', '/customer-portal', '/api-integration', '/payroll', '/scheduling', '/logistics'];
   const shouldShowNavbar = !dashboardPaths.includes(location.pathname);
 
   useEffect(() => {
@@ -293,6 +294,11 @@ const Main: React.FC = () => {
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/management" element={
+          <ProtectedRoute>
+            <ManagementPage />
           </ProtectedRoute>
         } />
         <Route path="/messages" element={
