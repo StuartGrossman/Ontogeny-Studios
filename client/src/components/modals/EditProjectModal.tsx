@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { 
   X, 
@@ -14,7 +14,12 @@ import {
   Clock,
   Link,
   Save,
-  AlertCircle
+  AlertCircle,
+  Edit3,
+  CheckCircle,
+  XCircle,
+  PlayCircle,
+  PauseCircle
 } from 'lucide-react';
 
 interface Task {
@@ -67,57 +72,129 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
   const [newTaskDueDate, setNewTaskDueDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [tempValues, setTempValues] = useState<{[key: string]: string}>({});
 
   // Generate task ID
   const generateTaskId = () => {
     return `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   };
 
-  // Handle form input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  // Handle individual field editing
+  const startEditing = (field: string) => {
+    setEditingField(field);
+    setTempValues({ [field]: formData[field as keyof typeof formData]?.toString() || '' });
   };
 
-  // Handle progress change
-  const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const progress = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-    setFormData(prev => ({
-      ...prev,
-      progress
-    }));
+  const cancelEditing = () => {
+    setEditingField(null);
+    setTempValues({});
   };
 
-  // Calculate progress based on completed tasks
-  const calculateProgressFromTasks = () => {
-    if (tasks.length === 0) return formData.progress;
-    const completedTasks = tasks.filter(task => task.completed).length;
-    return Math.round((completedTasks / tasks.length) * 100);
-  };
-
-  // Auto-update progress when tasks change
-  useEffect(() => {
-    if (tasks.length > 0) {
-      const autoProgress = calculateProgressFromTasks();
-      // Only auto-update if the difference is significant (more than 5%)
-      if (Math.abs(autoProgress - formData.progress) > 5) {
-        setFormData(prev => ({
-          ...prev,
-          progress: autoProgress
-        }));
-      }
+  const saveField = async (field: string) => {
+    if (!tempValues[field]?.trim() && field !== 'link') {
+      setError(`${field} cannot be empty`);
+      return;
     }
-  }, [tasks]);
 
-  // Add new task with validation
-  const addTask = () => {
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const updateData = {
+        [field]: tempValues[field]?.trim() || '',
+        updatedAt: new Date()
+      };
+
+      await updateDoc(doc(db, 'projects', project.id), updateData);
+      
+      setFormData(prev => ({
+        ...prev,
+        [field]: tempValues[field]?.trim() || ''
+      }));
+
+      setEditingField(null);
+      setTempValues({});
+      onUpdate();
+    } catch (error) {
+      console.error(`Error updating ${field}:`, error);
+      setError(`Failed to update ${field}. Please try again.`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle progress change with immediate update
+  const handleProgressChange = async (newProgress: number) => {
+    const progress = Math.min(100, Math.max(0, newProgress));
+    
+    // Update UI immediately for better UX
+    setFormData(prev => ({ ...prev, progress }));
+    
+    try {
+      await updateDoc(doc(db, 'projects', project.id), {
+        progress,
+        updatedAt: new Date()
+      });
+      
+      onUpdate();
+    } catch (error) {
+      console.error('Error updating progress:', error);
+      setError('Failed to update progress');
+      // Revert on error
+      setFormData(prev => ({ ...prev, progress: project.progress || 0 }));
+    }
+  };
+
+  // Handle status change with immediate update
+  const handleStatusChange = async (newStatus: string) => {
+    // Update UI immediately
+    setFormData(prev => ({ ...prev, status: newStatus as any }));
+    
+    try {
+      await updateDoc(doc(db, 'projects', project.id), {
+        status: newStatus,
+        updatedAt: new Date()
+      });
+      
+      onUpdate();
+    } catch (error) {
+      console.error('Error updating status:', error);
+      setError('Failed to update status');
+      // Revert on error
+      setFormData(prev => ({ ...prev, status: project.status }));
+    }
+  };
+
+  // Handle deadline change with immediate update
+  const handleDeadlineChange = async (newDeadline: string) => {
+    if (newDeadline && new Date(newDeadline) < new Date()) {
+      setError('Deadline cannot be in the past');
+      return;
+    }
+
+    // Update UI immediately
+    setFormData(prev => ({ ...prev, deadline: newDeadline }));
+    
+    try {
+      await updateDoc(doc(db, 'projects', project.id), {
+        deadline: newDeadline,
+        updatedAt: new Date()
+      });
+      
+      onUpdate();
+    } catch (error) {
+      console.error('Error updating deadline:', error);
+      setError('Failed to update deadline');
+      // Revert on error
+      setFormData(prev => ({ ...prev, deadline: project.deadline }));
+    }
+  };
+
+  // Add new task
+  const addTask = async () => {
     if (!newTaskTitle.trim()) return;
     
-    // Check for duplicate task titles
     const isDuplicate = tasks.some(task => 
       task.title.toLowerCase().trim() === newTaskTitle.toLowerCase().trim()
     );
@@ -136,234 +213,167 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
       dueDate: newTaskDueDate || undefined
     };
 
-    setTasks(prev => [...prev, newTask]);
-    setNewTaskTitle('');
-    setNewTaskDescription('');
-    setNewTaskDueDate('');
-    setError(''); // Clear any existing errors
+    const updatedTasks = [...tasks, newTask];
+    setTasks(updatedTasks);
+
+    try {
+      await updateDoc(doc(db, 'projects', project.id), {
+        tasks: updatedTasks,
+        updatedAt: new Date()
+      });
+
+      setNewTaskTitle('');
+      setNewTaskDescription('');
+      setNewTaskDueDate('');
+      setError('');
+      onUpdate();
+    } catch (error) {
+      console.error('Error adding task:', error);
+      setError('Failed to add task');
+      setTasks(tasks); // Revert
+    }
   };
 
   // Remove task
-  const removeTask = (taskId: string) => {
-    setTasks(prev => prev.filter(task => task.id !== taskId));
+  const removeTask = async (taskId: string) => {
+    const updatedTasks = tasks.filter(task => task.id !== taskId);
+    setTasks(updatedTasks);
+
+    try {
+      await updateDoc(doc(db, 'projects', project.id), {
+        tasks: updatedTasks,
+        updatedAt: new Date()
+      });
+      onUpdate();
+    } catch (error) {
+      console.error('Error removing task:', error);
+      setError('Failed to remove task');
+      setTasks(tasks); // Revert
+    }
   };
 
   // Toggle task completion
   const toggleTaskCompletion = async (taskId: string) => {
-    if (updatingTaskId === taskId) return; // Prevent double-clicks
-    
-    setUpdatingTaskId(taskId);
-    setError('');
-    
-    // Optimistic update
     const updatedTasks = tasks.map(task => 
       task.id === taskId ? { ...task, completed: !task.completed } : task
     );
     setTasks(updatedTasks);
 
     try {
-      // Update progress based on new task completion
-      const completedTasks = updatedTasks.filter(task => task.completed).length;
-      const newProgress = updatedTasks.length > 0 ? Math.round((completedTasks / updatedTasks.length) * 100) : 0;
-      
-      setFormData(prev => ({
-        ...prev,
-        progress: newProgress
-      }));
-
-      // Here you could add Firebase update if needed
-      // await updateDoc(doc(db, 'projects', project.id), { tasks: updatedTasks });
-      
+      await updateDoc(doc(db, 'projects', project.id), {
+        tasks: updatedTasks,
+        updatedAt: new Date()
+      });
+      onUpdate();
     } catch (error) {
       console.error('Error updating task:', error);
-      setError('Failed to update task. Please try again.');
-      // Revert optimistic update
-      setTasks(tasks);
-    } finally {
-      setUpdatingTaskId(null);
+      setError('Failed to update task');
+      setTasks(tasks); // Revert
     }
   };
 
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError('');
-
-    // Form validation
-    if (!formData.name.trim()) {
-      setError('Project name is required');
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (!formData.description.trim()) {
-      setError('Project description is required');
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (formData.deadline && new Date(formData.deadline) < new Date()) {
-      setError('Deadline cannot be in the past');
-      setIsSubmitting(false);
-      return;
-    }
-
-    try {
-      // Use the correct collection - admin-created projects are stored in 'projects' collection
-      const projectRef = doc(db, 'projects', project.id);
-      
-      const updateData = {
-        ...formData,
-        name: formData.name.trim(),
-        description: formData.description.trim(),
-        features: formData.features.trim(),
-        tasks: tasks,
-        updatedAt: new Date(),
-        progress: Math.min(100, Math.max(0, formData.progress))
-      };
-
-      await updateDoc(projectRef, updateData);
-      
-      console.log('Project updated successfully');
-      onUpdate(); // Refresh the project list
-      onClose();
-    } catch (error) {
-      console.error('Error updating project:', error);
-      setError('Failed to update project. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'planning': return <Clock size={16} />;
+      case 'in-progress': return <PlayCircle size={16} />;
+      case 'completed': return <CheckCircle size={16} />;
+      case 'on-hold': return <PauseCircle size={16} />;
+      default: return <Clock size={16} />;
     }
   };
 
-  // Handle close
-  const handleClose = () => {
-    if (!isSubmitting) {
-      onClose();
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'planning': return '#f59e0b';
+      case 'in-progress': return '#3b82f6';
+      case 'completed': return '#10b981';
+      case 'on-hold': return '#ef4444';
+      default: return '#6b7280';
     }
   };
 
   return (
-    <div className="modal-overlay" onClick={handleClose}>
-      <div className="edit-project-modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <div className="modal-title">
-            <FileText size={24} />
-            <h2>Edit Project</h2>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="edit-project-modal-new" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="modal-header-new">
+          <div className="project-header-info">
+            <div className="project-title-section">
+              <Target className="project-icon" />
+              <h1 className="project-title">{formData.name}</h1>
+            </div>
+            <div className="project-meta">
+              <div className="assigned-user">
+                <Users size={16} />
+                <span>{project.assignedUserName}</span>
+              </div>
+              <div className="project-status" style={{ color: getStatusColor(formData.status) }}>
+                {getStatusIcon(formData.status)}
+                <span>{formData.status.replace('-', ' ').toUpperCase()}</span>
+              </div>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="modal-close-btn"
-            disabled={isSubmitting}
-          >
+          <button onClick={onClose} className="close-btn-new">
             <X size={20} />
           </button>
         </div>
 
-        <div className="modal-subtitle">
-          <Users size={16} />
-          <span>Assigned to: <strong>{project.assignedUserName}</strong> ({project.assignedUserEmail})</span>
-        </div>
-
-        <form onSubmit={handleSubmit} className="project-form">
-          {error && (
-            <div className="error-message">
-              <AlertCircle size={16} />
-              {error}
-            </div>
-          )}
-
-          {/* Basic Project Information */}
-          <div className="form-section">
-            <h3 className="section-title">Project Information</h3>
-            
-            <div className="form-group">
-              <label htmlFor="name" className="form-label">
-                <Target size={16} />
-                Project Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                placeholder="Enter project name..."
-                className="form-input"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="description" className="form-label">
-                <FileText size={16} />
-                Description
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                placeholder="Describe the project goals and objectives..."
-                className="form-textarea"
-                rows={3}
-                disabled={isSubmitting}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="features" className="form-label">
-                <FileText size={16} />
-                Features & Requirements
-              </label>
-              <textarea
-                id="features"
-                name="features"
-                value={formData.features}
-                onChange={handleInputChange}
-                placeholder="List the key features and requirements..."
-                className="form-textarea"
-                rows={4}
-                disabled={isSubmitting}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="link" className="form-label">
-                <Link size={16} />
-                Project Link
-              </label>
-              <input
-                type="url"
-                id="link"
-                name="link"
-                value={formData.link}
-                onChange={handleInputChange}
-                placeholder="https://..."
-                className="form-input"
-                disabled={isSubmitting}
-              />
-            </div>
+        {error && (
+          <div className="error-banner">
+            <AlertCircle size={16} />
+            <span>{error}</span>
+            <button onClick={() => setError('')} className="error-close">
+              <X size={14} />
+            </button>
           </div>
+        )}
 
-          {/* Project Status & Progress */}
-          <div className="form-section">
-            <h3 className="section-title">Status & Progress</h3>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="status" className="form-label">
-                  <Clock size={16} />
-                  Status
-                </label>
+        <div className="modal-content-new">
+          {/* Progress Overview */}
+          <div className="progress-overview">
+            <div className="progress-header">
+              <h3>Project Progress</h3>
+              <span className="progress-percentage">{formData.progress}%</span>
+            </div>
+            <div className="progress-bar-container">
+              <div className="progress-bar-new">
+                <div 
+                  className="progress-fill-new" 
+                  style={{ width: `${formData.progress}%` }}
+                />
+              </div>
+                              <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={formData.progress}
+                  onChange={(e) => {
+                    const newProgress = parseInt(e.target.value);
+                    setFormData(prev => ({ ...prev, progress: newProgress }));
+                  }}
+                  onMouseUp={(e) => {
+                    const newProgress = parseInt((e.target as HTMLInputElement).value);
+                    handleProgressChange(newProgress);
+                  }}
+                  onTouchEnd={(e) => {
+                    const newProgress = parseInt((e.target as HTMLInputElement).value);
+                    handleProgressChange(newProgress);
+                  }}
+                  className="progress-slider"
+                  disabled={isSubmitting}
+                />
+            </div>
+            <div className="progress-stats">
+              <div className="stat">
+                <span className="stat-label">Completed Tasks</span>
+                <span className="stat-value">{tasks.filter(t => t.completed).length} / {tasks.length}</span>
+              </div>
+              <div className="stat">
+                <span className="stat-label">Status</span>
                 <select
-                  id="status"
-                  name="status"
                   value={formData.status}
-                  onChange={handleInputChange}
-                  className="form-input"
+                  onChange={(e) => handleStatusChange(e.target.value)}
+                  className="status-select"
                   disabled={isSubmitting}
                 >
                   <option value="planning">Planning</option>
@@ -372,175 +382,270 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
                   <option value="on-hold">On Hold</option>
                 </select>
               </div>
-
-              <div className="form-group">
-                <label htmlFor="progress" className="form-label">
-                  <BarChart3 size={16} />
-                  Progress ({formData.progress}%)
-                </label>
-                <input
-                  type="number"
-                  id="progress"
-                  name="progress"
-                  value={formData.progress}
-                  onChange={handleProgressChange}
-                  min="0"
-                  max="100"
-                  className="form-input"
-                  disabled={isSubmitting}
-                />
-                <div className="progress-bar-preview">
-                  <div 
-                    className="progress-fill-preview"
-                    style={{ width: `${formData.progress}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="deadline" className="form-label">
-                  <Calendar size={16} />
-                  Deadline
-                </label>
+              <div className="stat">
+                <span className="stat-label">Deadline</span>
                 <input
                   type="date"
-                  id="deadline"
-                  name="deadline"
                   value={formData.deadline}
-                  onChange={handleInputChange}
-                  className="form-input"
+                  onChange={(e) => handleDeadlineChange(e.target.value)}
+                  className="deadline-input"
                   disabled={isSubmitting}
                 />
               </div>
             </div>
           </div>
 
-          {/* Tasks Management */}
-          <div className="form-section">
-            <h3 className="section-title">Tasks ({tasks.length})</h3>
-            
+          {/* Editable Fields */}
+          <div className="fields-grid">
+            {/* Project Name */}
+            <div className="field-card">
+              <div className="field-header">
+                <Target size={18} />
+                <h4>Project Name</h4>
+                {editingField !== 'name' && (
+                  <button 
+                    onClick={() => startEditing('name')} 
+                    className="edit-btn"
+                    disabled={isSubmitting}
+                  >
+                    <Edit3 size={14} />
+                  </button>
+                )}
+              </div>
+              {editingField === 'name' ? (
+                <div className="edit-field">
+                  <input
+                    type="text"
+                    value={tempValues.name || ''}
+                    onChange={(e) => setTempValues({ ...tempValues, name: e.target.value })}
+                    className="field-input"
+                    placeholder="Enter project name..."
+                    autoFocus
+                  />
+                  <div className="edit-actions">
+                    <button onClick={() => saveField('name')} className="save-btn" disabled={isSubmitting}>
+                      <Check size={14} />
+                    </button>
+                    <button onClick={cancelEditing} className="cancel-btn" disabled={isSubmitting}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="field-content">{formData.name || 'No name set'}</p>
+              )}
+            </div>
+
+            {/* Description */}
+            <div className="field-card">
+              <div className="field-header">
+                <FileText size={18} />
+                <h4>Description</h4>
+                {editingField !== 'description' && (
+                  <button 
+                    onClick={() => startEditing('description')} 
+                    className="edit-btn"
+                    disabled={isSubmitting}
+                  >
+                    <Edit3 size={14} />
+                  </button>
+                )}
+              </div>
+              {editingField === 'description' ? (
+                <div className="edit-field">
+                  <textarea
+                    value={tempValues.description || ''}
+                    onChange={(e) => setTempValues({ ...tempValues, description: e.target.value })}
+                    className="field-textarea"
+                    placeholder="Describe the project goals and objectives..."
+                    rows={3}
+                    autoFocus
+                  />
+                  <div className="edit-actions">
+                    <button onClick={() => saveField('description')} className="save-btn" disabled={isSubmitting}>
+                      <Check size={14} />
+                    </button>
+                    <button onClick={cancelEditing} className="cancel-btn" disabled={isSubmitting}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="field-content">{formData.description || 'No description set'}</p>
+              )}
+            </div>
+
+            {/* Features */}
+            <div className="field-card">
+              <div className="field-header">
+                <BarChart3 size={18} />
+                <h4>Features & Requirements</h4>
+                {editingField !== 'features' && (
+                  <button 
+                    onClick={() => startEditing('features')} 
+                    className="edit-btn"
+                    disabled={isSubmitting}
+                  >
+                    <Edit3 size={14} />
+                  </button>
+                )}
+              </div>
+              {editingField === 'features' ? (
+                <div className="edit-field">
+                  <textarea
+                    value={tempValues.features || ''}
+                    onChange={(e) => setTempValues({ ...tempValues, features: e.target.value })}
+                    className="field-textarea"
+                    placeholder="List the key features and requirements..."
+                    rows={4}
+                    autoFocus
+                  />
+                  <div className="edit-actions">
+                    <button onClick={() => saveField('features')} className="save-btn" disabled={isSubmitting}>
+                      <Check size={14} />
+                    </button>
+                    <button onClick={cancelEditing} className="cancel-btn" disabled={isSubmitting}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="field-content">{formData.features || 'No features specified'}</p>
+              )}
+            </div>
+
+            {/* Project Link */}
+            <div className="field-card">
+              <div className="field-header">
+                <Link size={18} />
+                <h4>Project Link</h4>
+                {editingField !== 'link' && (
+                  <button 
+                    onClick={() => startEditing('link')} 
+                    className="edit-btn"
+                    disabled={isSubmitting}
+                  >
+                    <Edit3 size={14} />
+                  </button>
+                )}
+              </div>
+              {editingField === 'link' ? (
+                <div className="edit-field">
+                  <input
+                    type="url"
+                    value={tempValues.link || ''}
+                    onChange={(e) => setTempValues({ ...tempValues, link: e.target.value })}
+                    className="field-input"
+                    placeholder="https://..."
+                    autoFocus
+                  />
+                  <div className="edit-actions">
+                    <button onClick={() => saveField('link')} className="save-btn" disabled={isSubmitting}>
+                      <Check size={14} />
+                    </button>
+                    <button onClick={cancelEditing} className="cancel-btn" disabled={isSubmitting}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="field-content">
+                  {formData.link ? (
+                    <a href={formData.link} target="_blank" rel="noopener noreferrer" className="project-link">
+                      {formData.link}
+                    </a>
+                  ) : (
+                    'No link set'
+                  )}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Tasks Section */}
+          <div className="tasks-section">
+            <div className="tasks-header">
+              <h3>Tasks ({tasks.length})</h3>
+            </div>
+
             {/* Add New Task */}
-            <div className="add-task-section">
-              <div className="form-group">
+            <div className="add-task-form">
+              <div className="task-inputs">
                 <input
                   type="text"
                   value={newTaskTitle}
                   onChange={(e) => setNewTaskTitle(e.target.value)}
                   placeholder="Task title..."
-                  className="form-input"
-                  disabled={isSubmitting}
+                  className="task-title-input"
                 />
+                <input
+                  type="date"
+                  value={newTaskDueDate}
+                  onChange={(e) => setNewTaskDueDate(e.target.value)}
+                  className="task-date-input"
+                />
+                <button
+                  onClick={addTask}
+                  className="add-task-btn-new"
+                  disabled={!newTaskTitle.trim() || isSubmitting}
+                >
+                  <Plus size={16} />
+                  Add
+                </button>
               </div>
-              <div className="form-group">
+              {newTaskTitle && (
                 <textarea
                   value={newTaskDescription}
                   onChange={(e) => setNewTaskDescription(e.target.value)}
                   placeholder="Task description (optional)..."
-                  className="form-textarea"
+                  className="task-description-input"
                   rows={2}
-                  disabled={isSubmitting}
                 />
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <input
-                    type="date"
-                    value={newTaskDueDate}
-                    onChange={(e) => setNewTaskDueDate(e.target.value)}
-                    className="form-input"
-                    disabled={isSubmitting}
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={addTask}
-                  className="add-task-btn"
-                  disabled={!newTaskTitle.trim() || isSubmitting}
-                >
-                  <Plus size={16} />
-                  Add Task
-                </button>
-              </div>
+              )}
             </div>
 
             {/* Tasks List */}
-            <div className="tasks-list">
+            <div className="tasks-list-new">
               {tasks.map((task) => (
-                <div key={task.id} className={`task-item ${task.completed ? 'completed' : ''} ${updatingTaskId === task.id ? 'updating' : ''}`}>
-                  <div className="task-content">
-                    <button
-                      type="button"
-                      onClick={() => toggleTaskCompletion(task.id)}
-                      className="task-checkbox"
-                      disabled={isSubmitting || updatingTaskId === task.id}
-                    >
-                      {updatingTaskId === task.id ? (
-                        <div className="spinner" />
-                      ) : task.completed ? (
-                        <Check size={16} />
-                      ) : (
-                        <div className="checkbox-empty" />
-                      )}
-                    </button>
-                    <div className="task-details">
-                      <div className="task-title">{task.title}</div>
-                      {task.description && (
-                        <div className="task-description">{task.description}</div>
-                      )}
-                      {task.dueDate && (
-                        <div className="task-due-date">Due: {task.dueDate}</div>
-                      )}
-                    </div>
-                  </div>
+                <div key={task.id} className={`task-item-new ${task.completed ? 'completed' : ''}`}>
                   <button
-                    type="button"
-                    onClick={() => removeTask(task.id)}
-                    className="remove-task-btn"
+                    onClick={() => toggleTaskCompletion(task.id)}
+                    className="task-checkbox-new"
                     disabled={isSubmitting}
                   >
-                    <Trash2 size={16} />
+                    {task.completed && <Check size={14} />}
+                  </button>
+                  <div className="task-content-new">
+                    <div className="task-title-new">{task.title}</div>
+                    {task.description && (
+                      <div className="task-description-new">{task.description}</div>
+                    )}
+                    {task.dueDate && (
+                      <div className="task-due-date-new">
+                        <Calendar size={12} />
+                        Due: {new Date(task.dueDate).toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => removeTask(task.id)}
+                    className="remove-task-btn-new"
+                    disabled={isSubmitting}
+                  >
+                    <Trash2 size={14} />
                   </button>
                 </div>
               ))}
               
               {tasks.length === 0 && (
-                <div className="no-tasks">
-                  <Clock size={24} />
+                <div className="no-tasks-new">
+                  <Clock size={32} />
                   <p>No tasks yet. Add some tasks to track project progress.</p>
                 </div>
               )}
             </div>
           </div>
-
-          {/* Submit Actions */}
-          <div className="modal-actions">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="btn-secondary"
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="spinner" />
-                  Updating...
-                </>
-              ) : (
-                <>
-                  <Save size={16} />
-                  Update Project
-                </>
-              )}
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   );

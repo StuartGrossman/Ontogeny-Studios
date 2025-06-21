@@ -77,5 +77,15 @@ service cloud.firestore {
         (resource.data.senderId == request.auth.uid || 
          resource.data.receiverId == request.auth.uid);
     }
+    
+    // Chat system - allow authenticated users to read/write chats and messages
+    match /chats/{chatId} {
+      allow read, write, create, update: if request.auth != null;
+        
+      // Chat messages subcollection
+      match /messages/{messageId} {
+        allow read, create, update: if request.auth != null;
+      }
+    }
   }
 } 

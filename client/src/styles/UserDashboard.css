@@ -940,4 +940,195 @@
     width: 100%;
     justify-content: center;
   }
+}
+
+/* ===== PROJECT TABS ===== */
+.project-tabs {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  color: #64748b;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.tab-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.tab-badge {
+  background: rgba(255, 255, 255, 0.9);
+  color: #667eea;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.125rem 0.375rem;
+  border-radius: 8px;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.tab-btn.active .tab-badge {
+  background: rgba(255, 255, 255, 0.95);
+  color: #667eea;
+}
+
+/* ===== PROJECT ACTIONS ===== */
+.project-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-left: auto;
+}
+
+.delete-btn,
+.restore-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  opacity: 0.7;
+}
+
+.delete-btn {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.delete-btn:hover {
+  background: #dc2626;
+  color: white;
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.restore-btn {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.restore-btn:hover {
+  background: #16a34a;
+  color: white;
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* Project card header adjustments */
+.project-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.project-header h4 {
+  flex: 1;
+  margin: 0;
+}
+
+.project-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: flex-end;
+}
+
+/* Tab-specific styling */
+.user-projects-section .section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.user-projects-section .section-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* Alert indicators for tabs */
+.tab-btn .tab-badge {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Responsive adjustments for tabs */
+@media (max-width: 768px) {
+  .project-tabs {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+  
+  .tab-btn {
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .user-projects-section .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  .project-actions {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .delete-btn,
+  .restore-btn {
+    width: 28px;
+    height: 28px;
+  }
 } 

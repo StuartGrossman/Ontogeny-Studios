@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { Users, RefreshCw, ArrowUp, ArrowDown, FolderPlus, Calendar, FileText, CheckCircle, Edit3, MessageCircle } from 'lucide-react';
+import { Users, RefreshCw, ArrowUp, ArrowDown, FolderPlus, CheckCircle, Edit3, MessageCircle, Folder, GitPullRequest, Star, Trash2, RotateCcw } from 'lucide-react';
 import { UserAvatar } from '../utils/avatarGenerator';
-import { ChatModal } from './modals';
-import { useAuth } from '../contexts/AuthContext';
 
 interface User {
   id: string;
@@ -28,12 +26,16 @@ interface Project {
   priority?: string;
   createdAt?: any;
   meetingScheduled?: boolean;
+  deleted?: boolean;
+  deletedAt?: any;
+  userId?: string;
 }
 
 interface AdminDashboardProps {
   allUsers: User[];
   selectedUser: User | null;
   userProjects: Project[];
+  allProjects: Project[]; // Add all projects for requested tabs
   usersLoading: boolean;
   userProjectsLoading: boolean;
   userSearchQuery: string;
@@ -43,12 +45,16 @@ interface AdminDashboardProps {
   onToggleAlertSort: () => void;
   onCreateProject: () => void;
   onOpenAdminProject: (project: Project) => void;
+  onDeleteProject?: (projectId: string) => void;
+  onRestoreProject?: (projectId: string) => void;
+  onNavigateToMessages: (userId: string) => void; // Add navigation handler
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({
   allUsers,
   selectedUser,
   userProjects,
+  allProjects,
   usersLoading,
   userProjectsLoading,
   userSearchQuery,
@@ -58,9 +64,52 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onToggleAlertSort,
   onCreateProject,
   onOpenAdminProject,
+  onDeleteProject,
+  onRestoreProject,
+  onNavigateToMessages,
 }) => {
-  const { currentUser } = useAuth();
-  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'active' | 'requested' | 'features'>('active');
+
+  // Filter projects based on active tab
+  const getFilteredProjects = () => {
+    switch (activeTab) {
+      case 'active':
+        // For active projects, show only the selected user's projects
+        if (!userProjects) return [];
+        return userProjects.filter(project => 
+          project.type !== 'user-requested' && !project.deleted
+        );
+      case 'requested':
+        // For requested projects, show ALL users' requested projects
+        if (!allProjects) return [];
+        return allProjects.filter(project => 
+          project.type === 'user-requested' && !project.deleted
+        );
+      case 'features':
+        // For features, show ALL users' requested projects with features
+        if (!allProjects) return [];
+        return allProjects.filter(project => 
+          project.type === 'user-requested' && 
+          project.features && 
+          !project.deleted
+        );
+      default:
+        return userProjects || [];
+    }
+  };
+
+  const filteredProjects = getFilteredProjects();
+  
+  // Count new/unread items for each tab
+  const getTabCounts = () => {
+    return {
+      active: userProjects ? userProjects.filter(p => p.type !== 'user-requested' && !p.deleted).length : 0,
+      requested: allProjects ? allProjects.filter(p => p.type === 'user-requested' && !p.deleted).length : 0,
+      features: allProjects ? allProjects.filter(p => p.type === 'user-requested' && p.features && !p.deleted).length : 0
+    };
+  };
+
+  const tabCounts = getTabCounts();
   return (
     <div className="admin-dashboard">
       {/* User Management Sidebar (1/4 screen) */}
@@ -168,18 +217,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </button>
                 <button 
                   className="action-btn primary"
-                  onClick={() => setShowMessageModal(true)}
+                  onClick={() => onNavigateToMessages(selectedUser.id)}
                 >
                   <MessageCircle size={16} />
-                  Message
-                </button>
-                <button className="action-btn secondary">
-                  <Calendar size={16} />
-                  Schedule Meeting
-                </button>
-                <button className="action-btn secondary">
-                  <FileText size={16} />
-                  View Reports
+                  Messages
                 </button>
               </div>
             </div>
@@ -187,8 +228,39 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             {/* User Projects & Tasks */}
             <div className="user-projects-section">
               <div className="section-header">
-                <h3>Projects & Tasks</h3>
-                <span className="project-count">{userProjects?.length || 0} projects</span>
+                <h3>User Management</h3>
+                <div className="project-tabs">
+                  <button 
+                    className={`tab-btn ${activeTab === 'active' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('active')}
+                  >
+                    <Folder size={16} />
+                    Active Projects
+                    {tabCounts.active > 0 && (
+                      <span className="tab-badge">{tabCounts.active}</span>
+                    )}
+                  </button>
+                  <button 
+                    className={`tab-btn ${activeTab === 'requested' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('requested')}
+                  >
+                    <GitPullRequest size={16} />
+                    Requested Projects
+                    {tabCounts.requested > 0 && (
+                      <span className="tab-badge">{tabCounts.requested}</span>
+                    )}
+                  </button>
+                  <button 
+                    className={`tab-btn ${activeTab === 'features' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('features')}
+                  >
+                    <Star size={16} />
+                    Requested Features
+                    {tabCounts.features > 0 && (
+                      <span className="tab-badge">{tabCounts.features}</span>
+                    )}
+                  </button>
+                </div>
               </div>
               
               {userProjectsLoading ? (
@@ -196,10 +268,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <RefreshCw className="spinning" size={24} />
                   <p>Loading projects...</p>
                 </div>
-              ) : userProjects && userProjects.length > 0 ? (
+              ) : filteredProjects && filteredProjects.length > 0 ? (
                 <div className="projects-list">
-                  {userProjects.map((project) => {
+                  {filteredProjects.map((project) => {
                     const isUserRequested = project.type === 'user-requested';
+                    const projectUser = allUsers.find(user => user.id === project.userId);
+                    const isGlobalView = activeTab === 'requested' || activeTab === 'features';
+                    
                     return (
                       <div 
                         key={project.id} 
@@ -208,7 +283,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         title={isUserRequested ? 'Click to view details' : 'Click to edit project'}
                       >
                         <div className="project-header">
-                          <h4>{project.name || project.projectName}</h4>
+                          <div className="project-title-section">
+                            <h4>{project.name || project.projectName}</h4>
+                            {isGlobalView && projectUser && (
+                              <div className="project-user-info">
+                                <UserAvatar
+                                  photoURL={projectUser.photoURL}
+                                  displayName={projectUser.displayName}
+                                  size={20}
+                                  className="project-user-avatar"
+                                />
+                                <span className="project-user-name">{projectUser.displayName}</span>
+                              </div>
+                            )}
+                          </div>
                           <div className="project-badges">
                             <span className={`status-badge ${project.status}`}>
                               {project.status}
@@ -221,6 +309,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 <Edit3 size={12} />
                                 Editable
                               </span>
+                            )}
+                          </div>
+                          <div className="project-actions">
+                            {project.deleted ? (
+                              <button
+                                className="restore-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onRestoreProject?.(project.id);
+                                }}
+                                title="Restore project"
+                              >
+                                <RotateCcw size={14} />
+                              </button>
+                            ) : (
+                              <button
+                                className="delete-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (window.confirm('Are you sure you want to delete this project? You can restore it later.')) {
+                                    onDeleteProject?.(project.id);
+                                  }
+                                }}
+                                title="Delete project"
+                              >
+                                <Trash2 size={14} />
+                              </button>
                             )}
                           </div>
                         </div>
@@ -303,9 +418,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               ) : (
                 <div className="empty-state">
-                  <FolderPlus size={48} />
-                  <h4>No projects yet</h4>
-                  <p>Use the "Create Project" button above to get started with {selectedUser.displayName}.</p>
+                  {activeTab === 'active' && (
+                    <>
+                      <FolderPlus size={48} />
+                      <h4>No active projects</h4>
+                      <p>Use the "Create Project" button above to get started with {selectedUser.displayName}.</p>
+                    </>
+                  )}
+                  {activeTab === 'requested' && (
+                    <>
+                      <GitPullRequest size={48} />
+                      <h4>No requested projects</h4>
+                      <p>{selectedUser.displayName} hasn't requested any projects yet.</p>
+                    </>
+                  )}
+                  {activeTab === 'features' && (
+                    <>
+                      <Star size={48} />
+                      <h4>No requested features</h4>
+                      <p>{selectedUser.displayName} hasn't requested any specific features yet.</p>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -319,25 +452,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
       </div>
 
-      {/* Chat Modal */}
-      {selectedUser && currentUser && (
-        <ChatModal
-          isOpen={showMessageModal}
-          onClose={() => setShowMessageModal(false)}
-          recipient={{
-            id: selectedUser.id,
-            displayName: selectedUser.displayName,
-            email: selectedUser.email,
-            photoURL: selectedUser.photoURL
-          }}
-          currentUser={{
-            uid: currentUser.uid,
-            displayName: currentUser.displayName || undefined,
-            email: currentUser.email || undefined,
-            photoURL: currentUser.photoURL || undefined
-          }}
-        />
-      )}
     </div>
   );
 };
