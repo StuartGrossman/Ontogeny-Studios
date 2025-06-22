@@ -9,4 +9,5 @@ export { default as FeatureRequestModal } from './FeatureRequestModal';
 export { default as FeatureAssignmentModal } from './FeatureAssignmentModal';
 export { default as UserRequestedProjectModal } from './UserRequestedProjectModal';
 export { default as SendMessageModal } from './SendMessageModal';
-export { default as ChatModal } from './ChatModal'; 
+export { default as ChatModal } from './ChatModal';
+export { default as AddFeatureModal } from './AddFeatureModal'; 

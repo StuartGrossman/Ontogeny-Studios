@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import Sidebar from './Sidebar';
+import ProjectNavbar from './ProjectNavbar';
 import ProjectRequestSection from './ProjectRequestSection';
 import RequestedProjectsSection from './RequestedProjectsSection';
 import ActiveProjectsSection from './ActiveProjectsSection';
+import CompletedProjectsSection from './CompletedProjectsSection';
 import MessagesSection from './MessagesSection';
+import EnhancedProjectRequestModal from './EnhancedProjectRequestModal';
+import { projectService } from '../services/projectService';
 
 interface Project {
   id: string;
@@ -31,6 +36,7 @@ interface UserDashboardProps {
   onOpenCustomerProject: (project: Project) => void;
   onFeatureRequest: (project: Project) => void;
   onSidebarStateChange?: (collapsed: boolean) => void;
+  sidebarCollapsed?: boolean;
 }
 
 const UserDashboard: React.FC<UserDashboardProps> = ({
@@ -42,10 +48,17 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
   onOpenCustomerProject,
   onFeatureRequest,
   onSidebarStateChange,
+  sidebarCollapsed: externalSidebarCollapsed,
 }) => {
   const [activeSection, setActiveSection] = useState('active-projects');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [internalSidebarCollapsed, setInternalSidebarCollapsed] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [showEnhancedModal, setShowEnhancedModal] = useState(false);
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
+
+  // Use external sidebar state if provided, otherwise use internal state
+  const sidebarCollapsed = externalSidebarCollapsed !== undefined ? externalSidebarCollapsed : internalSidebarCollapsed;
 
   console.log('🎛️ UserDashboard rendered');
   console.log('📊 customerProjects received:', customerProjects);
@@ -54,11 +67,60 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
   console.log('🎯 activeSection:', activeSection);
 
   const handleSectionChange = (section: string) => {
+    if (section === 'open-project-modal') {
+      setShowEnhancedModal(true);
+      return;
+    }
     setActiveSection(section);
   };
 
+  const handleProjectSubmit = async (projectData: any) => {
+    try {
+      console.log('Submitting project:', projectData);
+      
+      if (!currentUser) {
+        alert('You must be logged in to submit a project request.');
+        return;
+      }
+      
+      // Submit to Firebase using the project service
+      const projectId = await projectService.submitProjectRequest(
+        projectData, 
+        currentUser.uid, 
+        currentUser.email || ''
+      );
+      
+      console.log('Project submitted successfully with ID:', projectId);
+      
+      // Close modal and show success
+      setShowEnhancedModal(false);
+      
+      // Navigate to requested projects to see the new submission
+      setActiveSection('requested-projects');
+      
+      // You could also show a toast notification here
+      alert('Project request submitted successfully! You can track its progress in the Requested Projects section.');
+      
+    } catch (error) {
+      console.error('Error submitting project:', error);
+      alert('Failed to submit project request. Please try again.');
+    }
+  };
+
+  // Handle navigation from completed projects empty state
+  useEffect(() => {
+    const handleNavigateToSection = (event: CustomEvent) => {
+      setActiveSection(event.detail);
+    };
+
+    window.addEventListener('navigate-to-section', handleNavigateToSection as EventListener);
+    return () => {
+      window.removeEventListener('navigate-to-section', handleNavigateToSection as EventListener);
+    };
+  }, []);
+
   const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
+    setInternalSidebarCollapsed(!sidebarCollapsed);
     if (onSidebarStateChange) {
       onSidebarStateChange(!sidebarCollapsed);
     }
@@ -102,13 +164,15 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
             customerProjectsLoading={customerProjectsLoading}
             onOpenCustomerProject={onOpenCustomerProject}
             onFeatureRequest={onFeatureRequest}
+            selectedProject={selectedProject}
+            onProjectSelect={setSelectedProject}
           />
         );
       
       case 'completed-projects':
         return (
-          <ActiveProjectsSection 
-            customerProjects={customerProjects.filter(p => p.status === 'completed')}
+          <CompletedProjectsSection 
+            customerProjects={customerProjects}
             customerProjectsLoading={customerProjectsLoading}
             onOpenCustomerProject={onOpenCustomerProject}
             onFeatureRequest={onFeatureRequest}
@@ -226,10 +290,27 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
         onToggleCollapse={toggleSidebar}
       />
       
+      {/* Project Navbar - Only show for active projects section */}
+      {activeSection === 'active-projects' && (
+        <ProjectNavbar
+          projects={customerProjects}
+          selectedProject={selectedProject}
+          onProjectSelect={setSelectedProject}
+          isCollapsed={sidebarCollapsed}
+        />
+      )}
+      
       {/* Main Content */}
-      <div className={`user-dashboard-content-area ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <div className={`user-dashboard-content-area ${sidebarCollapsed ? 'sidebar-collapsed' : ''} ${activeSection === 'active-projects' ? 'with-project-navbar' : ''}`}>
         {renderSectionContent()}
       </div>
+
+      {/* Enhanced Project Request Modal */}
+      <EnhancedProjectRequestModal
+        isOpen={showEnhancedModal}
+        onClose={() => setShowEnhancedModal(false)}
+        onSubmit={handleProjectSubmit}
+      />
     </div>
   );
 };

@@ -29,7 +29,7 @@
 }
 
 .user-dashboard-navbar.sidebar-collapsed {
-  margin-left: 70px;
+  margin-left: 50px;
 }
 
 .user-dashboard-nav-left {
@@ -103,6 +103,11 @@
   gap: 0.5rem;
 }
 
+/* Adjust management link when placed in the right side */
+.user-dashboard-nav-right .user-dashboard-nav-link {
+  margin-right: 0.5rem;
+}
+
 .user-dashboard-nav-tab {
   display: flex;
   align-items: center;
@@ -115,6 +120,9 @@
   cursor: pointer;
   transition: all 0.3s ease;
   color: #64748b;
+  position: relative;
+  font-size: 16px; /* Standard icon size */
+  line-height: 1;
 }
 
 .user-dashboard-nav-tab:hover {
@@ -122,8 +130,22 @@
   color: #1e293b;
 }
 
-.user-dashboard-nav-tab {
-  position: relative;
+.user-dashboard-nav-tab svg,
+.user-dashboard-nav-tab i,
+.user-dashboard-nav-link svg,
+.user-dashboard-nav-link i {
+  width: 16px !important;
+  height: 16px !important;
+  font-size: 16px !important;
+  display: inline-block !important;
+  vertical-align: middle;
+}
+
+/* Specific handling for React Icons (Font Awesome) */
+.user-dashboard-nav-tab > svg,
+.user-dashboard-nav-link > svg {
+  width: 16px;
+  height: 16px;
 }
 
 .notification-badge {
@@ -161,7 +183,7 @@
 }
 
 .user-dashboard-main.sidebar-collapsed {
-  margin-left: 70px;
+  margin-left: 50px; /* Reduced from 70px for consistency with content area */
 }
 
 .user-dashboard-content {
@@ -174,30 +196,69 @@
 .user-dashboard-wrapper {
   display: flex;
   width: 100%;
-  min-height: calc(100vh - 80px);
-  margin-top: 80px; /* Account for fixed navbar */
-  padding-top: 0; /* Remove extra padding */
+  min-height: 100vh; /* Use full viewport height */
+  margin-top: 0; /* Remove top margin to eliminate spacing */
+  padding-top: 0; /* Remove padding-top as requested */
 }
 
 .user-dashboard-content-area {
   flex: 1;
   margin-left: 280px; /* Account for sidebar width */
-  padding: 0.5rem 2rem; /* Further reduced top padding */
+  margin-right: 1rem; /* Minimal right margin */
+  padding: 2rem; /* Add padding for content readability */
   overflow-y: auto;
-  transition: margin-left 0.3s ease;
+  transition: all 0.3s ease;
   background: #f8fafc;
+  min-height: calc(100vh - 160px); /* Account for navbar (80px) + wrapper padding (80px) */
 }
 
 .user-dashboard-content-area.sidebar-collapsed {
-  margin-left: 70px; /* Account for collapsed sidebar width */
+  margin-left: 50px; /* Reduced from 70px to 50px - expands by 20px more */
+}
+
+.user-dashboard-content-area.with-project-navbar {
+  margin-left: 580px; /* Reduced from 600px to 580px for tighter spacing */
+  margin-right: 1rem; /* Minimal right margin to maximize content space */
+}
+
+.user-dashboard-content-area.sidebar-collapsed.with-project-navbar {
+  margin-left: 120px; /* Reduced from 140px to 120px - provides 20px more space */
+  margin-right: 1rem; /* Minimal right margin to maximize content space */
+}
+
+/* Responsive margin adjustments for different screen sizes */
+@media (min-width: 1920px) {
+  .user-dashboard-content-area.with-project-navbar {
+    margin-left: 580px; /* Consistent with main sizing */
+    margin-right: 2rem; /* Bit more space on larger screens */
+  }
+  
+  .user-dashboard-content-area.sidebar-collapsed.with-project-navbar {
+    margin-left: 120px; /* Consistent with main sizing */
+    margin-right: 2rem;
+  }
+}
+
+@media (max-width: 1366px) {
+  .user-dashboard-content-area.with-project-navbar {
+    margin-left: 580px; /* Keep consistent navbar positioning */
+    margin-right: 0.5rem; /* Minimal space on smaller screens */
+  }
+  
+  .user-dashboard-content-area.sidebar-collapsed.with-project-navbar {
+    margin-left: 120px; /* Consistent with main sizing */
+    margin-right: 0.5rem;
+  }
 }
 
 /* Section content styles */
 .section-content {
   background: white;
-  border-radius: 16px;
-  padding: 2rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border-radius: 12px; /* Subtle rounded corners for modern look */
+  padding: 2rem; /* Good padding for content readability */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); /* Subtle shadow for depth */
+  min-height: calc(100vh - 240px); /* Account for navbar (80px) + padding (160px) */
+  margin: 0; /* Remove any default margins */
 }
 
 .section-content h2 {

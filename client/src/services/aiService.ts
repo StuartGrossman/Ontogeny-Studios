@@ -30,6 +30,23 @@ export interface AIResponse {
   };
 }
 
+export interface AIFeatureResponse {
+  success: boolean;
+  features?: Feature[];
+  error?: string;
+}
+
+export interface Feature {
+  id: string;
+  title: string;
+  description: string;
+  category: 'Authentication' | 'Core Features' | 'User Interface' | 'Data Management' | 'Integrations' | 'Security' | 'Performance' | 'Admin' | 'Mobile' | 'Analytics';
+  priority: 'Critical' | 'High' | 'Medium' | 'Low';
+  complexity: 'Simple' | 'Moderate' | 'Complex';
+  timeEstimate: number; // in hours
+  isCustom?: boolean;
+}
+
 class AIService {
   private async makeAPICall(messages: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<AIResponse> {
     try {
@@ -413,6 +430,368 @@ Remember: Your goal is comprehensive feature definition, not technical implement
       }
     }
     return 'Project Planning Session';
+  }
+
+  async generateFeatures(projectDescription: string): Promise<AIFeatureResponse> {
+    try {
+      const response = await fetch(DEEPSEEK_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [
+            {
+              role: 'system',
+              content: `You are a professional software architect specializing in feature breakdown for web applications. Your task is to generate a comprehensive list of features based on a project description.
+
+🎯 YOUR MISSION:
+- Analyze the project description and generate 15-25 essential features
+- Cover all aspects: authentication, core functionality, UI/UX, security, performance, integrations, admin tools, mobile support, and analytics
+- Provide realistic time estimates in hours
+- Categorize features properly
+- Set appropriate priorities and complexity levels
+
+📋 FEATURE CATEGORIES:
+- Authentication: Login, registration, password management, social auth, 2FA
+- Core Features: Main functionality specific to the project
+- User Interface: Design, responsiveness, themes, accessibility
+- Data Management: Storage, backup, export, import, data validation
+- Integrations: APIs, third-party services, webhooks, notifications
+- Security: Encryption, permissions, compliance, data protection
+- Performance: Optimization, caching, monitoring, scalability
+- Admin: Admin panel, user management, content management, analytics
+- Mobile: Responsive design, mobile app, offline support
+- Analytics: Usage tracking, reporting, insights, metrics
+
+💡 TIME ESTIMATION GUIDELINES:
+- Simple features: 4-12 hours (basic forms, static pages, simple UI components)
+- Moderate features: 12-32 hours (user authentication, data processing, integrations)
+- Complex features: 32-80 hours (real-time features, advanced algorithms, complex integrations)
+
+✅ RESPONSE FORMAT:
+Return a JSON array of features with this exact structure:
+[
+  {
+    "title": "Feature Name",
+    "description": "Detailed description of what this feature does",
+    "category": "Authentication|Core Features|User Interface|Data Management|Integrations|Security|Performance|Admin|Mobile|Analytics",
+    "priority": "Critical|High|Medium|Low",
+    "complexity": "Simple|Moderate|Complex",
+    "timeEstimate": <number_of_hours>
+  }
+]
+
+IMPORTANT: Return ONLY the JSON array, no additional text or formatting.`
+            },
+            {
+              role: 'user',
+              content: `Generate a comprehensive feature list for this project: ${projectDescription}`
+            }
+          ],
+          max_tokens: 2000,
+          temperature: 0.7,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.choices && data.choices[0] && data.choices[0].message) {
+        const content = data.choices[0].message.content.trim();
+        
+        try {
+          // Try to parse the JSON response
+          const featuresData = JSON.parse(content);
+          
+          if (Array.isArray(featuresData)) {
+            // Add IDs to features and validate structure
+            const features: Feature[] = featuresData.map((feature, index) => ({
+              id: `ai_feature_${Date.now()}_${index}`,
+              title: feature.title || 'Untitled Feature',
+              description: feature.description || 'No description provided',
+              category: this.validateCategory(feature.category),
+              priority: this.validatePriority(feature.priority),
+              complexity: this.validateComplexity(feature.complexity),
+              timeEstimate: Math.max(1, parseInt(feature.timeEstimate) || 8),
+              isCustom: false
+            }));
+
+            return {
+              success: true,
+              features
+            };
+          } else {
+            throw new Error('Invalid response format - not an array');
+          }
+        } catch (parseError) {
+          console.warn('Failed to parse AI response as JSON, falling back to manual parsing');
+          // Fallback to manual parsing if JSON parsing fails
+          const features = this.parseFeatureText(content, projectDescription);
+          return {
+            success: true,
+            features
+          };
+        }
+      } else {
+        throw new Error('Invalid response format from API');
+      }
+    } catch (error) {
+      console.error('AI Feature Generation Error:', error);
+      
+      // Fallback to pre-defined features based on project description
+      const fallbackFeatures = this.generateFallbackFeatures(projectDescription);
+      
+      return {
+        success: true,
+        features: fallbackFeatures
+      };
+    }
+  }
+
+  private validateCategory(category: string): Feature['category'] {
+    const validCategories: Feature['category'][] = [
+      'Authentication', 'Core Features', 'User Interface', 'Data Management', 
+      'Integrations', 'Security', 'Performance', 'Admin', 'Mobile', 'Analytics'
+    ];
+    return validCategories.includes(category as Feature['category']) 
+      ? category as Feature['category'] 
+      : 'Core Features';
+  }
+
+  private validatePriority(priority: string): Feature['priority'] {
+    const validPriorities: Feature['priority'][] = ['Critical', 'High', 'Medium', 'Low'];
+    return validPriorities.includes(priority as Feature['priority']) 
+      ? priority as Feature['priority'] 
+      : 'Medium';
+  }
+
+  private validateComplexity(complexity: string): Feature['complexity'] {
+    const validComplexities: Feature['complexity'][] = ['Simple', 'Moderate', 'Complex'];
+    return validComplexities.includes(complexity as Feature['complexity']) 
+      ? complexity as Feature['complexity'] 
+      : 'Moderate';
+  }
+
+  private parseFeatureText(content: string, projectDescription: string): Feature[] {
+    // Manual parsing fallback if JSON parsing fails
+    const lines = content.split('\n').filter(line => line.trim());
+    const features: Feature[] = [];
+    
+    lines.forEach((line, index) => {
+      if (line.includes('-') || line.includes('•') || line.includes('*')) {
+        const cleanLine = line.replace(/^[-•*\s]+/, '').trim();
+        
+        if (cleanLine.length > 10) { // Only consider substantial lines
+          features.push({
+            id: `parsed_feature_${Date.now()}_${index}`,
+            title: cleanLine.substring(0, 50), // First 50 chars as title
+            description: cleanLine,
+            category: this.categorizeFromText(cleanLine),
+            priority: this.prioritizeFromText(cleanLine),
+            complexity: this.complexityFromText(cleanLine),
+            timeEstimate: this.estimateTimeFromText(cleanLine),
+            isCustom: false
+          });
+        }
+      }
+    });
+
+    // If we couldn't parse enough features, add fallback features
+    if (features.length < 10) {
+      const fallbackFeatures = this.generateFallbackFeatures(projectDescription);
+      return [...features, ...fallbackFeatures].slice(0, 20);
+    }
+
+    return features.slice(0, 20); // Limit to 20 features
+  }
+
+  private categorizeFromText(text: string): Feature['category'] {
+    const lowerText = text.toLowerCase();
+    
+    if (lowerText.includes('login') || lowerText.includes('auth') || lowerText.includes('register')) {
+      return 'Authentication';
+    } else if (lowerText.includes('ui') || lowerText.includes('design') || lowerText.includes('interface')) {
+      return 'User Interface';
+    } else if (lowerText.includes('database') || lowerText.includes('data') || lowerText.includes('storage')) {
+      return 'Data Management';
+    } else if (lowerText.includes('api') || lowerText.includes('integration') || lowerText.includes('third-party')) {
+      return 'Integrations';
+    } else if (lowerText.includes('security') || lowerText.includes('encrypt') || lowerText.includes('permission')) {
+      return 'Security';
+    } else if (lowerText.includes('performance') || lowerText.includes('optimization') || lowerText.includes('cache')) {
+      return 'Performance';
+    } else if (lowerText.includes('admin') || lowerText.includes('management') || lowerText.includes('dashboard')) {
+      return 'Admin';
+    } else if (lowerText.includes('mobile') || lowerText.includes('responsive') || lowerText.includes('app')) {
+      return 'Mobile';
+    } else if (lowerText.includes('analytics') || lowerText.includes('tracking') || lowerText.includes('report')) {
+      return 'Analytics';
+    } else {
+      return 'Core Features';
+    }
+  }
+
+  private prioritizeFromText(text: string): Feature['priority'] {
+    const lowerText = text.toLowerCase();
+    
+    if (lowerText.includes('critical') || lowerText.includes('essential') || lowerText.includes('required')) {
+      return 'Critical';
+    } else if (lowerText.includes('important') || lowerText.includes('high') || lowerText.includes('priority')) {
+      return 'High';
+    } else if (lowerText.includes('optional') || lowerText.includes('nice') || lowerText.includes('low')) {
+      return 'Low';
+    } else {
+      return 'Medium';
+    }
+  }
+
+  private complexityFromText(text: string): Feature['complexity'] {
+    const lowerText = text.toLowerCase();
+    
+    if (lowerText.includes('simple') || lowerText.includes('basic') || lowerText.includes('easy')) {
+      return 'Simple';
+    } else if (lowerText.includes('complex') || lowerText.includes('advanced') || lowerText.includes('sophisticated')) {
+      return 'Complex';
+    } else {
+      return 'Moderate';
+    }
+  }
+
+  private estimateTimeFromText(text: string): number {
+    const lowerText = text.toLowerCase();
+    
+    if (lowerText.includes('simple') || lowerText.includes('basic')) {
+      return 8;
+    } else if (lowerText.includes('complex') || lowerText.includes('advanced')) {
+      return 40;
+    } else {
+      return 20;
+    }
+  }
+
+  private generateFallbackFeatures(projectDescription: string): Feature[] {
+    const lowerDesc = projectDescription.toLowerCase();
+    const baseFeatures: Omit<Feature, 'id'>[] = [
+      // Always include core features
+      {
+        title: 'User Registration & Login',
+        description: 'Secure user registration and authentication system with email verification',
+        category: 'Authentication',
+        priority: 'Critical',
+        complexity: 'Moderate',
+        timeEstimate: 16
+      },
+      {
+        title: 'User Dashboard',
+        description: 'Main dashboard showing user overview and key metrics',
+        category: 'Core Features',
+        priority: 'Critical',
+        complexity: 'Moderate',
+        timeEstimate: 20
+      },
+      {
+        title: 'Responsive Design',
+        description: 'Mobile-first responsive design that works on all devices',
+        category: 'User Interface',
+        priority: 'Critical',
+        complexity: 'Moderate',
+        timeEstimate: 24
+      },
+      {
+        title: 'Data Storage',
+        description: 'Secure cloud-based data storage with backup capabilities',
+        category: 'Data Management',
+        priority: 'Critical',
+        complexity: 'Complex',
+        timeEstimate: 32
+      },
+      {
+        title: 'Email Notifications',
+        description: 'Automated email notifications for important events',
+        category: 'Integrations',
+        priority: 'High',
+        complexity: 'Moderate',
+        timeEstimate: 16
+      }
+    ];
+
+    // Add context-specific features
+    const contextFeatures = this.getContextualFallbackFeatures(lowerDesc);
+    
+    const allFeatures = [...baseFeatures, ...contextFeatures];
+    
+    return allFeatures.map((feature, index) => ({
+      ...feature,
+      id: `fallback_feature_${Date.now()}_${index}`,
+      isCustom: false
+    }));
+  }
+
+  private getContextualFallbackFeatures(lowerDesc: string): Omit<Feature, 'id'>[] {
+    const contextFeatures: Omit<Feature, 'id'>[] = [];
+
+    if (lowerDesc.includes('ecommerce') || lowerDesc.includes('shop') || lowerDesc.includes('store')) {
+      contextFeatures.push(
+        {
+          title: 'Shopping Cart',
+          description: 'Add items to cart and manage quantities',
+          category: 'Core Features',
+          priority: 'Critical',
+          complexity: 'Moderate',
+          timeEstimate: 20
+        },
+        {
+          title: 'Payment Processing',
+          description: 'Secure payment processing with Stripe/PayPal',
+          category: 'Integrations',
+          priority: 'Critical',
+          complexity: 'Complex',
+          timeEstimate: 32
+        }
+      );
+    }
+
+    if (lowerDesc.includes('social') || lowerDesc.includes('community')) {
+      contextFeatures.push(
+        {
+          title: 'User Profiles',
+          description: 'Public user profiles with bio and activity',
+          category: 'Core Features',
+          priority: 'High',
+          complexity: 'Moderate',
+          timeEstimate: 20
+        },
+        {
+          title: 'Activity Feed',
+          description: 'News feed showing user activities',
+          category: 'Core Features',
+          priority: 'Medium',
+          complexity: 'Moderate',
+          timeEstimate: 24
+        }
+      );
+    }
+
+    if (lowerDesc.includes('chat') || lowerDesc.includes('messaging')) {
+      contextFeatures.push(
+        {
+          title: 'Real-time Chat',
+          description: 'Live messaging between users',
+          category: 'Core Features',
+          priority: 'High',
+          complexity: 'Complex',
+          timeEstimate: 36
+        }
+      );
+    }
+
+    return contextFeatures;
   }
 }
 

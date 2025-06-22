@@ -198,11 +198,12 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const menuItems = [
     {
-      id: 'dashboard',
-      label: 'Dashboard',
-      icon: Home,
-      description: 'Overview and quick stats',
-      badge: null
+      id: 'request-new-project',
+      label: 'Request New Project',
+      icon: Plus,
+      description: 'Start a new project request',
+      badge: null,
+      isAction: true // This will trigger a modal instead of navigation
     },
     {
       id: 'projects',
@@ -354,9 +355,15 @@ const Sidebar: React.FC<SidebarProps> = ({
     return (
       <div key={item.id} className={`sidebar-item ${isSubItem ? 'sub-item' : ''}`}>
         <div
-          className={`sidebar-link ${isActive ? 'active' : ''} ${isCollapsed ? 'collapsed' : ''}`}
+          className={`sidebar-link ${isActive ? 'active' : ''} ${isCollapsed ? 'collapsed' : ''} ${item.isAction ? 'action-item' : ''}`}
           onClick={() => {
-            if (item.isExpandable && !isCollapsed) {
+            if (item.isAction) {
+              // Handle action items (like opening modals)
+              if (item.id === 'request-new-project') {
+                // This will be handled by the parent component
+                onSectionChange('open-project-modal');
+              }
+            } else if (item.isExpandable && !isCollapsed) {
               toggleSection(item.id);
             } else {
               onSectionChange(item.id);

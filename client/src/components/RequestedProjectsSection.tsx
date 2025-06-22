@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FileText, RefreshCw, Clock, Eye, CheckCircle, Calendar, User, Video, Settings, ChevronRight } from 'lucide-react';
+import '../styles/RequestedProjectsSection.css';
 
 interface Project {
   id: string;
@@ -18,7 +19,6 @@ interface RequestedProjectsSectionProps {
   requestedProjectsLoading: boolean;
 }
 
-// RequestedProjectFeatures component for collapsible feature display
 interface RequestedProjectFeaturesProps {
   features: string;
   requestId: string;
@@ -31,7 +31,6 @@ const RequestedProjectFeatures: React.FC<RequestedProjectFeaturesProps> = ({ fea
   const parseFeatures = (featuresText: string) => {
     const featureLines = featuresText.split('\n').filter((f: string) => f.trim());
     
-    // Enhanced categorization with more intelligent grouping
     const categorized: { [key: string]: Array<{ text: string; priority: string; complexity: 'simple' | 'moderate' | 'complex' }> } = {
       '🔐 Authentication & Security': [],
       '💻 Core Functionality': [],
@@ -55,10 +54,7 @@ const RequestedProjectFeatures: React.FC<RequestedProjectFeaturesProps> = ({ fea
         : trimmedFeature;
       const priority = priorityMatch ? priorityMatch[1].toLowerCase() : 'medium';
 
-      // Determine complexity based on feature description
       const complexity = determineComplexity(featureText);
-
-      // Enhanced categorization with more specific keywords
       const lowerText = featureText.toLowerCase();
       
       if (lowerText.includes('login') || lowerText.includes('auth') || lowerText.includes('security') || 
@@ -100,7 +96,6 @@ const RequestedProjectFeatures: React.FC<RequestedProjectFeaturesProps> = ({ fea
       }
     });
 
-    // Remove empty categories and sort by priority within each category
     return Object.entries(categorized)
       .filter(([_, features]) => features.length > 0)
       .map(([category, features]) => [
@@ -115,20 +110,17 @@ const RequestedProjectFeatures: React.FC<RequestedProjectFeaturesProps> = ({ fea
   const determineComplexity = (featureText: string): 'simple' | 'moderate' | 'complex' => {
     const lowerText = featureText.toLowerCase();
     
-    // Complex features
     if (lowerText.includes('ai') || lowerText.includes('machine learning') || lowerText.includes('blockchain') ||
         lowerText.includes('real-time') || lowerText.includes('video') || lowerText.includes('streaming') ||
         lowerText.includes('complex algorithm') || lowerText.includes('advanced')) {
       return 'complex';
     }
     
-    // Simple features
     if (lowerText.includes('button') || lowerText.includes('text') || lowerText.includes('color') ||
         lowerText.includes('simple') || lowerText.includes('basic') || lowerText.includes('static')) {
       return 'simple';
     }
     
-    // Default to moderate
     return 'moderate';
   };
 
@@ -214,142 +206,133 @@ const RequestedProjectsSection: React.FC<RequestedProjectsSectionProps> = ({
 }) => {
   if (requestedProjectsLoading) {
     return (
-      <div className="loading-state">
-        <RefreshCw className="spinning" size={32} />
-        <p>Loading your project requests...</p>
+      <div className="requested-projects-section">
+        <div className="loading-state">
+          <RefreshCw className="spinning" size={32} />
+          <p>Loading your project requests...</p>
+        </div>
       </div>
     );
   }
 
   if (requestedProjects.length === 0) {
-    return null;
+    return (
+      <div className="requested-projects-section">
+        <div className="empty-state">
+          <FileText size={48} />
+          <h3>No Project Requests</h3>
+          <p>You haven't requested any projects yet. Click "Request New Project" to get started!</p>
+        </div>
+      </div>
+    );
   }
+
+  const pendingCount = requestedProjects.filter(r => r.status === 'pending').length;
+  const reviewCount = requestedProjects.filter(r => r.status === 'under-review' || r.status === 'in-review').length;
+  const acceptedCount = requestedProjects.filter(r => r.status === 'accepted' || r.status === 'approved').length;
 
   return (
     <div className="requested-projects-section">
-      <div className="section-header">
-        <h3>
-          <FileText size={20} />
-          Requested Projects
-        </h3>
-        <div className="request-summary">
-          <span className="summary-item">
-            <span className="summary-number">{requestedProjects.filter(r => r.status === 'pending').length}</span>
-            <span className="summary-label">Pending</span>
-          </span>
-          <span className="summary-item">
-            <span className="summary-number">{requestedProjects.filter(r => r.status === 'under-review').length}</span>
-            <span className="summary-label">Under Review</span>
-          </span>
-          <span className="summary-item">
-            <span className="summary-number">{requestedProjects.filter(r => r.status === 'approved').length}</span>
-            <span className="summary-label">Approved</span>
-          </span>
+      <div className="requested-projects-header">
+        <div className="requested-projects-title">
+          <FileText size={24} />
+          <h2>Requested Projects</h2>
+        </div>
+      </div>
+
+      <div className="projects-summary">
+        <div className="summary-card pending">
+          <div className="summary-number">{pendingCount}</div>
+          <div className="summary-label">Pending</div>
+        </div>
+        <div className="summary-card in-review">
+          <div className="summary-number">{reviewCount}</div>
+          <div className="summary-label">In Review</div>
+        </div>
+        <div className="summary-card accepted">
+          <div className="summary-number">{acceptedCount}</div>
+          <div className="summary-label">Accepted</div>
         </div>
       </div>
       
-      {/* Group by priority */}
-      {['high', 'medium', 'low'].map(priority => {
-        const projectsInPriority = requestedProjects.filter(r => r.priority === priority);
-        if (projectsInPriority.length === 0) return null;
-        
-        return (
-          <div key={priority} className="priority-group">
-            <div className="priority-header">
-              <div className="priority-indicator">
-                <span className={`priority-dot ${priority}`}>
-                  {priority === 'high' ? '🔴' : priority === 'medium' ? '🟡' : '🟢'}
+      <div className="requested-projects-grid">
+        {requestedProjects.map((request) => {
+          let progress = 0;
+          if (request.features && typeof request.features === 'string') {
+            const lines = request.features.split('\n').filter((line: string) => line.trim());
+            if (lines.length > 0) {
+              const completedLines = lines.filter((line: string) => /^(\[x\]|\✓)/.test(line.trim()));
+              progress = Math.round((completedLines.length / lines.length) * 100);
+            }
+          }
+          
+          return (
+            <div key={request.id} className="requested-project-card">
+              <div className="project-card-header">
+                <div className="project-name">
+                  {request.projectName}
+                </div>
+                <span className={`project-status ${request.status}`}>
+                  {request.status === 'pending' && <Clock size={12} />}
+                  {request.status === 'under-review' && <Eye size={12} />}
+                  {request.status === 'approved' && <CheckCircle size={12} />}
+                  {request.status === 'accepted' && <CheckCircle size={12} />}
+                  {request.status === 'accepted' ? 'Accepted' : request.status.replace('-', ' ')}
                 </span>
-                <h4>{priority.charAt(0).toUpperCase() + priority.slice(1)} Priority</h4>
               </div>
-              <span className="priority-count">{projectsInPriority.length} {projectsInPriority.length === 1 ? 'request' : 'requests'}</span>
-            </div>
-            
-            <div className="requested-projects-grid">
-              {projectsInPriority.map((request) => {
-                // Calculate progress from features
-                let progress = 0;
-                if (request.features && typeof request.features === 'string') {
-                  const lines = request.features.split('\n').filter((line: string) => line.trim());
-                  if (lines.length > 0) {
-                    const completedLines = lines.filter((line: string) => /^(\[x\]|\✓)/.test(line.trim()));
-                    progress = Math.round((completedLines.length / lines.length) * 100);
-                  }
-                }
-                
-                return (
-                  <div key={request.id} className={`requested-project-card priority-${priority}`}>
-                    <div className="requested-project-header">
-                      <div className="project-title-group">
-                        <h4>{request.projectName}</h4>
-                        <span className={`status-badge ${request.status} ${request.status === 'accepted' ? 'accepted-badge' : ''}`}>
-                          {request.status === 'pending' && <Clock size={12} />}
-                          {request.status === 'under-review' && <Eye size={12} />}
-                          {request.status === 'approved' && <CheckCircle size={12} />}
-                          {request.status === 'accepted' && <CheckCircle size={12} />}
-                          {request.status === 'accepted' ? '✅ ACCEPTED' : request.status.replace('-', ' ')}
-                        </span>
-                      </div>
-                      <div className="request-timeline">
-                        <Calendar size={14} />
-                        <span>{new Date(request.createdAt.seconds * 1000).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                    
-                    {/* Progress Bar for Accepted Projects */}
-                    {request.status === 'accepted' && (
-                      <div className="request-progress-section">
-                        <div className="progress-header">
-                          <span className="progress-label">Development Progress</span>
-                          <span className="progress-percentage">{progress}%</span>
-                        </div>
-                        <div className="request-progress-bar">
-                          <div 
-                            className="request-progress-fill"
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
-                        <div className="progress-details">
-                          <span>{request.features ? request.features.split('\n').filter((line: string) => /^(\[x\]|\✓)/.test(line.trim())).length : 0} features completed</span>
-                          {progress === 100 && (
-                            <span className="ready-badge">🚀 Ready for Deployment!</span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="requested-project-content">
-                      <div className="project-description">
-                        <p>{request.description}</p>
-                      </div>
-                      
-                      {request.features && (
-                        <RequestedProjectFeatures 
-                          features={request.features}
-                          requestId={request.id}
-                        />
-                      )}
-                      
-                      <div className="request-meta">
-                        <div className="meta-item">
-                          <User size={14} />
-                          <span>Requested by You</span>
-                        </div>
-                        {request.meetingScheduled && (
-                          <div className="meta-item">
-                            <Video size={14} />
-                            <span>Meeting Scheduled</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+              
+              <div className="project-meta">
+                <div className="meta-item">
+                  <Calendar size={14} />
+                  <span>{new Date(request.createdAt.seconds * 1000).toLocaleDateString()}</span>
+                </div>
+                <div className="meta-item">
+                  <User size={14} />
+                  <span>Requested by You</span>
+                </div>
+                {request.meetingScheduled && (
+                  <div className="meta-item">
+                    <Video size={14} />
+                    <span>Meeting Scheduled</span>
                   </div>
-                );
-              })}
+                )}
+              </div>
+
+              <div className="project-description">
+                {request.description}
+              </div>
+              
+              {request.features && (
+                <RequestedProjectFeatures 
+                  features={request.features}
+                  requestId={request.id}
+                />
+              )}
+
+              {request.status === 'accepted' && (
+                <div className="request-progress-section">
+                  <div className="progress-header">
+                    <span className="progress-label">Development Progress</span>
+                    <span className="progress-percentage">{progress}%</span>
+                  </div>
+                  <div className="request-progress-bar">
+                    <div 
+                      className="request-progress-fill"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <div className="progress-details">
+                    <span>{request.features ? request.features.split('\n').filter((line: string) => /^(\[x\]|\✓)/.test(line.trim())).length : 0} features completed</span>
+                    {progress === 100 && (
+                      <span className="ready-badge">🚀 Ready for Deployment!</span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 };

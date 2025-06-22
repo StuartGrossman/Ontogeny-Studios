@@ -14,7 +14,7 @@ import { useProjectModals } from '../hooks/useProjectModals';
 
 // Components
 import UserDashboard from '../components/UserDashboard';
-import Footer from '../components/Footer';
+// import Footer from '../components/Footer'; // Removed footer from dashboard
 import AIChatModal from '../components/AIChatModal';
 
 
@@ -32,6 +32,7 @@ import '../styles/FeatureAssignmentModal.css';
 import '../styles/EditProjectModal.css';
 import '../styles/UserRequestedProjectModal.css';
 import '../styles/Sidebar.css';
+import '../styles/AddFeatureModal.css';
 
 const Dashboard: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -194,16 +195,17 @@ const Dashboard: React.FC = () => {
 
         <div className="user-dashboard-nav-center">
           <div className="user-dashboard-nav-links">
-            {dashboardData.isAdmin && (
-              <a href="/management" className="user-dashboard-nav-link">
-                <FaUserTie />
-                Management
-              </a>
-            )}
+            {/* Management link moved to the right side */}
           </div>
         </div>
 
         <div className="user-dashboard-nav-right">
+          {dashboardData.isAdmin && (
+            <a href="/management" className="user-dashboard-nav-link" title="Management Dashboard">
+              <FaUserTie />
+              Management
+            </a>
+          )}
           <button className="user-dashboard-nav-tab" title="Notifications">
             <FaBell />
             {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
@@ -230,6 +232,7 @@ const Dashboard: React.FC = () => {
               onOpenCustomerProject={handleOpenCustomerProject}
               onFeatureRequest={handleFeatureRequest}
               onSidebarStateChange={handleSidebarStateChange}
+              sidebarCollapsed={sidebarCollapsed}
             />
           </div>
         </main>
@@ -284,7 +287,7 @@ const Dashboard: React.FC = () => {
         projectDetails={modals.projectDetails}
       />
 
-      <Footer />
+      {/* Footer removed from dashboard for better space utilization */}
     </div>
   );
 };

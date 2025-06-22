@@ -219,6 +219,25 @@
   background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
 }
 
+.sidebar-link.action-item {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 8px;
+  margin: 0.5rem;
+  border: none;
+  font-weight: 600;
+}
+
+.sidebar-link.action-item:hover {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.sidebar-link.action-item .sidebar-label {
+  font-weight: 600;
+}
+
 .sidebar-link.collapsed {
   padding: 0.75rem;
   text-align: center;

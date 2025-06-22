@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, RefreshCw, TrendingUp, Clock, AlertCircle, Zap, Target, MessageSquare, Play, Calendar, Users, CheckCircle, Settings, BarChart3, FileText, GitBranch } from 'lucide-react';
+import { Activity, RefreshCw, TrendingUp, Clock, AlertCircle, Zap, Target, MessageSquare, Play, Calendar, Users, CheckCircle, Settings, BarChart3, FileText, GitBranch, Plus, X } from 'lucide-react';
+import ProjectFeaturesModal from './ProjectFeaturesModal';
+import { AddFeatureModal } from './modals';
 import '../styles/ActiveProjectsSection.css';
+import '../styles/ProjectFeaturesModal.css';
+import '../styles/AddFeatureModal.css';
+
+interface ProjectFeature {
+  id: string;
+  name: string;
+  description: string;
+  status: 'completed' | 'in-progress' | 'pending';
+  priority: 'high' | 'medium' | 'low';
+  category: string;
+}
 
 interface Project {
   id: string;
@@ -11,6 +24,7 @@ interface Project {
   deadline?: string;
   tasks?: any[];
   createdAt?: any;
+  websiteUrl?: string;
 }
 
 interface ActiveProjectsSectionProps {
@@ -18,6 +32,8 @@ interface ActiveProjectsSectionProps {
   customerProjectsLoading: boolean;
   onOpenCustomerProject: (project: Project) => void;
   onFeatureRequest: (project: Project) => void;
+  selectedProject?: Project | null;
+  onProjectSelect?: (project: Project) => void;
 }
 
 const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
@@ -25,10 +41,19 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
   customerProjectsLoading,
   onOpenCustomerProject,
   onFeatureRequest,
+  selectedProject: externalSelectedProject,
+  onProjectSelect,
 }) => {
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [internalSelectedProject, setInternalSelectedProject] = useState<Project | null>(null);
   const [projectDetailsLoading, setProjectDetailsLoading] = useState(false);
   const [metricsLoading, setMetricsLoading] = useState(false);
+  const [showProjectFeaturesModal, setShowProjectFeaturesModal] = useState(false);
+  const [showAddFeatureModal, setShowAddFeatureModal] = useState(false);
+  const [showTeamModal, setShowTeamModal] = useState(false);
+
+  // Use external selected project if provided, otherwise use internal state
+  const selectedProject = externalSelectedProject !== undefined ? externalSelectedProject : internalSelectedProject;
+  const setSelectedProject = onProjectSelect || setInternalSelectedProject;
 
   console.log('🎯 ActiveProjectsSection rendered');
   console.log('📊 customerProjects:', customerProjects);
@@ -39,12 +64,38 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
   const activeProjects = customerProjects.filter(p => p.status === 'in-progress' || p.status === 'planning');
   const completedProjects = customerProjects.filter(p => p.status === 'completed');
 
+  // Add mock project for testing if no active projects exist
+  const mockActiveProjects = activeProjects.length === 0 ? [
+    {
+      id: 'mock-1',
+      name: 'E-commerce Platform',
+      description: 'A modern e-commerce platform with advanced features including payment processing, inventory management, and user analytics.',
+      status: 'in-progress',
+      progress: 65,
+      deadline: '2024-03-15',
+      websiteUrl: 'https://shopify.com',
+      createdAt: { seconds: Date.now() / 1000 - (30 * 24 * 60 * 60) }, // 30 days ago
+      tasks: []
+    },
+    {
+      id: 'mock-2',
+      name: 'Task Management App',
+      description: 'A collaborative task management application with real-time updates and team collaboration features.',
+      status: 'in-progress',
+      progress: 40,
+      deadline: '2024-04-01',
+      websiteUrl: 'https://asana.com',
+      createdAt: { seconds: Date.now() / 1000 - (15 * 24 * 60 * 60) }, // 15 days ago
+      tasks: []
+    }
+  ] : activeProjects;
+
   // Auto-select first project if none selected
   useEffect(() => {
-    if (!selectedProject && activeProjects.length > 0) {
-      setSelectedProject(activeProjects[0]);
+    if (!selectedProject && mockActiveProjects.length > 0) {
+      setSelectedProject(mockActiveProjects[0]);
     }
-  }, [activeProjects, selectedProject]);
+  }, [mockActiveProjects, selectedProject]);
 
   // Simulate loading when project changes
   useEffect(() => {
@@ -86,12 +137,172 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
   // Get project icon based on name or type
   const getProjectIcon = (project: Project) => {
     const name = project.name?.toLowerCase() || '';
-    if (name.includes('web') || name.includes('website')) return <BarChart3 size={20} />;
-    if (name.includes('mobile') || name.includes('app')) return <Settings size={20} />;
-    if (name.includes('dashboard') || name.includes('admin')) return <Target size={20} />;
-    if (name.includes('api') || name.includes('backend')) return <GitBranch size={20} />;
-    return <FileText size={20} />;
+    if (name.includes('web') || name.includes('website')) return <BarChart3 size={24} />;
+    if (name.includes('mobile') || name.includes('app')) return <Settings size={24} />;
+    if (name.includes('dashboard') || name.includes('admin')) return <Target size={24} />;
+    if (name.includes('api') || name.includes('backend')) return <GitBranch size={24} />;
+    return <FileText size={24} />;
   };
+
+  // Get feature status icon
+  const getFeatureStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle size={16} />;
+      case 'in-progress':
+        return <Clock size={16} />;
+      case 'pending':
+        return <AlertCircle size={16} />;
+      default:
+        return <FileText size={16} />;
+    }
+  };
+
+  // Handle adding new feature
+  const handleAddFeature = async (featureData: any) => {
+    try {
+      // Here you would typically save to your backend
+      console.log('Adding new feature:', featureData);
+      
+      // For now, just simulate success
+      // In a real app, you'd make an API call to save the feature
+      
+      // You could also refresh the project data here if needed
+      
+    } catch (error) {
+      console.error('Error adding feature:', error);
+      throw error; // Re-throw to let the modal handle the error
+    }
+  };
+
+  // Mock team data - replace with actual data from your backend
+  const mockTeamMembers = [
+    {
+      id: '1',
+      name: 'Sarah Johnson',
+      role: 'Lead Developer',
+      avatar: 'SJ',
+      email: 'sarah.johnson@ontogeny.com',
+      status: 'active'
+    },
+    {
+      id: '2',
+      name: 'Mike Chen',
+      role: 'UI/UX Designer',
+      avatar: 'MC',
+      email: 'mike.chen@ontogeny.com',
+      status: 'active'
+    },
+    {
+      id: '3',
+      name: 'Alex Rodriguez',
+      role: 'Backend Developer',
+      avatar: 'AR',
+      email: 'alex.rodriguez@ontogeny.com',
+      status: 'active'
+    },
+    {
+      id: '4',
+      name: 'Emily Davis',
+      role: 'Project Manager',
+      avatar: 'ED',
+      email: 'emily.davis@ontogeny.com',
+      status: 'active'
+    }
+  ];
+
+  // Team Modal Component
+  const TeamModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-content team-modal">
+        <div className="modal-header">
+          <div className="modal-title-section">
+            <Users size={24} />
+            <div>
+              <h2>Project Team</h2>
+              <p>Team members working on {selectedProject?.name}</p>
+            </div>
+          </div>
+          <button className="modal-close-btn" onClick={() => setShowTeamModal(false)}>
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="team-content">
+          <div className="team-list">
+            {mockTeamMembers.map((member) => (
+              <div key={member.id} className="team-member">
+                <div className="member-avatar">
+                  {member.avatar}
+                </div>
+                <div className="member-info">
+                  <h4>{member.name}</h4>
+                  <p className="member-role">{member.role}</p>
+                  <p className="member-email">{member.email}</p>
+                </div>
+                <div className={`member-status ${member.status}`}>
+                  <span className="status-dot"></span>
+                  {member.status}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Mock project features - replace with actual data from your backend
+  const mockProjectFeatures: ProjectFeature[] = [
+    {
+      id: '1',
+      name: 'User Authentication',
+      description: 'Complete user registration, login, and password reset functionality',
+      status: 'completed',
+      priority: 'high',
+      category: 'Authentication'
+    },
+    {
+      id: '2',
+      name: 'Dashboard Interface',
+      description: 'Main user dashboard with project overview and quick actions',
+      status: 'completed',
+      priority: 'high',
+      category: 'UI/UX'
+    },
+    {
+      id: '3',
+      name: 'Payment Integration',
+      description: 'Stripe payment processing for subscriptions and one-time payments',
+      status: 'in-progress',
+      priority: 'high',
+      category: 'Payment'
+    },
+    {
+      id: '4',
+      name: 'Email Notifications',
+      description: 'Automated email system for user notifications and updates',
+      status: 'in-progress',
+      priority: 'medium',
+      category: 'Communication'
+    },
+    {
+      id: '5',
+      name: 'Mobile Responsive Design',
+      description: 'Optimize interface for mobile and tablet devices',
+      status: 'pending',
+      priority: 'medium',
+      category: 'UI/UX'
+    },
+    {
+      id: '6',
+      name: 'Advanced Analytics',
+      description: 'Detailed analytics dashboard with custom reporting',
+      status: 'pending',
+      priority: 'low',
+      category: 'Analytics'
+    }
+  ];
 
   if (customerProjectsLoading) {
     return (
@@ -102,7 +313,7 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
     );
   }
 
-  if (customerProjects.length === 0) {
+  if (customerProjects.length === 0 && mockActiveProjects.length === 0) {
     return (
       <div className="active-projects-section">
         <div className="active-projects-header">
@@ -144,127 +355,28 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
   }
 
   return (
-    <div className="projects-management-container">
-      {/* Header */}
-      <div className="projects-header-section">
-        <div className="projects-title">
-          <h1>
-            <Activity size={28} />
-            Project Management
-          </h1>
-          <p>Manage and track your active and completed projects</p>
-        </div>
-        <div className="projects-stats">
-          <div className="stat-card active">
-            <span className="stat-number">{activeProjects.length}</span>
-            <span className="stat-label">Active Projects</span>
-          </div>
-          <div className="stat-card completed">
-            <span className="stat-number">{completedProjects.length}</span>
-            <span className="stat-label">Completed</span>
-          </div>
-          <div className="stat-card total">
-            <span className="stat-number">{customerProjects.length}</span>
-            <span className="stat-label">Total Projects</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="projects-main-content">
-        {/* Left Sidebar - Project List */}
-        <div className="projects-sidebar">
-          <div className="projects-sidebar-header">
-            <h3>Your Projects</h3>
-            <span className="project-count">{activeProjects.length} active</span>
-          </div>
-          
-          <div className="projects-list">
-            {activeProjects.map((project) => (
-              <div 
-                key={project.id}
-                className={`project-list-item ${selectedProject?.id === project.id ? 'selected' : ''}`}
-                onClick={() => setSelectedProject(project)}
-              >
-                <div className="project-icon">
-                  {getProjectIcon(project)}
+    <div className="active-projects-content">
+      <div className="project-details-content">
+        {selectedProject ? (
+          <div className="project-details-view">
+            {/* Project Header */}
+            {projectDetailsLoading ? (
+              <div className="project-details-header">
+                <div className="project-title-section">
+                  <div className="project-title-content">
+                    <div className="loading-placeholder" style={{width: '200px', height: '28px', marginBottom: '8px'}}></div>
+                    <div className="loading-placeholder" style={{width: '100px', height: '20px'}}></div>
+                  </div>
                 </div>
-                <div className="project-info">
-                  <h4>{project.name}</h4>
-                  <div className="project-status-mini">
-                    <span className={`status-dot ${project.status}`}></span>
-                    <span className="status-text">{project.status}</span>
-                  </div>
-                  <div className="project-progress-mini">
-                    <div className="progress-bar-mini">
-                      <div 
-                        className="progress-fill-mini"
-                        style={{ width: `${project.progress || 0}%` }}
-                      ></div>
-                    </div>
-                    <span className="progress-text-mini">{project.progress || 0}%</span>
-                  </div>
+                <div className="project-actions-header">
+                  <div className="loading-placeholder" style={{width: '120px', height: '40px', marginRight: '10px'}}></div>
+                  <div className="loading-placeholder" style={{width: '120px', height: '40px'}}></div>
                 </div>
               </div>
-            ))}
-            
-            {completedProjects.length > 0 && (
-              <>
-                <div className="projects-divider">
-                  <span>Completed Projects</span>
-                </div>
-                {completedProjects.map((project) => (
-                  <div 
-                    key={project.id}
-                    className={`project-list-item completed ${selectedProject?.id === project.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedProject(project)}
-                  >
-                    <div className="project-icon completed">
-                      <CheckCircle size={20} />
-                    </div>
-                    <div className="project-info">
-                      <h4>{project.name}</h4>
-                      <div className="project-status-mini">
-                        <span className="completed-badge">✅ Completed</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Right Content - Project Details */}
-        <div className="project-details-content">
-          {selectedProject ? (
-            <div className="project-details-view">
-              {/* Project Header */}
-              {projectDetailsLoading ? (
-                <div className="project-details-header">
-                  <div className="project-title-section">
-                    <div className="project-icon-large">
-                      <RefreshCw className="spinning" size={32} />
-                    </div>
-                    <div className="project-title-info">
-                      <div className="loading-placeholder" style={{width: '200px', height: '28px', marginBottom: '8px'}}></div>
-                      <div className="loading-placeholder" style={{width: '100px', height: '20px'}}></div>
-                    </div>
-                  </div>
-                  <div className="project-actions-header">
-                    <div className="loading-placeholder" style={{width: '120px', height: '40px', marginRight: '10px'}}></div>
-                    <div className="loading-placeholder" style={{width: '120px', height: '40px'}}></div>
-                  </div>
-                </div>
-              ) : (
-                <div className="project-details-header">
-                  <div className="project-title-section">
-                    <div className="project-icon-large">
-                      {selectedProject.status === 'completed' ? 
-                        <CheckCircle size={32} /> : 
-                        getProjectIcon(selectedProject)
-                      }
-                    </div>
+            ) : (
+              <div className="project-details-header">
+                <div className="project-title-section">
+                  <div className="project-title-content">
                     <div className="project-title-info">
                       <h2>{selectedProject.name}</h2>
                       <span className={`project-status-badge ${selectedProject.status}`}>
@@ -274,47 +386,43 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
                       </span>
                     </div>
                   </div>
-                  
-                  <div className="project-actions-header">
-                    <button 
-                      className="action-btn primary"
-                      onClick={() => onOpenCustomerProject(selectedProject)}
-                    >
-                      <Settings size={16} />
-                      Project Details
-                    </button>
-                    {selectedProject.status !== 'completed' && (
-                      <button 
-                        className="action-btn secondary"
-                        onClick={() => onFeatureRequest(selectedProject)}
-                      >
-                        <MessageSquare size={16} />
-                        Request Feature
-                      </button>
-                    )}
-                  </div>
                 </div>
-              )}
+                
+                <div className="project-actions-header">
+                  {selectedProject.websiteUrl && (
+                    <a 
+                      href={selectedProject.websiteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="action-btn primary"
+                    >
+                      <BarChart3 size={16} />
+                      Live Project
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
 
-              {/* Project Overview */}
-              <div className="project-overview-section">
-                {metricsLoading ? (
-                  <div className="overview-cards">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="overview-card">
-                        <div className="card-header">
-                          <RefreshCw className="spinning" size={20} />
-                          <div className="loading-placeholder" style={{width: '80px', height: '16px'}}></div>
-                        </div>
-                        <div className="card-content">
-                          <div className="loading-placeholder" style={{width: '100%', height: '60px', marginBottom: '10px'}}></div>
-                          <div className="loading-placeholder" style={{width: '120px', height: '14px'}}></div>
-                        </div>
+            {/* Project Overview */}
+            <div className="project-overview-section">
+              {metricsLoading ? (
+                <div className="overview-cards">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="overview-card">
+                      <div className="card-header">
+                        <RefreshCw className="spinning" size={20} />
+                        <div className="loading-placeholder" style={{width: '80px', height: '16px'}}></div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="overview-cards">
+                      <div className="card-content">
+                        <div className="loading-placeholder" style={{width: '100%', height: '60px', marginBottom: '10px'}}></div>
+                        <div className="loading-placeholder" style={{width: '120px', height: '14px'}}></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="overview-cards">
                   {selectedProject.status !== 'completed' && (
                     <>
                       <div className="overview-card progress">
@@ -348,7 +456,10 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
                         </div>
                       </div>
 
-                      <div className="overview-card team">
+                      <div 
+                        className="overview-card team clickable"
+                        onClick={() => setShowTeamModal(true)}
+                      >
                         <div className="card-header">
                           <Users size={20} />
                           <span>Team</span>
@@ -359,22 +470,7 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
                             <span className="team-label">team members</span>
                           </div>
                           <div className="team-activity">
-                            <span>Active development</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="overview-card risk">
-                        <div className="card-header">
-                          <AlertCircle size={20} />
-                          <span>Risk Level</span>
-                        </div>
-                        <div className="card-content">
-                          <div className={`risk-indicator ${generateProjectMetrics(selectedProject).riskLevel}`}>
-                            <span className="risk-level">{generateProjectMetrics(selectedProject).riskLevel}</span>
-                          </div>
-                          <div className="risk-description">
-                            <span>Project health monitoring</span>
+                            <span>Click to view team details</span>
                           </div>
                         </div>
                       </div>
@@ -403,63 +499,178 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
                     </div>
                   )}
                 </div>
+              )}
+            </div>
+
+            {/* Project Features - Most Important Section */}
+            <div className="project-features-section">
+              <div className="features-header">
+                <div className="features-title-section">
+                  <h3>
+                    <Settings size={20} />
+                    Project Features
+                  </h3>
+                  <span className="features-subtitle">Track development progress and feature status</span>
+                </div>
+                {selectedProject.status !== 'completed' && (
+                  <div className="features-header-actions">
+                    <button 
+                      className="features-add-btn large"
+                      onClick={() => setShowAddFeatureModal(true)}
+                    >
+                      <Plus size={18} />
+                      Add Feature
+                    </button>
+                  </div>
                 )}
               </div>
-
-              {/* Project Description */}
-              <div className="project-description-section">
-                <h3>Project Description</h3>
-                <div className="description-content">
-                  <p>{selectedProject.description || 'No description available for this project.'}</p>
-                </div>
-              </div>
-
-              {/* Project Timeline */}
-              {selectedProject.status !== 'completed' && (
-                <div className="project-timeline-section">
-                  <h3>Project Timeline</h3>
-                  <div className="timeline-content">
-                    <div className="timeline-item">
-                      <div className="timeline-marker started"></div>
-                      <div className="timeline-info">
-                        <span className="timeline-title">Project Started</span>
-                        <span className="timeline-date">
-                          {selectedProject.createdAt ? 
-                            new Date(selectedProject.createdAt.seconds * 1000).toLocaleDateString() : 
-                            'Recently'
-                          }
+              
+              <div className="features-grid-main">
+                {mockProjectFeatures.map((feature) => (
+                  <div key={feature.id} className={`feature-card-main ${feature.status}`}>
+                    <div className="feature-status-indicator">
+                      {getFeatureStatusIcon(feature.status)}
+                    </div>
+                    <div className="feature-content">
+                      <div className="feature-header-main">
+                        <h4>{feature.name}</h4>
+                        <span className={`feature-priority ${feature.priority}`}>
+                          {feature.priority}
+                        </span>
+                      </div>
+                      <p className="feature-description-main">{feature.description}</p>
+                      <div className="feature-meta-main">
+                        <span className="feature-category-main">{feature.category}</span>
+                        <span className={`feature-status-text ${feature.status}`}>
+                          {feature.status.replace('-', ' ')}
                         </span>
                       </div>
                     </div>
-                    <div className="timeline-item">
-                      <div className="timeline-marker current"></div>
-                      <div className="timeline-info">
-                        <span className="timeline-title">Current Phase</span>
-                        <span className="timeline-date">Development in progress</span>
-                      </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="features-actions">
+                <button 
+                  className="features-view-all-btn small"
+                  onClick={() => setShowProjectFeaturesModal(true)}
+                >
+                  <Settings size={14} />
+                  View All Features & APIs
+                </button>
+              </div>
+            </div>
+
+            {/* Project Description */}
+            <div className="project-description-section">
+              <h3>Project Overview</h3>
+              <div className="description-content">
+                <div className="description-card">
+                  <div className="description-text">
+                    <p>{selectedProject.description || 'No description available for this project.'}</p>
+                  </div>
+                  <div className="description-meta">
+                    <div className="meta-item">
+                      <Calendar size={16} />
+                      <span>Started: {selectedProject.createdAt ? 
+                        new Date(selectedProject.createdAt.seconds * 1000).toLocaleDateString() : 
+                        'Recently'
+                      }</span>
                     </div>
-                    <div className="timeline-item">
-                      <div className="timeline-marker future"></div>
-                      <div className="timeline-info">
-                        <span className="timeline-title">Expected Completion</span>
-                        <span className="timeline-date">{selectedProject.deadline || 'To be determined'}</span>
+                    {selectedProject.deadline && (
+                      <div className="meta-item">
+                        <Clock size={16} />
+                        <span>Deadline: {selectedProject.deadline}</span>
                       </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Project Timeline */}
+            {selectedProject.status !== 'completed' && (
+              <div className="project-timeline-section">
+                <h3>Development Timeline</h3>
+                <div className="timeline-horizontal">
+                  <div className="timeline-step completed">
+                    <div className="timeline-step-marker"></div>
+                    <div className="timeline-step-content">
+                      <span className="timeline-step-title">Project Started</span>
+                      <span className="timeline-step-date">
+                        {selectedProject.createdAt ? 
+                          new Date(selectedProject.createdAt.seconds * 1000).toLocaleDateString() : 
+                          'Recently'
+                        }
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="timeline-connector completed"></div>
+                  
+                  <div className="timeline-step current">
+                    <div className="timeline-step-marker"></div>
+                    <div className="timeline-step-content">
+                      <span className="timeline-step-title">Development</span>
+                      <span className="timeline-step-date">In Progress</span>
+                    </div>
+                  </div>
+                  
+                  <div className="timeline-connector"></div>
+                  
+                  <div className="timeline-step">
+                    <div className="timeline-step-marker"></div>
+                    <div className="timeline-step-content">
+                      <span className="timeline-step-title">Testing</span>
+                      <span className="timeline-step-date">Upcoming</span>
+                    </div>
+                  </div>
+                  
+                  <div className="timeline-connector"></div>
+                  
+                  <div className="timeline-step">
+                    <div className="timeline-step-marker"></div>
+                    <div className="timeline-step-content">
+                      <span className="timeline-step-title">Deployment</span>
+                      <span className="timeline-step-date">
+                        {selectedProject.deadline || 'TBD'}
+                      </span>
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
-          ) : (
-            <div className="no-project-selected">
-              <div className="no-selection-content">
-                <Activity size={64} />
-                <h3>Select a Project</h3>
-                <p>Choose a project from the sidebar to view its details and manage its progress.</p>
               </div>
+            )}
+          </div>
+        ) : (
+          <div className="no-project-selected">
+            <div className="no-selection-content">
+              <Activity size={64} />
+              <h3>Select a Project</h3>
+              <p>Choose a project from the sidebar to view its details and manage its progress.</p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
+
+      {/* Project Features Modal */}
+      {showProjectFeaturesModal && selectedProject && (
+        <ProjectFeaturesModal
+          isOpen={showProjectFeaturesModal}
+          onClose={() => setShowProjectFeaturesModal(false)}
+          project={selectedProject}
+        />
+      )}
+
+      {/* Add Feature Modal */}
+      <AddFeatureModal
+        isOpen={showAddFeatureModal}
+        onClose={() => setShowAddFeatureModal(false)}
+        onSubmit={handleAddFeature}
+        project={selectedProject}
+      />
+
+      {/* Team Modal */}
+      {showTeamModal && <TeamModal />}
     </div>
   );
 };

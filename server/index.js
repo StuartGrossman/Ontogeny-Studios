@@ -6,11 +6,7 @@ const plansRoutes = require('./routes/plans');
 dotenv.config();
 
 const app = express();
-<<<<<<< HEAD
-const port = process.env.PORT || 3002;
-=======
 const port = process.env.PORT || 3005; // Use port 3005
->>>>>>> dashboard-only
 
 // Middleware
 app.use(cors());
