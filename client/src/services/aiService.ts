@@ -30,6 +30,122 @@ export interface AIResponse {
   };
 }
 
+interface ProjectAnalysis {
+  projectName?: string;
+  description: string;
+  features: {
+    text: string;
+    complexity: 'simple' | 'moderate' | 'complex';
+    estimatedHours: number;
+  }[];
+}
+
+// Simulation function - replace with actual DeepSeek API call in production
+const simulateDeepSeekAnalysis = async (input: string): Promise<ProjectAnalysis> => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  // Simple text analysis to extract basic information
+  const words = input.toLowerCase().split(/\s+/);
+  const sentences = input.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  
+  // Extract potential features based on common keywords
+  const features = [];
+  const featureKeywords = [
+    { keywords: ['login', 'auth', 'signin', 'signup', 'register'], text: 'User authentication system', complexity: 'moderate' },
+    { keywords: ['dashboard', 'admin', 'panel'], text: 'Admin dashboard interface', complexity: 'moderate' },
+    { keywords: ['database', 'data', 'storage'], text: 'Database integration and data management', complexity: 'moderate' },
+    { keywords: ['api', 'endpoint', 'integration'], text: 'API development and integration', complexity: 'moderate' },
+    { keywords: ['ui', 'interface', 'design', 'frontend'], text: 'User interface design and implementation', complexity: 'simple' },
+    { keywords: ['payment', 'billing', 'subscription'], text: 'Payment processing system', complexity: 'complex' },
+    { keywords: ['chat', 'messaging', 'communication'], text: 'Real-time messaging system', complexity: 'complex' },
+    { keywords: ['search', 'filter', 'sort'], text: 'Search and filtering functionality', complexity: 'simple' },
+    { keywords: ['notification', 'alert', 'email'], text: 'Notification system', complexity: 'moderate' },
+    { keywords: ['report', 'analytics', 'chart'], text: 'Reporting and analytics dashboard', complexity: 'complex' },
+    { keywords: ['mobile', 'responsive', 'app'], text: 'Mobile-responsive design', complexity: 'moderate' },
+    { keywords: ['security', 'encryption', 'secure'], text: 'Security implementation', complexity: 'complex' }
+  ];
+
+  // Find matching features
+  for (const featurePattern of featureKeywords) {
+    const hasKeyword = featurePattern.keywords.some(keyword => 
+      words.some(word => word.includes(keyword))
+    );
+    if (hasKeyword) {
+      features.push({
+        text: featurePattern.text,
+        complexity: featurePattern.complexity as 'simple' | 'moderate' | 'complex',
+        estimatedHours: 15
+      });
+    }
+  }
+
+  // If no features found, add some generic ones based on input length
+  if (features.length === 0) {
+    features.push(
+      { text: 'Core application functionality', complexity: 'moderate' as 'simple' | 'moderate' | 'complex', estimatedHours: 15 },
+      { text: 'User interface implementation', complexity: 'simple' as 'simple' | 'moderate' | 'complex', estimatedHours: 15 }
+    );
+  }
+
+  // Extract project name (look for titles or capitalized phrases)
+  let projectName: string | undefined = undefined;
+  const firstSentence = sentences[0]?.trim();
+  if (firstSentence && firstSentence.length < 50) {
+    projectName = firstSentence.replace(/[^\w\s]/g, '').trim();
+  }
+
+  return {
+    projectName,
+    description: input.trim() || 'AI-assisted project development with enhanced features and modern architecture.',
+    features
+  };
+};
+
+export const analyzeProjectText = async (textInput: string): Promise<ProjectAnalysis> => {
+  try {
+    const prompt = `
+Analyze the following project description and extract structured information:
+
+"${textInput}"
+
+Please provide a JSON response with the following structure:
+{
+  "projectName": "extracted project name if mentioned, otherwise null",
+  "description": "a clean, professional project description based on the input",
+  "features": [
+    {
+      "text": "specific feature description",
+      "complexity": "simple|moderate|complex",
+      "estimatedHours": 15
+    }
+  ]
+}
+
+Guidelines:
+- Extract all identifiable features and requirements
+- Set estimatedHours to 15 for all features (AI-assisted development)
+- Classify complexity as:
+  - simple: Basic CRUD, simple UI components, basic integrations
+  - moderate: Complex UI, API integrations, data processing, workflows
+  - complex: Advanced algorithms, complex integrations, real-time features, security implementations
+- Keep feature descriptions concise but specific
+- If no clear project name is mentioned, set projectName to null
+- Ensure the description is professional and comprehensive
+
+Return only valid JSON, no additional text.`;
+
+    // For now, we'll simulate the DeepSeek API call
+    // In production, you would replace this with actual DeepSeek API integration
+    const mockAnalysis = await simulateDeepSeekAnalysis(textInput);
+    return mockAnalysis;
+
+  } catch (error) {
+    console.error('Error analyzing project text:', error);
+    throw new Error('Failed to analyze project text');
+  }
+};
+
 class AIService {
   private async makeAPICall(messages: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<AIResponse> {
     try {

@@ -563,6 +563,7 @@ const UserRequestedProjectModal: React.FC<UserRequestedProjectModalProps> = ({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="user-requested-modal" onClick={e => e.stopPropagation()}>
+        {/* Simplified Header */}
         <div className="modal-header">
           <div className="modal-title-section">
             <h2>{project.projectName || project.name}</h2>
@@ -589,390 +590,387 @@ const UserRequestedProjectModal: React.FC<UserRequestedProjectModalProps> = ({
           </button>
         </div>
 
-        <div className="modal-content">
-          {/* Error Display */}
-          {error && (
-            <div className="error-message">
-              <AlertCircle size={16} />
-              {error}
-              {error.includes('old format') && (
-                <button 
-                  className="migrate-btn"
-                  onClick={migrateDocument}
-                  disabled={migratingDocument}
-                  style={{ marginLeft: '10px', padding: '4px 8px', fontSize: '12px' }}
-                >
-                  {migratingDocument ? 'Migrating...' : 'Fix Now'}
-                </button>
-              )}
-              {error.includes('no longer exists') && (
-                <button 
-                  className="refresh-btn"
-                  onClick={() => {
-                    onUpdate();
-                    onClose();
-                  }}
-                  style={{ marginLeft: '10px', padding: '4px 8px', fontSize: '12px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px' }}
-                >
-                  Refresh Data
-                </button>
-              )}
+        {/* Error Display */}
+        {error && (
+          <div className="error-message">
+            <AlertCircle size={16} />
+            {error}
+            {error.includes('old format') && (
               <button 
-                className="error-dismiss"
-                onClick={() => setError('')}
-                title="Dismiss error"
+                className="migrate-btn"
+                onClick={migrateDocument}
+                disabled={migratingDocument}
+                style={{ marginLeft: '10px', padding: '4px 8px', fontSize: '12px' }}
               >
-                <X size={14} />
+                {migratingDocument ? 'Migrating...' : 'Fix Now'}
               </button>
-            </div>
-          )}
-
-          {/* Enhanced Status Section for Accepted Projects */}
-          {isAccepted && (
-            <div className="accepted-project-notice">
-              <div className="accepted-header">
-                <CheckCircle size={24} className="accepted-icon" />
-                <div className="accepted-content">
-                  <h3>🎉 Project Accepted!</h3>
-                  <p>Your project has been approved and is now in active development. Track progress below.</p>
-                </div>
-              </div>
-              
-              {/* Progress Bar for Accepted Projects */}
-              <div className="accepted-progress-section">
-                <div className="progress-header">
-                  <span className="progress-label">Development Progress</span>
-                  <span className="progress-percentage">{progressPercentage}%</span>
-                </div>
-                <div className="progress-bar-large">
-                  <div 
-                    className="progress-fill-large"
-                    style={{ width: `${progressPercentage}%` }}
-                  />
-                </div>
-                <div className="progress-stats">
-                  <span>{completedFeatures} of {features.length} features completed</span>
-                  {progressPercentage === 100 && (
-                    <span className="completion-badge">🚀 Ready for Deployment!</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Project Overview */}
-          <div className="project-overview">
-            <div className="overview-item">
-              <User size={16} />
-              <span>Requested by: {project.requestedByName || project.requestedBy}</span>
-            </div>
-            <div className="overview-item">
-              <Calendar size={16} />
-              <span>
-                Requested: {project.createdAt?.seconds 
-                  ? new Date(project.createdAt.seconds * 1000).toLocaleDateString()
-                  : new Date(project.createdAt).toLocaleDateString()}
-              </span>
-            </div>
-            {project.lastUpdated && (
-              <div className="overview-item">
-                <Clock size={16} />
-                <span>
-                  Last Updated: {project.lastUpdated?.seconds 
-                    ? new Date(project.lastUpdated.seconds * 1000).toLocaleDateString()
-                    : new Date(project.lastUpdated).toLocaleDateString()}
-                </span>
-              </div>
             )}
-            {!isAccepted && (
-              <div className="overview-item">
-                <Target size={16} />
-                <span>Priority: {project.priority}</span>
-              </div>
+            {error.includes('no longer exists') && (
+              <button 
+                className="refresh-btn"
+                onClick={() => {
+                  onUpdate();
+                  onClose();
+                }}
+                style={{ marginLeft: '10px', padding: '4px 8px', fontSize: '12px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px' }}
+              >
+                Refresh Data
+              </button>
             )}
+            <button 
+              className="error-dismiss"
+              onClick={() => setError('')}
+              title="Dismiss error"
+            >
+              <X size={14} />
+            </button>
           </div>
+        )}
 
-          {/* Progress Section for Non-Accepted Projects */}
-          {!isAccepted && (
-            <div className="progress-section">
-              <div className="progress-bar">
-                <div 
-                  className="progress-fill"
-                  style={{ width: `${progressPercentage}%` }}
-                />
-              </div>
-              <span className="progress-text">{progressPercentage}%</span>
-            </div>
-          )}
-
-          {/* Description */}
-          {project.description && (
-            <div className="description-section">
-              <h3>Project Description</h3>
-              <p>{project.description}</p>
-            </div>
-          )}
-
-          {/* Features List */}
-          <div className="features-section">
-            <div className="features-header">
-              <h3>Features & Requirements</h3>
-              <span className="features-count">{features.length} features</span>
-            </div>
-            
-            {/* Add New Feature */}
-            <div className="add-feature-section">
-              <div className="add-feature-input">
-                <input
-                  type="text"
-                  value={newFeature}
-                  onChange={(e) => setNewFeature(e.target.value)}
-                  placeholder="Add a new feature or requirement..."
-                  className="new-feature-input"
-                  onKeyPress={(e) => e.key === 'Enter' && addNewFeature()}
-                />
-                <button 
-                  className="add-feature-btn"
-                  onClick={addNewFeature}
-                  disabled={!newFeature.trim() || addingFeature}
-                >
-                  {addingFeature ? (
-                    <div className="loading-spinner" />
-                  ) : (
-                    '+ Add Feature'
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <div className="features-list">
-              {features.map((feature: Feature) => (
-                <div 
-                  key={feature.id} 
-                  className={`feature-item ${feature.completed ? 'completed' : ''} ${updatingFeature === feature.id ? 'updating' : ''}`}
-                >
-                  <div 
-                    className="feature-checkbox"
-                    onClick={() => toggleFeatureCompletion(feature.id)}
-                  >
-                    {updatingFeature === feature.id ? (
-                      <div className="loading-spinner" />
-                    ) : feature.completed ? (
-                      <CheckCircle size={18} className="check-icon completed" />
-                    ) : (
-                      <Circle size={18} className="check-icon" />
-                    )}
-                  </div>
-                  <div className="feature-content">
-                    <span className="feature-text">{feature.text}</span>
-                    <span 
-                      className="feature-priority" 
-                      style={{ color: getPriorityColor(feature.priority) }}
-                    >
-                      {feature.priority}
+        {/* Two Column Layout */}
+        <div className="modal-two-column-layout">
+          {/* Left Column: Project Information & Management */}
+          <div className="left-column-info">
+            {/* Project Overview */}
+            <div className="info-section">
+              <h3 className="section-title">Project Overview</h3>
+              <div className="project-overview">
+                <div className="overview-item">
+                  <User size={16} />
+                  <span>Requested by: {project.requestedByName || project.requestedBy}</span>
+                </div>
+                <div className="overview-item">
+                  <Calendar size={16} />
+                  <span>
+                    Requested: {project.createdAt?.seconds 
+                      ? new Date(project.createdAt.seconds * 1000).toLocaleDateString()
+                      : new Date(project.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                {project.lastUpdated && (
+                  <div className="overview-item">
+                    <Clock size={16} />
+                    <span>
+                      Last Updated: {project.lastUpdated?.seconds 
+                        ? new Date(project.lastUpdated.seconds * 1000).toLocaleDateString()
+                        : new Date(project.lastUpdated).toLocaleDateString()}
                     </span>
                   </div>
-                  <button 
-                    className="delete-feature-btn"
-                    onClick={() => deleteFeature(feature.id)}
-                    title="Delete feature"
-                  >
-                    <X size={14} />
-                  </button>
+                )}
+                {!isAccepted && (
+                  <div className="overview-item">
+                    <Target size={16} />
+                    <span>Priority: {project.priority}</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Progress Section for Non-Accepted Projects */}
+              {!isAccepted && (
+                <div className="progress-section">
+                  <div className="progress-bar">
+                    <div 
+                      className="progress-fill"
+                      style={{ width: `${progressPercentage}%` }}
+                    />
+                  </div>
+                  <span className="progress-text">{progressPercentage}%</span>
                 </div>
-              ))}
+              )}
             </div>
-          </div>
 
-          {/* Status Actions */}
-          <div className="status-actions">
-            <h3>Project Management</h3>
-            
-            {/* Accept Project Button (only show if pending/under-review) */}
-            {(project.status === 'pending' || project.status === 'under-review') && (
-              <div className="accept-project-section">
+            {/* Project Management */}
+            <div className="info-section">
+              <h3 className="section-title">Project Management</h3>
+              
+              {/* Accept Project Button (only show if pending/under-review) */}
+              {(project.status === 'pending' || project.status === 'under-review') && (
+                <div className="accept-project-section">
+                  <button 
+                    className="accept-project-btn"
+                    onClick={acceptProject}
+                    disabled={acceptingProject}
+                  >
+                    {acceptingProject ? (
+                      <>
+                        <div className="loading-spinner" />
+                        Accepting Project...
+                      </>
+                    ) : (
+                      <>
+                        <Check size={16} />
+                        Accept & Start Development
+                      </>
+                    )}
+                  </button>
+                  <p className="accept-description">
+                    Creates an admin project with detailed tracking and converts features to tasks.
+                  </p>
+                </div>
+              )}
+
+              {/* Status Update Buttons */}
+              <div className="status-buttons">
                 <button 
-                  className="accept-project-btn"
-                  onClick={acceptProject}
-                  disabled={acceptingProject}
+                  className={`status-btn ${project.status === 'pending' ? 'active' : ''}`}
+                  onClick={() => updateStatus('pending')}
+                  disabled={updatingStatus}
                 >
-                  {acceptingProject ? (
-                    <>
-                      <div className="loading-spinner" />
-                      Accepting Project...
-                    </>
-                  ) : (
-                    <>
-                      <Check size={16} />
-                      Accept Project & Start Development
-                    </>
-                  )}
+                  <Clock size={16} />
+                  Pending
                 </button>
-                <p className="accept-description">
-                  This will create a new admin project with detailed tracking, convert features to tasks, 
-                  and notify the user that development has started.
-                </p>
+                <button 
+                  className={`status-btn ${project.status === 'under-review' ? 'active' : ''}`}
+                  onClick={() => updateStatus('under-review')}
+                  disabled={updatingStatus}
+                >
+                  <MessageSquare size={16} />
+                  Under Review
+                </button>
+                <button 
+                  className={`status-btn ${project.status === 'in-progress' ? 'active' : ''}`}
+                  onClick={() => updateStatus('in-progress')}
+                  disabled={updatingStatus}
+                >
+                  <Target size={16} />
+                  In Progress
+                </button>
+                <button 
+                  className={`status-btn ${project.status === 'accepted' ? 'active' : ''}`}
+                  onClick={() => updateStatus('accepted')}
+                  disabled={updatingStatus}
+                >
+                  <CheckCircle size={16} />
+                  Accepted
+                </button>
+                <button 
+                  className={`status-btn ${project.status === 'completed' ? 'active' : ''}`}
+                  onClick={() => updateStatus('completed')}
+                  disabled={updatingStatus}
+                >
+                  <CheckCircle size={16} />
+                  Completed
+                </button>
+                <button 
+                  className={`status-btn reject ${project.status === 'rejected' ? 'active' : ''}`}
+                  onClick={() => updateStatus('rejected')}
+                  disabled={updatingStatus}
+                >
+                  <X size={16} />
+                  Rejected
+                </button>
+              </div>
+            </div>
+
+            {/* Project Timeline (show if accepted) */}
+            {project.status === 'accepted' && project.acceptedAt && (
+              <div className="info-section">
+                <h3 className="section-title">Timeline</h3>
+                <div className="timeline-section">
+                  <div className="timeline-item">
+                    <div className="timeline-icon accepted">
+                      <Check size={16} />
+                    </div>
+                    <div className="timeline-content">
+                      <h4>Project Accepted</h4>
+                      <p>Accepted by {project.acceptedByName || 'Admin'}</p>
+                      <span className="timeline-date">
+                        {new Date(project.acceptedAt.seconds * 1000).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                  {project.adminProjectId && (
+                    <div className="timeline-item">
+                      <div className="timeline-icon in-progress">
+                        <Play size={16} />
+                      </div>
+                      <div className="timeline-content">
+                        <h4>Development Started</h4>
+                        <p>Admin project created</p>
+                        <span className="timeline-date">
+                          {new Date(project.acceptedAt.seconds * 1000).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Enhanced Project Management */}
+                  {project.adminProjectId && (
+                    <div className="admin-project-link">
+                      <div className="enhanced-project-notice">
+                        <Activity size={16} />
+                        <div className="notice-content">
+                          <h4>Enhanced Management</h4>
+                          <p>Advanced tracking available in admin project.</p>
+                          <div className="admin-project-actions">
+                            <button 
+                              className="view-admin-project-btn"
+                              onClick={() => {
+                                onClose();
+                                if (project.adminProjectId) {
+                                  onOpenAdminProject?.(project.adminProjectId);
+                                }
+                              }}
+                            >
+                              <FileText size={14} />
+                              View Details
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
-            {/* Status Update Buttons */}
-            <div className="status-buttons">
-              <button 
-                className={`status-btn ${project.status === 'pending' ? 'active' : ''}`}
-                onClick={() => updateStatus('pending')}
-                disabled={updatingStatus}
-              >
-                <Clock size={16} />
-                Pending
-              </button>
-              <button 
-                className={`status-btn ${project.status === 'under-review' ? 'active' : ''}`}
-                onClick={() => updateStatus('under-review')}
-                disabled={updatingStatus}
-              >
-                <MessageSquare size={16} />
-                Under Review
-              </button>
-              <button 
-                className={`status-btn ${project.status === 'in-progress' ? 'active' : ''}`}
-                onClick={() => updateStatus('in-progress')}
-                disabled={updatingStatus}
-              >
-                <Target size={16} />
-                In Progress
-              </button>
-              <button 
-                className={`status-btn ${project.status === 'accepted' ? 'active' : ''}`}
-                onClick={() => updateStatus('accepted')}
-                disabled={updatingStatus}
-              >
-                <CheckCircle size={16} />
-                Accepted
-              </button>
-              <button 
-                className={`status-btn ${project.status === 'completed' ? 'active' : ''}`}
-                onClick={() => updateStatus('completed')}
-                disabled={updatingStatus}
-              >
-                <CheckCircle size={16} />
-                Completed
-              </button>
-              <button 
-                className={`status-btn reject ${project.status === 'rejected' ? 'active' : ''}`}
-                onClick={() => updateStatus('rejected')}
-                disabled={updatingStatus}
-              >
-                <X size={16} />
-                Rejected
-              </button>
-            </div>
-          </div>
-
-          {/* Project Timeline (show if accepted) */}
-          {project.status === 'accepted' && project.acceptedAt && (
-            <div className="timeline-section">
-              <h3>Project Timeline</h3>
-              <div className="timeline-item">
-                <div className="timeline-icon accepted">
-                  <Check size={16} />
-                </div>
-                <div className="timeline-content">
-                  <h4>Project Accepted</h4>
-                  <p>Accepted by {project.acceptedByName || 'Admin'}</p>
-                  <span className="timeline-date">
-                    {new Date(project.acceptedAt.seconds * 1000).toLocaleString()}
+            {/* Admin Notes */}
+            <div className="info-section">
+              <h3 className="section-title">Admin Notes</h3>
+              <div className="notes-section">
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Add internal notes about this project..."
+                  className="notes-textarea"
+                  rows={4}
+                />
+                <div className="notes-actions">
+                  <button 
+                    className="save-notes-btn" 
+                    onClick={saveNotes}
+                    disabled={savingNotes}
+                  >
+                    {savingNotes ? (
+                      <>
+                        <div className="loading-spinner" />
+                        Saving...
+                      </>
+                    ) : (
+                      'Save Notes'
+                    )}
+                  </button>
+                  <span className={`notes-status ${notesSaved ? 'success' : notes !== (project?.adminNotes || '') && !savingNotes ? 'warning' : ''}`}>
+                    {notesSaved && '✓ Saved'}
+                    {notes !== (project?.adminNotes || '') && !savingNotes && !notesSaved && 'Unsaved'}
                   </span>
                 </div>
               </div>
-              {project.adminProjectId && (
-                <div className="timeline-item">
-                  <div className="timeline-icon in-progress">
-                    <Play size={16} />
-                  </div>
-                  <div className="timeline-content">
-                    <h4>Development Started</h4>
-                    <p>Admin project created with ID: {project.adminProjectId.slice(-8)}</p>
-                    <span className="timeline-date">
-                      {new Date(project.acceptedAt.seconds * 1000).toLocaleString()}
-                    </span>
+            </div>
+          </div>
+
+          {/* Right Column: Description & Features */}
+          <div className="right-column-features">
+            {/* Enhanced Status Section for Accepted Projects */}
+            {isAccepted && (
+              <div className="accepted-project-notice">
+                <div className="accepted-header">
+                  <CheckCircle size={20} className="accepted-icon" />
+                  <div className="accepted-content">
+                    <h3>🎉 Project Accepted!</h3>
+                    <p>Your project is now in active development. Track progress below.</p>
                   </div>
                 </div>
-              )}
-              
-              {/* Enhanced Project Management */}
-              <div className="admin-project-link">
-                <div className="enhanced-project-notice">
-                  <Activity size={20} />
-                  <div className="notice-content">
-                    <h4>Enhanced Project Management Available</h4>
-                    <p>This project has been converted to an admin project with detailed task tracking, progress monitoring, and advanced features.</p>
-                    <div className="admin-project-actions">
-                      <button 
-                        className="view-admin-project-btn"
-                        onClick={() => {
-                          onClose();
-                          // The parent component should handle opening the admin project
-                          if (project.adminProjectId) {
-                            // Signal to parent to open admin project
-                            console.log('Opening admin project:', project.adminProjectId);
-                            onOpenAdminProject?.(project.adminProjectId);
-                          }
-                        }}
-                      >
-                        <FileText size={16} />
-                        View Enhanced Project Details
-                      </button>
-                      <button 
-                        className="edit-progression-btn"
-                        onClick={() => {
-                          onClose();
-                          if (project.adminProjectId) {
-                            onOpenAdminProject?.(project.adminProjectId);
-                          }
-                        }}
-                      >
-                        <Edit3 size={16} />
-                        Edit Feature Progression
-                      </button>
-                    </div>
+                
+                {/* Progress Bar for Accepted Projects */}
+                <div className="accepted-progress-section">
+                  <div className="progress-header">
+                    <span className="progress-label">Development Progress</span>
+                    <span className="progress-percentage">{progressPercentage}%</span>
+                  </div>
+                  <div className="progress-bar-large">
+                    <div 
+                      className="progress-fill-large"
+                      style={{ width: `${progressPercentage}%` }}
+                    />
+                  </div>
+                  <div className="progress-stats">
+                    <span>{completedFeatures} of {features.length} features completed</span>
+                    {progressPercentage === 100 && (
+                      <span className="completion-badge">🚀 Ready for Deployment!</span>
+                    )}
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Admin Notes */}
-          <div className="notes-section">
-            <div className="notes-header">
-              <h3>Admin Notes</h3>
-              <span className="notes-info">Internal notes - visible only to admins</span>
-            </div>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add internal notes about this project..."
-              className="notes-textarea"
-              rows={4}
-            />
-            <div className="notes-actions">
-              <button 
-                className="save-notes-btn" 
-                onClick={saveNotes}
-                disabled={savingNotes}
-              >
-                {savingNotes ? (
-                  <>
-                    <div className="loading-spinner" />
-                    Saving...
-                  </>
-                ) : (
-                  'Save Notes'
-                )}
-              </button>
-              <span className={`notes-status ${notesSaved ? 'success' : notes !== (project?.adminNotes || '') && !savingNotes ? 'warning' : ''}`}>
-                {notesSaved && '✓ Notes saved successfully'}
-                {notes !== (project?.adminNotes || '') && !savingNotes && !notesSaved && 'Unsaved changes'}
-              </span>
+            {/* Description */}
+            {project.description && (
+              <div className="description-section">
+                <h3>Project Description</h3>
+                <p>{project.description}</p>
+              </div>
+            )}
+
+            {/* Features List */}
+            <div className="features-section">
+              <div className="features-header">
+                <h3>Features & Requirements</h3>
+                <span className="features-count">{features.length} features</span>
+              </div>
+              
+              {/* Add New Feature */}
+              <div className="add-feature-section">
+                <div className="add-feature-input">
+                  <input
+                    type="text"
+                    value={newFeature}
+                    onChange={(e) => setNewFeature(e.target.value)}
+                    placeholder="Add a new feature or requirement..."
+                    className="new-feature-input"
+                    onKeyPress={(e) => e.key === 'Enter' && addNewFeature()}
+                  />
+                  <button 
+                    className="add-feature-btn"
+                    onClick={addNewFeature}
+                    disabled={!newFeature.trim() || addingFeature}
+                  >
+                    {addingFeature ? (
+                      <div className="loading-spinner" />
+                    ) : (
+                      '+ Add Feature'
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="features-list">
+                {features.map((feature: Feature) => (
+                  <div 
+                    key={feature.id} 
+                    className={`feature-item ${feature.completed ? 'completed' : ''} ${updatingFeature === feature.id ? 'updating' : ''}`}
+                  >
+                    <div 
+                      className="feature-checkbox"
+                      onClick={() => toggleFeatureCompletion(feature.id)}
+                    >
+                      {updatingFeature === feature.id ? (
+                        <div className="loading-spinner" />
+                      ) : feature.completed ? (
+                        <CheckCircle size={18} className="check-icon completed" />
+                      ) : (
+                        <Circle size={18} className="check-icon" />
+                      )}
+                    </div>
+                    <div className="feature-content">
+                      <span className="feature-text">{feature.text}</span>
+                      <span 
+                        className="feature-priority" 
+                        style={{ color: getPriorityColor(feature.priority) }}
+                      >
+                        {feature.priority}
+                      </span>
+                    </div>
+                    <button 
+                      className="delete-feature-btn"
+                      onClick={() => deleteFeature(feature.id)}
+                      title="Delete feature"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
