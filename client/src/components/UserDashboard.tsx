@@ -145,6 +145,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
               customerProjectsLoading={customerProjectsLoading}
               onOpenCustomerProject={onOpenCustomerProject}
               onFeatureRequest={onFeatureRequest}
+              sidebarCollapsed={sidebarCollapsed}
             />
           </>
         );
@@ -166,6 +167,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
             onFeatureRequest={onFeatureRequest}
             selectedProject={selectedProject}
             onProjectSelect={setSelectedProject}
+            sidebarCollapsed={sidebarCollapsed}
           />
         );
       
@@ -176,6 +178,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
             customerProjectsLoading={customerProjectsLoading}
             onOpenCustomerProject={onOpenCustomerProject}
             onFeatureRequest={onFeatureRequest}
+            sidebarCollapsed={sidebarCollapsed}
           />
         );
       

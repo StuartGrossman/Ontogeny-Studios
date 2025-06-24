@@ -23,6 +23,7 @@ interface CompletedProjectsSectionProps {
   customerProjectsLoading: boolean;
   onOpenCustomerProject: (project: Project) => void;
   onFeatureRequest: (project: Project) => void;
+  sidebarCollapsed?: boolean;
 }
 
 const CompletedProjectsSection: React.FC<CompletedProjectsSectionProps> = ({
@@ -30,12 +31,13 @@ const CompletedProjectsSection: React.FC<CompletedProjectsSectionProps> = ({
   customerProjectsLoading,
   onOpenCustomerProject,
   onFeatureRequest,
+  sidebarCollapsed = false,
 }) => {
   const completedProjects = customerProjects.filter(p => p.status === 'completed');
 
   if (customerProjectsLoading) {
     return (
-      <div className="active-projects-section">
+      <div className={`active-projects-section ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         <div className="loading-state">
           <RefreshCw className="spinning" size={32} />
           <p>Loading completed projects...</p>
@@ -46,7 +48,7 @@ const CompletedProjectsSection: React.FC<CompletedProjectsSectionProps> = ({
 
   if (completedProjects.length === 0) {
     return (
-      <div className="active-projects-section">
+      <div className={`active-projects-section ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         <div className="active-projects-header">
           <h2>
             <CheckCircle size={24} />
@@ -106,7 +108,7 @@ const CompletedProjectsSection: React.FC<CompletedProjectsSectionProps> = ({
   // If there are completed projects, show them using the same layout as ActiveProjectsSection
   // but with completed-specific styling
   return (
-    <div className="active-projects-section completed-projects">
+    <div className={`active-projects-section completed-projects ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       <div className="active-projects-header">
         <h2>
           <CheckCircle size={24} />

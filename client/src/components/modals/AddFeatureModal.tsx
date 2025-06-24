@@ -1,19 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, MessageSquare, Settings, AlertCircle, CheckCircle, ArrowRight, ArrowLeft, Send, Lightbulb, Eye, Plus } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { X, Send, Lightbulb, Eye, Plus, ArrowRight, CheckCircle } from 'lucide-react';
 
 interface AddFeatureModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (featureData: any) => void;
   project?: any;
-}
-
-interface FeatureRequirement {
-  id: string;
-  text: string;
-  category: string;
-  complexity: 'simple' | 'moderate' | 'complex';
-  estimatedHours: number;
 }
 
 interface Message {
@@ -23,236 +16,194 @@ interface Message {
   timestamp: Date;
 }
 
-const AddFeatureModal: React.FC<AddFeatureModalProps> = ({
-  isOpen,
-  onClose,
-  onSubmit,
-  project
+interface Requirement {
+  id: string;
+  text: string;
+  priority: 'high' | 'medium' | 'low';
+}
+
+const AddFeatureModal: React.FC<AddFeatureModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onSubmit, 
+  project 
 }) => {
-  const [currentStep, setCurrentStep] = useState<'consultation' | 'review'>('consultation');
+  // State management
+  const [step, setStep] = useState<'chat' | 'review'>('chat');
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isConsultantTyping, setIsConsultantTyping] = useState(false);
+  const [currentMessage, setCurrentMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  
+  // Feature data
   const [featureName, setFeatureName] = useState('');
   const [featureDescription, setFeatureDescription] = useState('');
-  const [featureRequirements, setFeatureRequirements] = useState<FeatureRequirement[]>([]);
-  const [featureCategory, setFeatureCategory] = useState('Core Features');
-  const [featurePriority, setFeaturePriority] = useState<'high' | 'medium' | 'low'>('medium');
-  const [estimatedTime, setEstimatedTime] = useState(0);
+  const [requirements, setRequirements] = useState<Requirement[]>([]);
+  const [category, setCategory] = useState('Feature');
+  const [priority, setPriority] = useState<'high' | 'medium' | 'low'>('medium');
+  const [estimatedHours, setEstimatedHours] = useState(0);
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const categories = [
-    'Core Features', 'Authentication & Security', 'UI/UX Improvements', 
-    'Payment & Billing', 'Notifications', 'Integrations & APIs', 
-    'Performance', 'Analytics', 'Mobile & Responsive', 'Admin Tools', 'Other'
-  ];
+  // Initialize chat when modal opens
+  useEffect(() => {
+    if (isOpen && messages.length === 0) {
+      const welcomeMessage: Message = {
+        id: '1',
+        text: `Hi! I'm your AI Feature Consultant. I'll help you design a new feature for "${project?.name || 'your project'}". 
 
-  // Auto-scroll to bottom of chat
+What feature would you like to add? Describe your idea and I'll help you break it down into requirements.`,
+        sender: 'consultant',
+        timestamp: new Date()
+      };
+      setMessages([welcomeMessage]);
+    }
+  }, [isOpen, project?.name]);
+
+  // Auto-scroll messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Initial consultant greeting
+  // Focus input when not typing
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      setTimeout(() => {
-        addConsultantMessage(`Hello! I'm your AI feature consultant. I'll help you design and define your new feature for "${project?.name || 'your project'}". 
-
-What kind of feature would you like to add? Tell me about your idea, and I'll help you break it down into specific requirements and provide estimates.`);
-      }, 500);
+    if (!isTyping && inputRef.current) {
+      inputRef.current.focus();
     }
-  }, [isOpen]);
+  }, [isTyping]);
 
-  const addConsultantMessage = (text: string) => {
-    const newMessage: Message = {
+  const processUserMessage = async (userMessage: string) => {
+    setIsTyping(true);
+    
+    // Simulate AI processing delay
+    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1500));
+    
+    // Simple AI logic to extract feature information
+    const response = analyzeMessage(userMessage);
+    
+    // Update feature data based on analysis
+    if (response.featureName && !featureName) {
+      setFeatureName(response.featureName);
+    }
+    if (response.description) {
+      setFeatureDescription(response.description);
+    }
+    if (response.requirements.length > 0) {
+      setRequirements(prev => [...prev, ...response.requirements]);
+    }
+    if (response.category) {
+      setCategory(response.category);
+    }
+    if (response.estimatedHours > 0) {
+      setEstimatedHours(prev => prev + response.estimatedHours);
+    }
+
+    // Add consultant response
+    const consultantMessage: Message = {
       id: Date.now().toString(),
-      text,
+      text: response.message,
       sender: 'consultant',
       timestamp: new Date()
     };
-    setMessages(prev => [...prev, newMessage]);
+    
+    setMessages(prev => [...prev, consultantMessage]);
+    setIsTyping(false);
   };
 
-  const addUserMessage = (text: string) => {
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text,
-      sender: 'user',
-      timestamp: new Date()
-    };
-    setMessages(prev => [...prev, newMessage]);
-  };
-
-  const processUserMessage = async (message: string) => {
-    setIsConsultantTyping(true);
-    
-    // Simulate AI processing
-    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-    
-    // Analyze message and generate response with feature details
-    const analysisResult = analyzeFeatureRequest(message);
-    
-    if (analysisResult) {
-      // Update feature details based on analysis
-      if (analysisResult.name && !featureName) {
-        setFeatureName(analysisResult.name);
-      }
-      if (analysisResult.description) {
-        setFeatureDescription(analysisResult.description);
-      }
-      if (analysisResult.requirements) {
-        setFeatureRequirements(prev => [...prev, ...analysisResult.requirements]);
-      }
-      if (analysisResult.category) {
-        setFeatureCategory(analysisResult.category);
-      }
-      if (analysisResult.estimatedTime) {
-        setEstimatedTime(prev => prev + analysisResult.estimatedTime);
-      }
-      
-      addConsultantMessage(analysisResult.response);
-    } else {
-      addConsultantMessage("I understand. Can you provide more details about what this feature should do and how users will interact with it?");
-    }
-    
-    setIsConsultantTyping(false);
-  };
-
-  const analyzeFeatureRequest = (message: string): any => {
+  const analyzeMessage = (message: string): any => {
     const lowerMessage = message.toLowerCase();
     
-    // Simple AI-like analysis based on keywords
-    if (lowerMessage.includes('search') || lowerMessage.includes('find')) {
+    // User authentication feature
+    if (lowerMessage.includes('login') || lowerMessage.includes('auth') || lowerMessage.includes('sign in')) {
       return {
-        name: 'Advanced Search',
-        description: 'Enhanced search functionality with filters and advanced options',
-        category: 'Core Features',
-        estimatedTime: 20,
+        featureName: 'User Authentication System',
+        description: 'Secure user login and registration system with password reset',
+        category: 'Authentication',
+        estimatedHours: 24,
         requirements: [
-          {
-            id: '1',
-            text: 'Search input field with autocomplete',
-            category: 'UI Components',
-            complexity: 'moderate' as const,
-            estimatedHours: 6
-          },
-          {
-            id: '2',
-            text: 'Advanced filter options',
-            category: 'Functionality',
-            complexity: 'moderate' as const,
-            estimatedHours: 8
-          },
-          {
-            id: '3',
-            text: 'Search results pagination',
-            category: 'UI Components',
-            complexity: 'simple' as const,
-            estimatedHours: 4
-          }
+          { id: `req-${Date.now()}-1`, text: 'Login form with validation', priority: 'high' as const },
+          { id: `req-${Date.now()}-2`, text: 'Registration page', priority: 'high' as const },
+          { id: `req-${Date.now()}-3`, text: 'Password reset functionality', priority: 'medium' as const },
+          { id: `req-${Date.now()}-4`, text: 'Session management', priority: 'high' as const }
         ],
-        response: `Great! I can see you want to add search functionality. I've outlined a comprehensive search feature that includes:
+        message: `Great! I've outlined a complete authentication system for you. This includes login, registration, password reset, and secure session management.
 
-• Search input with autocomplete suggestions
-• Advanced filtering options
-• Paginated results display
-
-This would enhance user experience significantly. Would you like me to add any specific search filters or modify any of these requirements?`
+The estimated development time is 24 hours. Would you like me to add two-factor authentication or social login options?`
       };
     }
     
-    if (lowerMessage.includes('chat') || lowerMessage.includes('message') || lowerMessage.includes('communication')) {
+    // Search functionality
+    if (lowerMessage.includes('search') || lowerMessage.includes('find') || lowerMessage.includes('filter')) {
       return {
-        name: 'Real-time Messaging',
-        description: 'Live chat system for user communication',
-        category: 'Communication',
-        estimatedTime: 35,
+        featureName: 'Advanced Search System',
+        description: 'Powerful search with filters, sorting, and real-time results',
+        category: 'Core Feature',
+        estimatedHours: 18,
         requirements: [
-          {
-            id: '1',
-            text: 'Chat interface design',
-            category: 'UI Components',
-            complexity: 'moderate' as const,
-            estimatedHours: 10
-          },
-          {
-            id: '2',
-            text: 'Real-time messaging backend',
-            category: 'Backend',
-            complexity: 'complex' as const,
-            estimatedHours: 15
-          },
-          {
-            id: '3',
-            text: 'Message history and persistence',
-            category: 'Database',
-            complexity: 'moderate' as const,
-            estimatedHours: 8
-          }
+          { id: `req-${Date.now()}-1`, text: 'Search input with autocomplete', priority: 'high' as const },
+          { id: `req-${Date.now()}-2`, text: 'Advanced filter options', priority: 'medium' as const },
+          { id: `req-${Date.now()}-3`, text: 'Sort and pagination', priority: 'medium' as const },
+          { id: `req-${Date.now()}-4`, text: 'Search result highlighting', priority: 'low' as const }
         ],
-        response: `Excellent idea! A messaging system would really improve user engagement. I've designed a complete chat solution including:
+        message: `Perfect! I've designed a comprehensive search system with autocomplete, filters, and pagination.
 
-• Modern chat interface with emoji support
-• Real-time message delivery
-• Message history and search
-• Online status indicators
-
-Would you like to add file sharing capabilities or group chat features to this?`
+This will take approximately 18 hours to implement. Should we add saved searches or search analytics?`
       };
     }
     
-    if (lowerMessage.includes('notification') || lowerMessage.includes('alert') || lowerMessage.includes('remind')) {
+    // Dashboard feature
+    if (lowerMessage.includes('dashboard') || lowerMessage.includes('analytics') || lowerMessage.includes('chart')) {
       return {
-        name: 'Smart Notifications',
-        description: 'Intelligent notification system with multiple delivery channels',
-        category: 'Notifications',
-        estimatedTime: 25,
+        featureName: 'Analytics Dashboard',
+        description: 'Interactive dashboard with charts, metrics, and real-time data',
+        category: 'Analytics',
+        estimatedHours: 32,
         requirements: [
-          {
-            id: '1',
-            text: 'In-app notification center',
-            category: 'UI Components',
-            complexity: 'moderate' as const,
-            estimatedHours: 8
-          },
-          {
-            id: '2',
-            text: 'Email notification templates',
-            category: 'Templates',
-            complexity: 'simple' as const,
-            estimatedHours: 6
-          },
-          {
-            id: '3',
-            text: 'Push notification service',
-            category: 'Backend',
-            complexity: 'complex' as const,
-            estimatedHours: 12
-          }
+          { id: `req-${Date.now()}-1`, text: 'Data visualization charts', priority: 'high' as const },
+          { id: `req-${Date.now()}-2`, text: 'Key metrics display', priority: 'high' as const },
+          { id: `req-${Date.now()}-3`, text: 'Date range filtering', priority: 'medium' as const },
+          { id: `req-${Date.now()}-4`, text: 'Export functionality', priority: 'low' as const }
         ],
-        response: `Perfect! Notifications are crucial for user engagement. I've created a comprehensive notification system:
+        message: `Excellent idea! An analytics dashboard will provide great insights. I've included interactive charts, key metrics, and filtering options.
 
-• In-app notification center with badges
-• Email notifications with custom templates  
-• Push notifications for mobile users
-• User preference controls
-
-Should we add SMS notifications or specific notification triggers?`
+This is estimated at 32 hours of development. Would you like to add custom report generation or data export features?`
       };
     }
     
-    return null;
+    // Generic response for other messages
+    return {
+      featureName: '',
+      description: '',
+      category: '',
+      estimatedHours: 0,
+      requirements: [],
+      message: `I understand you want to add that feature. Can you provide more specific details about:
+
+• What exactly should this feature do?
+• Who will use it and how?
+• Are there any specific requirements or constraints?
+
+The more details you provide, the better I can help you plan it out!`
+    };
   };
 
   const handleSendMessage = () => {
-    if (!inputMessage.trim()) return;
+    if (!currentMessage.trim()) return;
     
-    addUserMessage(inputMessage);
-    processUserMessage(inputMessage);
-    setInputMessage('');
+    // Add user message
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      text: currentMessage,
+      sender: 'user',
+      timestamp: new Date()
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    processUserMessage(currentMessage);
+    setCurrentMessage('');
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -263,11 +214,9 @@ Should we add SMS notifications or specific notification triggers?`
   };
 
   const proceedToReview = () => {
-    if (!featureName || featureRequirements.length === 0) {
-      addConsultantMessage("I need a bit more information to create your feature specification. Can you tell me more about what you'd like this feature to do?");
-      return;
+    if (featureName && requirements.length > 0) {
+      setStep('review');
     }
-    setCurrentStep('review');
   };
 
   const handleSubmit = async () => {
@@ -277,27 +226,18 @@ Should we add SMS notifications or specific notification triggers?`
       const featureData = {
         name: featureName,
         description: featureDescription,
-        category: featureCategory,
-        priority: featurePriority,
-        requirements: featureRequirements,
-        estimatedHours: estimatedTime,
+        category,
+        priority,
+        requirements: requirements.map(req => req.text),
+        estimatedHours,
         status: 'pending',
         projectId: project?.id,
-        requestedAt: new Date(),
-        consultationMessages: messages
+        createdAt: new Date(),
+        messages: messages
       };
 
       await onSubmit(featureData);
-      onClose();
-      
-      // Reset form
-      setCurrentStep('consultation');
-      setMessages([]);
-      setFeatureName('');
-      setFeatureDescription('');
-      setFeatureRequirements([]);
-      setEstimatedTime(0);
-      
+      handleClose();
     } catch (error) {
       console.error('Error adding feature:', error);
     } finally {
@@ -305,61 +245,73 @@ Should we add SMS notifications or specific notification triggers?`
     }
   };
 
-  const removeRequirement = (id: string) => {
-    setFeatureRequirements(prev => prev.filter(req => req.id !== id));
-    const removedReq = featureRequirements.find(req => req.id === id);
-    if (removedReq) {
-      setEstimatedTime(prev => prev - removedReq.estimatedHours);
-    }
+  const handleClose = () => {
+    // Reset all state
+    setStep('chat');
+    setMessages([]);
+    setCurrentMessage('');
+    setFeatureName('');
+    setFeatureDescription('');
+    setRequirements([]);
+    setCategory('Feature');
+    setPriority('medium');
+    setEstimatedHours(0);
+    setIsSubmitting(false);
+    onClose();
   };
 
   if (!isOpen) return null;
 
-  return (
-    <div className="modal-overlay">
-      <div className="modal-content add-feature-modal-enhanced">
+  const modalContent = (
+    <div className="add-feature-modal-overlay" onClick={handleClose}>
+      <div className="add-feature-modal-container" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
         <div className="modal-header">
-          <div className="modal-title-section">
-            <Plus size={24} />
-            <div>
+          <div className="header-left">
+            <Plus className="header-icon" />
+            <div className="header-text">
               <h2>Add New Feature</h2>
-              <p>Step {currentStep === 'consultation' ? '1' : '2'} of 2: {currentStep === 'consultation' ? 'Feature Consultation' : 'Review & Submit'}</p>
+              <p>Step {step === 'chat' ? '1' : '2'} of 2: {step === 'chat' ? 'AI Consultation' : 'Review & Submit'}</p>
             </div>
           </div>
-          <button className="modal-close-btn" onClick={onClose}>
+          <button className="close-button" onClick={handleClose}>
             <X size={20} />
           </button>
         </div>
 
-        <div className="modal-body-split">
-          {/* Left Side - Feature Consultant */}
+        {/* Main Content */}
+        <div className="modal-body">
+          {/* Left Panel - AI Consultant */}
           <div className="consultant-panel">
             <div className="consultant-header">
               <div className="consultant-avatar">
-                <Lightbulb size={20} />
+                <Lightbulb size={18} />
               </div>
               <div className="consultant-info">
                 <h3>AI Feature Consultant</h3>
-                <span className="consultant-status">Online</span>
+                <span className="status-online">● Online</span>
               </div>
             </div>
-            
-            <div className="chat-messages">
+
+            <div className="chat-container">
               {messages.map((message) => (
                 <div key={message.id} className={`message ${message.sender}`}>
-                  <div className="message-content">
+                  <div className="message-bubble">
                     <p>{message.text}</p>
                     <span className="message-time">
-                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {message.timestamp.toLocaleTimeString([], { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
                     </span>
                   </div>
                 </div>
               ))}
               
-              {isConsultantTyping && (
+              {isTyping && (
                 <div className="message consultant">
-                  <div className="message-content typing">
-                    <div className="typing-indicator">
+                  <div className="message-bubble typing">
+                    <div className="typing-dots">
                       <span></span>
                       <span></span>
                       <span></span>
@@ -370,21 +322,22 @@ Should we add SMS notifications or specific notification triggers?`
               
               <div ref={messagesEndRef} />
             </div>
-            
-            {currentStep === 'consultation' && (
+
+            {step === 'chat' && (
               <div className="chat-input">
                 <input
                   ref={inputRef}
                   type="text"
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
+                  value={currentMessage}
+                  onChange={(e) => setCurrentMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Describe your feature idea..."
                   className="message-input"
+                  disabled={isTyping}
                 />
                 <button
                   onClick={handleSendMessage}
-                  disabled={!inputMessage.trim()}
+                  disabled={!currentMessage.trim() || isTyping}
                   className="send-button"
                 >
                   <Send size={16} />
@@ -393,97 +346,91 @@ Should we add SMS notifications or specific notification triggers?`
             )}
           </div>
 
-          {/* Right Side - Live Preview */}
+          {/* Right Panel - Feature Preview */}
           <div className="preview-panel">
             <div className="preview-header">
-              <Eye size={20} />
+              <Eye size={18} />
               <h3>Feature Specification</h3>
             </div>
-            
-            <div className="feature-preview">
+
+            <div className="preview-content">
               {featureName ? (
-                <>
-                  <div className="preview-section">
+                <div className="feature-spec">
+                  {/* Feature Name */}
+                  <div className="spec-section">
                     <h4>Feature Name</h4>
-                    <div className="feature-name-display">{featureName}</div>
+                    <div className="feature-name">{featureName}</div>
                   </div>
-                  
+
+                  {/* Description */}
                   {featureDescription && (
-                    <div className="preview-section">
+                    <div className="spec-section">
                       <h4>Description</h4>
-                      <div className="feature-description-display">{featureDescription}</div>
+                      <div className="feature-description">{featureDescription}</div>
                     </div>
                   )}
-                  
-                  <div className="preview-section">
-                    <h4>Category & Priority</h4>
-                    <div className="feature-meta">
-                      <span className={`category-badge ${featureCategory.toLowerCase().replace(/\s+/g, '-')}`}>
-                        {featureCategory}
-                      </span>
-                      <span className={`priority-badge priority-${featurePriority}`}>
-                        {featurePriority} priority
+
+                  {/* Category & Priority */}
+                  <div className="spec-section">
+                    <h4>Details</h4>
+                    <div className="feature-badges">
+                      <span className="category-badge">{category}</span>
+                      <span className={`priority-badge priority-${priority}`}>
+                        {priority.toUpperCase()} Priority
                       </span>
                     </div>
                   </div>
-                  
-                  {featureRequirements.length > 0 && (
-                    <div className="preview-section">
-                      <h4>Requirements ({featureRequirements.length})</h4>
+
+                  {/* Requirements */}
+                  {requirements.length > 0 && (
+                    <div className="spec-section">
+                      <h4>Requirements ({requirements.length})</h4>
                       <div className="requirements-list">
-                        {featureRequirements.map((req, index) => (
+                        {requirements.map((req, index) => (
                           <div key={req.id} className="requirement-item">
-                            <div className="requirement-content">
-                              <span className="requirement-number">{index + 1}</span>
-                              <span className="requirement-text">{req.text}</span>
-                              <span className={`complexity-badge ${req.complexity}`}>
-                                {req.complexity}
-                              </span>
-                            </div>
-                            {currentStep === 'review' && (
-                              <button
-                                onClick={() => removeRequirement(req.id)}
-                                className="remove-requirement"
-                              >
-                                <X size={14} />
-                              </button>
-                            )}
+                            <span className="req-number">{index + 1}</span>
+                            <span className="req-text">{req.text}</span>
+                            <span className={`req-priority priority-${req.priority}`}>
+                              {req.priority}
+                            </span>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
-                  
-                  {estimatedTime > 0 && (
-                    <div className="preview-section">
+
+                  {/* Time Estimate */}
+                  {estimatedHours > 0 && (
+                    <div className="spec-section">
                       <h4>Time Estimate</h4>
                       <div className="time-estimate">
-                        <span className="estimate-number">{estimatedTime}</span>
-                        <span className="estimate-unit">hours</span>
-                        <span className="estimate-days">({Math.ceil(estimatedTime / 8)} days)</span>
+                        <div className="estimate-hours">{estimatedHours}h</div>
+                        <div className="estimate-days">≈ {Math.ceil(estimatedHours / 8)} working days</div>
                       </div>
                     </div>
                   )}
-                </>
+                </div>
               ) : (
-                <div className="preview-placeholder">
-                  <MessageSquare size={48} />
-                  <p>Start chatting with the AI consultant to build your feature specification</p>
+                <div className="preview-empty">
+                  <Lightbulb size={64} />
+                  <h3>Let's Build Your Feature</h3>
+                  <p>Start chatting with the AI consultant to create your feature specification. The more details you provide, the better the result!</p>
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        <div className="modal-actions">
-          {currentStep === 'consultation' ? (
+        {/* Footer Actions */}
+        <div className="modal-footer">
+          {step === 'chat' ? (
             <>
-              <button onClick={onClose} className="btn-secondary">
+              <button onClick={handleClose} className="btn-secondary">
                 Cancel
               </button>
               <button
                 onClick={proceedToReview}
-                disabled={!featureName || featureRequirements.length === 0}
+                disabled={!featureName || requirements.length === 0}
                 className="btn-primary"
               >
                 Review Feature <ArrowRight size={16} />
@@ -492,10 +439,10 @@ Should we add SMS notifications or specific notification triggers?`
           ) : (
             <>
               <button
-                onClick={() => setCurrentStep('consultation')}
+                onClick={() => setStep('chat')}
                 className="btn-secondary"
               >
-                <ArrowLeft size={16} /> Back to Chat
+                ← Back to Chat
               </button>
               <button
                 onClick={handleSubmit}
@@ -503,14 +450,11 @@ Should we add SMS notifications or specific notification triggers?`
                 className="btn-primary"
               >
                 {isSubmitting ? (
-                  <>
-                    <Settings className="spinning" size={16} />
-                    Adding Feature...
-                  </>
+                  <>Adding Feature...</>
                 ) : (
                   <>
                     <CheckCircle size={16} />
-                    Add Feature to Project
+                    Add to Project
                   </>
                 )}
               </button>
@@ -520,6 +464,8 @@ Should we add SMS notifications or specific notification triggers?`
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default AddFeatureModal; 

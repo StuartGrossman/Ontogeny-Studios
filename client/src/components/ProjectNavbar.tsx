@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, CheckCircle, BarChart3, Settings, Target, GitBranch, FileText } from 'lucide-react';
+import { Activity, CheckCircle, BarChart3, Settings, Target, GitBranch, FileText, Plus, Key, Palette, Globe } from 'lucide-react';
 import '../styles/ProjectNavbar.css';
 
 interface Project {
@@ -11,23 +11,41 @@ interface Project {
   deadline?: string;
   tasks?: any[];
   createdAt?: any;
+  websiteUrl?: string;
+  liveLink?: string;
+  link?: string;
 }
 
 interface ProjectNavbarProps {
-  projects: Project[];
-  selectedProject: Project | null;
-  onProjectSelect: (project: Project) => void;
-  isCollapsed?: boolean; // This refers to the main sidebar being collapsed, affecting positioning
+  // Project selection mode
+  projects?: Project[];
+  selectedProject?: Project | null;
+  onProjectSelect?: (project: Project) => void;
+  isCollapsed?: boolean;
+  
+  // Project actions mode
+  project?: Project;
+  onAddFeature?: () => void;
+  onAddAPIKey?: () => void;
+  onAddUIDesign?: () => void;
+  onAddDNSRecords?: () => void;
+  mode?: 'selection' | 'actions';
 }
 
 const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
   projects,
   selectedProject,
   onProjectSelect,
-  isCollapsed = false // Main sidebar collapsed state
+  isCollapsed = false, // Main sidebar collapsed state
+  project,
+  onAddFeature,
+  onAddAPIKey,
+  onAddUIDesign,
+  onAddDNSRecords,
+  mode = 'selection'
 }) => {
-  const activeProjects = projects.filter(p => p.status === 'in-progress' || p.status === 'planning');
-  const completedProjects = projects.filter(p => p.status === 'completed');
+  const activeProjects = projects?.filter(p => p.status === 'in-progress' || p.status === 'planning') || [];
+  const completedProjects = projects?.filter(p => p.status === 'completed') || [];
 
   const getProjectIcon = (project: Project) => {
     const name = project.name?.toLowerCase() || '';
@@ -38,7 +56,85 @@ const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
     return <FileText size={20} />;
   };
 
-  if (projects.length === 0) {
+  // Project Actions Mode
+  if (mode === 'actions' && project) {
+    return (
+      <div className={`project-actions-navbar ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
+        <div className="project-actions-content">
+          <div className="project-actions-left">
+            <div className="current-project-info">
+              <div className="current-project-icon">
+                {getProjectIcon(project)}
+              </div>
+              <div className="current-project-details">
+                <span className="current-project-name">{project.name}</span>
+                <span className={`current-project-status ${project.status}`}>
+                  {project.status === 'completed' ? 'Completed' : 
+                   project.status === 'in-progress' ? 'In Progress' :
+                   project.status === 'planning' ? 'Planning' : project.status}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="project-actions-center">
+            <div className="action-buttons-group">
+              {project.status !== 'completed' && (
+                <button 
+                  className="action-btn primary"
+                  onClick={onAddFeature}
+                >
+                  <Plus size={16} />
+                  Add Feature
+                </button>
+              )}
+              
+              <button 
+                className="action-btn secondary"
+                onClick={onAddAPIKey}
+              >
+                <Key size={16} />
+                Add API Key
+              </button>
+              
+              <button 
+                className="action-btn secondary"
+                onClick={onAddUIDesign}
+              >
+                <Palette size={16} />
+                Add UI Design
+              </button>
+              
+              <button 
+                className="action-btn secondary"
+                onClick={onAddDNSRecords}
+              >
+                <Globe size={16} />
+                DNS Records
+              </button>
+            </div>
+          </div>
+          
+          <div className="project-actions-right">
+            {(project.liveLink || project.link || project.websiteUrl) && (
+              <a 
+                href={project.liveLink || project.link || project.websiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="action-btn tertiary small"
+              >
+                <BarChart3 size={14} />
+                Live
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Project Selection Mode (original functionality)
+  if (projects?.length === 0) {
     return (
       <div className={`project-navbar ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
         <div className="project-navbar-header">
@@ -71,7 +167,7 @@ const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
               <div
                 key={project.id}
                 className={`project-navbar-item ${selectedProject?.id === project.id ? 'selected' : ''}`}
-                onClick={() => onProjectSelect(project)}
+                onClick={() => onProjectSelect?.(project)}
               >
                 <div className="project-navbar-icon">
                   {getProjectIcon(project)}
@@ -105,7 +201,7 @@ const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
               <div
                 key={project.id}
                 className={`project-navbar-item completed ${selectedProject?.id === project.id ? 'selected' : ''}`}
-                onClick={() => onProjectSelect(project)}
+                onClick={() => onProjectSelect?.(project)}
               >
                 <div className="project-navbar-icon completed">
                   <CheckCircle size={20} />
