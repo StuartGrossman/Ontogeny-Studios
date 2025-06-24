@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Users, RefreshCw, ArrowUp, ArrowDown, FolderPlus, CheckCircle, Edit3, MessageCircle, Folder, GitPullRequest, Star, Trash2, RotateCcw } from 'lucide-react';
+import { Users, RefreshCw, ArrowUp, ArrowDown, FolderPlus, CheckCircle, Edit3, MessageCircle, Folder, GitPullRequest, Star, Trash2, RotateCcw, Key } from 'lucide-react';
 import { UserAvatar } from '../utils/avatarGenerator';
+import APIKeysManagement from './APIKeysManagement';
+import '../styles/Dashboard.css';
 
 interface User {
   id: string;
@@ -48,6 +50,7 @@ interface AdminDashboardProps {
   onDeleteProject?: (projectId: string) => void;
   onRestoreProject?: (projectId: string) => void;
   onNavigateToMessages: (userId: string) => void; // Add navigation handler
+  currentUser?: any; // Add currentUser prop
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -67,8 +70,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onDeleteProject,
   onRestoreProject,
   onNavigateToMessages,
+  currentUser,
 }) => {
-  const [activeTab, setActiveTab] = useState<'active' | 'requested' | 'features'>('active');
+  const [activeTab, setActiveTab] = useState<'active' | 'requested' | 'features' | 'api-keys'>('active');
 
   // Filter projects based on active tab
   const getFilteredProjects = () => {
@@ -93,6 +97,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           project.features && 
           !project.deleted
         );
+      case 'api-keys':
+        // API keys don't have projects to filter
+        return [];
       default:
         return userProjects || [];
     }
@@ -260,6 +267,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <span className="tab-badge">{tabCounts.features}</span>
                     )}
                   </button>
+                  <button 
+                    className={`tab-btn ${activeTab === 'api-keys' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('api-keys')}
+                  >
+                    <Key size={16} />
+                    API Keys
+                  </button>
                 </div>
               </div>
               
@@ -268,6 +282,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <RefreshCw className="spinning" size={24} />
                   <p>Loading projects...</p>
                 </div>
+              ) : activeTab === 'api-keys' ? (
+                <APIKeysManagement 
+                  userId={selectedUser?.id}
+                  userName={selectedUser?.displayName}
+                  currentUser={currentUser}
+                />
               ) : filteredProjects && filteredProjects.length > 0 ? (
                 <div className="projects-list">
                   {filteredProjects.map((project) => {

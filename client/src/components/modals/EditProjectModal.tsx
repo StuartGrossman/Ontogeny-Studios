@@ -684,8 +684,8 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
                   <ExternalLink size={16} />
                 </a>
               )}
-              <button onClick={onClose} className="modal-close">
-                <X size={20} />
+              <button onClick={onClose} className="modal-close-fixed">
+                <X size={18} />
               </button>
             </div>
           </div>
@@ -816,17 +816,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
                     </div>
                   </div>
 
-                  {/* Quick Actions */}
-                  <div className="quick-actions">
-                    <button
-                      onClick={() => handleStatusChange('completed')}
-                      className="complete-project-btn"
-                      disabled={isSubmitting || formData.status === 'completed'}
-                    >
-                      <CheckCircle size={14} />
-                      {formData.status === 'completed' ? 'Project Completed' : 'Mark Complete'}
-                    </button>
-                  </div>
+
 
                   {/* Project Notes */}
                   <div className="notes-control">

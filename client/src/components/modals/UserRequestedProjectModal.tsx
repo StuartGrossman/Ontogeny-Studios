@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, CheckCircle, Circle, Clock, User, Calendar, Target, MessageSquare, AlertCircle, Check, Play, FileText, Activity, Edit3 } from 'lucide-react';
 import { doc, updateDoc, addDoc, collection, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
+import projectService from '../../services/projectService';
 
 interface Feature {
   id: number;
@@ -239,28 +240,58 @@ const UserRequestedProjectModal: React.FC<UserRequestedProjectModalProps> = ({
       setUpdatingStatus(true);
       setError(''); // Clear any previous errors
       
-      // Validate project ID
+      // Validate project ID and current user
       if (!project.id) {
         throw new Error('Project ID is missing');
       }
       
-      const docRef = doc(db, 'user_project_requests', project.id);
-      await updateDoc(docRef, {
-        status: newStatus,
-        lastUpdated: new Date()
+      if (!currentUser) {
+        throw new Error('You must be logged in to update project status');
+      }
+      
+      // Use server-side API for status updates
+      const response = await projectService.updateProjectStatus({
+        projectId: project.id,
+        newStatus: newStatus,
+        currentUser: {
+          uid: currentUser.uid,
+          displayName: currentUser.displayName,
+          email: currentUser.email,
+        }
       });
-      onUpdate();
+      
+      if (response.success) {
+        console.log('✅ Status updated successfully:', response.message);
+        if (response.adminProjectId) {
+          console.log('🆕 Admin project created:', response.adminProjectId);
+        }
+        onUpdate();
+        
+        // If project was accepted/started and admin project was created, show success message
+        if ((newStatus === 'accepted' || newStatus === 'in-progress') && response.adminProjectId) {
+          setError(''); // Clear any error
+          // Optionally show success message or close modal
+          if (newStatus === 'accepted') {
+            onClose(); // Close modal after successful acceptance
+          }
+        }
+      } else {
+        throw new Error(response.error || 'Failed to update project status');
+      }
+      
     } catch (error) {
       console.error('Error updating status:', error);
       let errorMessage = 'Failed to update project status. Please try again.';
       
       if (error instanceof Error) {
-        if (error.message.includes('No document to update')) {
-          errorMessage = 'Document not found. The project may have been deleted or you may not have permission to edit it.';
-        } else if (error.message.includes('permission')) {
-          errorMessage = 'You don\'t have permission to edit this project.';
+        if (error.message.includes('Project request not found')) {
+          errorMessage = 'Project not found. It may have been deleted or you may not have permission to edit it.';
+        } else if (error.message.includes('You must be logged in')) {
+          errorMessage = 'You must be logged in to update project status.';
         } else if (error.message.includes('Project ID is missing')) {
           errorMessage = 'Project ID is missing. Please refresh the page and try again.';
+        } else {
+          errorMessage = error.message;
         }
       }
       

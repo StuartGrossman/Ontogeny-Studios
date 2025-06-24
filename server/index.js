@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const plansRoutes = require('./routes/plans');
+const projectsRoutes = require('./routes/projects');
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/plans', plansRoutes);
+app.use('/api/projects', projectsRoutes);
 
 // Basic route
 app.get('/api/health', (req, res) => {

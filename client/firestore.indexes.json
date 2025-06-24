@@ -14,20 +14,46 @@
         }
       ]
     },
-          {
-        "collectionGroup": "user_project_requests",
-        "queryScope": "COLLECTION",
-        "fields": [
-          {
-            "fieldPath": "requestedBy",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "createdAt",
-            "order": "DESCENDING"
-          }
-        ]
-      },
+    {
+      "collectionGroup": "projects",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "deleted",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "user_project_requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "requestedBy",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
     {
       "collectionGroup": "conversations",
       "queryScope": "COLLECTION",

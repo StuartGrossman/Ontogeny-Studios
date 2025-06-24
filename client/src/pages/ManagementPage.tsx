@@ -14,6 +14,7 @@ import { useProjectModals } from '../hooks/useProjectModals';
 // Components
 import AdminDashboard from '../components/AdminDashboard';
 import ChatSystem from '../components/ChatSystem';
+import SettingsPage from '../components/SettingsPage';
 
 import AIChatModal from '../components/AIChatModal';
 import CreateProjectModal, { ProjectFormData } from '../components/modals/CreateProjectModal';
@@ -34,6 +35,7 @@ const ManagementPage: React.FC = () => {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const [showChat, setShowChat] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [selectedChatUserId, setSelectedChatUserId] = useState<string | undefined>(undefined);
   const [currentView, setCurrentView] = useState<'dashboard' | 'requested-projects' | 'requested-features'>('dashboard');
   const [unaddressedProjects, setUnaddressedProjects] = useState<any[]>([]);
@@ -61,35 +63,42 @@ const ManagementPage: React.FC = () => {
   const fetchUnaddressedRequests = async () => {
     try {
       // Fetch unaddressed project requests (status: pending, requested, under-review)
+      // Note: Removed 'deleted != true' filter to avoid multiple inequality filters
       const projectsQuery = query(
         collection(db, 'projects'),
         where('type', '==', 'user-requested'),
         where('status', 'in', ['pending', 'requested', 'under-review']),
-        where('deleted', '!=', true),
         orderBy('createdAt', 'desc')
       );
       
       const projectsSnapshot = await getDocs(projectsQuery);
-      const projects = projectsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const projects = projectsSnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+        .filter((project: any) => !project.deleted); // Filter out deleted projects on client side
 
       // Fetch unaddressed feature requests (projects with features that haven't been addressed)
+      // Note: Using separate queries to avoid multiple inequality filters
       const featuresQuery = query(
         collection(db, 'projects'),
         where('type', '==', 'user-requested'),
-        where('features', '!=', ''),
         where('status', 'in', ['pending', 'requested', 'under-review']),
-        where('deleted', '!=', true),
         orderBy('createdAt', 'desc')
       );
       
       const featuresSnapshot = await getDocs(featuresQuery);
-      const features = featuresSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const features = featuresSnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+        .filter((project: any) => 
+          !project.deleted && 
+          project.features && 
+          project.features.trim() !== ''
+        ); // Filter on client side for deleted and empty features
 
       setUnaddressedProjects(projects);
       setUnaddressedFeatures(features);
@@ -387,12 +396,20 @@ const ManagementPage: React.FC = () => {
                   setSelectedChatUserId(undefined);
                 }
                 setShowChat(!showChat);
+                setShowSettings(false); // Close settings when opening chat
               }}
               title="User Chat"
             >
               <MessageCircle size={20} />
             </button>
-            <button className="nav-tab" title="Settings">
+            <button 
+              className={`nav-tab ${showSettings ? 'active' : ''}`} 
+              onClick={() => {
+                setShowSettings(!showSettings);
+                setShowChat(false); // Close chat when opening settings
+              }}
+              title="Settings"
+            >
               <Settings size={20} />
             </button>
             <button className="nav-tab" onClick={handleLogout} title="Logout">
@@ -402,7 +419,13 @@ const ManagementPage: React.FC = () => {
         </nav>
 
         {/* Main Content Area */}
-        {showChat ? (
+        {showSettings ? (
+          <SettingsPage 
+            isOpen={showSettings}
+            currentUser={currentUser}
+            onClose={() => setShowSettings(false)}
+          />
+        ) : showChat ? (
           <ChatSystem 
             currentUser={currentUser ? {
               id: currentUser.uid,
@@ -535,6 +558,7 @@ const ManagementPage: React.FC = () => {
             onDeleteProject={handleDeleteProject}
             onRestoreProject={handleRestoreProject}
             onNavigateToMessages={handleNavigateToMessages}
+            currentUser={currentUser}
           />
         )}
       </div>
