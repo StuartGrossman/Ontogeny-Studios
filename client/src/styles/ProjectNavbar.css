@@ -301,6 +301,10 @@
   .project-navbar {
     display: none; /* Hide on mobile, projects will be in main content */
   }
+
+  .project-actions-navbar {
+    display: none; /* Hide project actions navbar on mobile too */
+  }
 }
 
 /* Project Actions Navbar */

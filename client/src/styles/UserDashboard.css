@@ -980,6 +980,19 @@
   .user-dashboard-container {
     margin-top: 70px;
   }
+
+  /* Mobile content area - no sidebar margins */
+  .user-dashboard-content-area,
+  .user-dashboard-content-area.sidebar-collapsed,
+  .user-dashboard-content-area.with-project-navbar,
+  .user-dashboard-content-area.sidebar-collapsed.with-project-navbar {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    padding: 0;
+    min-height: calc(100vh - 80px);
+    width: 100%;
+  }
   
   .user-dashboard-nav-center {
     display: none;
@@ -1034,6 +1047,23 @@
   .user-dashboard-quick-action-btn {
     width: 100%;
     justify-content: center;
+  }
+
+  /* Mobile project details */
+  .project-details-content {
+    height: auto;
+    min-height: calc(100vh - 80px);
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  .project-details-view {
+    width: 100%;
+    max-width: 100%;
+    padding: 1rem;
+    margin: 0;
   }
 }
 
