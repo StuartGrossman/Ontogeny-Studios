@@ -234,7 +234,7 @@
   margin-left: 280px; /* Account for sidebar width */
   margin-right: 1rem; /* Minimal right margin */
   margin-top: 70px; /* Account for project actions navbar */
-  padding: 2rem; /* Add padding for content readability */
+  padding: 0; /* Remove padding to eliminate weird spacing */
   overflow-y: auto;
   transition: all 0.3s ease;
   background: #f8fafc;
@@ -242,18 +242,18 @@
 }
 
 .user-dashboard-content-area.sidebar-collapsed {
-  margin-left: 50px; /* Reduced from 70px to 50px - expands by 20px more */
+  margin-left: 70px; /* Match actual collapsed sidebar width */
   margin-top: 70px; /* Account for project actions navbar */
 }
 
 .user-dashboard-content-area.with-project-navbar {
-  margin-left: 580px; /* Reduced from 600px to 580px for tighter spacing */
+  margin-left: 600px; /* 280px sidebar + 320px project selection navbar */
   margin-right: 1rem; /* Minimal right margin to maximize content space */
   margin-top: 70px; /* Account for project actions navbar */
 }
 
 .user-dashboard-content-area.sidebar-collapsed.with-project-navbar {
-  margin-left: 120px; /* Reduced from 140px to 120px - provides 20px more space */
+  margin-left: 140px; /* 70px collapsed sidebar + 70px collapsed project navbar */
   margin-right: 1rem; /* Minimal right margin to maximize content space */
   margin-top: 70px; /* Account for project actions navbar */
 }
@@ -261,24 +261,24 @@
 /* Responsive margin adjustments for different screen sizes */
 @media (min-width: 1920px) {
   .user-dashboard-content-area.with-project-navbar {
-    margin-left: 580px; /* Consistent with main sizing */
+    margin-left: 600px; /* 280px sidebar + 320px project selection navbar */
     margin-right: 2rem; /* Bit more space on larger screens */
   }
   
   .user-dashboard-content-area.sidebar-collapsed.with-project-navbar {
-    margin-left: 120px; /* Consistent with main sizing */
+    margin-left: 140px; /* 70px collapsed sidebar + 70px collapsed project navbar */
     margin-right: 2rem;
   }
 }
 
 @media (max-width: 1366px) {
   .user-dashboard-content-area.with-project-navbar {
-    margin-left: 580px; /* Keep consistent navbar positioning */
+    margin-left: 600px; /* 280px sidebar + 320px project selection navbar */
     margin-right: 0.5rem; /* Minimal space on smaller screens */
   }
   
   .user-dashboard-content-area.sidebar-collapsed.with-project-navbar {
-    margin-left: 120px; /* Consistent with main sizing */
+    margin-left: 140px; /* 70px collapsed sidebar + 70px collapsed project navbar */
     margin-right: 0.5rem;
   }
 }
@@ -1037,25 +1037,7 @@
   }
 }
 
-/* Active Projects Content Area */
-.active-projects-content {
-  flex: 1;
-  background: #f8fafc;
-  min-height: calc(100vh - 80px);
-  margin-left: 0;
-  padding-top: 0;
-  transition: margin-left 0.3s ease;
-  width: 100%;
-  max-width: 100%;
-  display: block;
-  overflow-x: hidden;
-}
-
-/* When sidebar is collapsed */
-.sidebar-collapsed .active-projects-content {
-  margin-left: 0;
-  width: 100%;
-}
+/* Active Projects Content Area - REMOVED conflicting rules that override proper margins */
 
 .project-details-content {
   background: white;
@@ -1119,67 +1101,8 @@
   line-height: 1.6;
 }
 
-/* Responsive Design - All content uses full width */
-@media (max-width: 1600px) {
-  .active-projects-content {
-    margin-left: 0;
-    width: 100%;
-  }
-  
-  .sidebar-collapsed .active-projects-content {
-    margin-left: 0;
-    width: 100%;
-  }
-}
-
-@media (max-width: 1440px) {
-  .active-projects-content {
-    margin-left: 0;
-    width: 100%;
-  }
-  
-  .sidebar-collapsed .active-projects-content {
-    margin-left: 0;
-    width: 100%;
-  }
-}
-
-@media (max-width: 1200px) {
-  .active-projects-content {
-    margin-left: 0;
-    width: 100%;
-  }
-  
-  .sidebar-collapsed .active-projects-content {
-    margin-left: 0;
-    width: 100%;
-  }
-}
-
-@media (max-width: 1024px) {
-  .active-projects-content {
-    margin-left: 0;
-    width: 100%;
-  }
-  
-  .sidebar-collapsed .active-projects-content {
-    margin-left: 0;
-    width: 100%;
-  }
-}
-
+/* Responsive Design - REMOVED conflicting rules that override proper margins */
 @media (max-width: 768px) {
-  .active-projects-content {
-    margin-left: 0;
-    width: 100%;
-    padding-top: 0;
-  }
-  
-  .sidebar-collapsed .active-projects-content {
-    margin-left: 0;
-    width: 100%;
-  }
-  
   .project-details-view {
     padding: 1rem;
   }

@@ -26,6 +26,7 @@ interface ProjectNavbarProps {
   // Project actions mode
   project?: Project;
   onAddFeature?: () => void;
+  onViewRequests?: () => void;
   onAddAPIKey?: () => void;
   onAddUIDesign?: () => void;
   onAddDNSRecords?: () => void;
@@ -39,6 +40,7 @@ const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
   isCollapsed = false, // Main sidebar collapsed state
   project,
   onAddFeature,
+  onViewRequests,
   onAddAPIKey,
   onAddUIDesign,
   onAddDNSRecords,
@@ -88,6 +90,14 @@ const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
                   Add Feature
                 </button>
               )}
+              
+              <button 
+                className="action-btn secondary"
+                onClick={onViewRequests}
+              >
+                <FileText size={16} />
+                View Requests
+              </button>
               
               <button 
                 className="action-btn secondary"

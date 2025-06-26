@@ -13,7 +13,7 @@
   align-items: center;
   justify-content: center;
   z-index: 10000;
-  padding: 2rem;
+  padding: 1rem;
   animation: fadeIn 0.2s ease-out;
 }
 
@@ -163,9 +163,9 @@
   border-radius: 3px;
 }
 
-/* DNS Form Container */
-.dns-form-container {
-  padding: 2rem 2.5rem;
+/* DNS Form Container - Override padding specifically for DNS Records modal */
+.dns-modal-container .dns-form-container {
+  padding: 2rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 2.5rem;
@@ -346,9 +346,9 @@
   line-height: 1.5;
 }
 
-/* DNS Records Manager */
-.dns-records-manager {
-  padding: 2rem 2.5rem;
+/* DNS Records Manager - Override padding specifically for DNS Records modal */
+.dns-modal-container .dns-records-manager {
+  padding: 2rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 2rem;
@@ -551,13 +551,13 @@
   color: #9ca3af;
 }
 
-/* Footer */
-.modal-footer {
+/* Footer - Override padding specifically for DNS Records modal */
+.dns-modal-container .modal-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1.5rem 2.5rem;
+  padding: 1.5rem 1rem;
   border-top: 1px solid #e5e7eb;
   background: white;
   flex-shrink: 0;
@@ -676,13 +676,13 @@
     padding: 1.5rem 2rem;
   }
   
-  .dns-form-container,
-  .dns-records-manager {
-    padding: 1.5rem 2rem;
+  .dns-modal-container .dns-form-container,
+  .dns-modal-container .dns-records-manager {
+    padding: 1.5rem 1rem;
   }
   
-  .modal-footer {
-    padding: 1.25rem 2rem;
+  .dns-modal-container .modal-footer {
+    padding: 1.25rem 1rem;
     flex-direction: column-reverse;
     gap: 0.75rem;
   }
