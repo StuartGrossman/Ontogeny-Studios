@@ -3737,3 +3737,515 @@
     font-size: 0.75rem;
   }
 } 
+
+/* ===== ENHANCED MOBILE OPTIMIZATIONS ===== */
+
+/* Small Mobile Devices (320px - 480px) */
+@media (max-width: 480px) {
+  /* Container and Layout */
+  .projects-management-container {
+    margin: 0 0.5rem;
+    padding: 0;
+  }
+  
+  .projects-header-section {
+    padding: 1rem;
+    gap: 1rem;
+  }
+  
+  .projects-title h1 {
+    font-size: 1.375rem;
+    line-height: 1.3;
+  }
+  
+  .projects-title p {
+    font-size: 0.875rem;
+  }
+  
+  /* Stats Cards - Stack vertically with smaller spacing */
+  .projects-stats {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .stat-card {
+    padding: 0.75rem;
+    min-height: auto;
+  }
+  
+  .stat-number {
+    font-size: 1.5rem;
+  }
+  
+  .stat-label {
+    font-size: 0.75rem;
+  }
+  
+  /* Project Details */
+  .project-details-view {
+    padding: 0.75rem;
+  }
+  
+  .project-details-header {
+    padding: 1rem 0.75rem;
+    gap: 0.75rem;
+  }
+  
+  .project-title-section {
+    gap: 0.5rem;
+  }
+  
+  .project-title-info h2 {
+    font-size: 1.25rem;
+    line-height: 1.3;
+  }
+  
+  .project-status-badge {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+  }
+  
+  /* Overview Cards - Better mobile layout */
+  .overview-cards {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .overview-card {
+    padding: 1rem;
+    min-height: auto;
+  }
+  
+  .card-header {
+    font-size: 0.875rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .progress-value {
+    font-size: 1.5rem;
+  }
+  
+  .days-remaining {
+    font-size: 1.25rem;
+  }
+  
+  .team-count {
+    font-size: 1.25rem;
+  }
+  
+  .risk-level {
+    font-size: 1.25rem;
+  }
+  
+  /* Features Section */
+  .features-grid-main {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .feature-card-main {
+    padding: 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .feature-header-main {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .feature-header-main h4 {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .feature-description-main {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  
+  .feature-meta-main {
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .feature-priority {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.6875rem;
+  }
+  
+  .feature-status-text {
+    font-size: 0.75rem;
+  }
+  
+  /* Features Actions */
+  .features-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  
+  .features-view-all-btn,
+  .features-request-btn,
+  .features-add-btn {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    min-height: 44px; /* Touch target */
+  }
+  
+  /* Timeline - Vertical layout for very small screens */
+  .timeline-horizontal {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem;
+    gap: 1rem;
+  }
+  
+  .timeline-step {
+    width: 100%;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .timeline-step-marker {
+    width: 24px;
+    height: 24px;
+    margin-top: 0.125rem;
+    flex-shrink: 0;
+  }
+  
+  .timeline-step-content {
+    flex: 1;
+    text-align: left;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  
+  .timeline-step:last-child .timeline-step-content {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  
+  .timeline-step-title {
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .timeline-step-date {
+    font-size: 0.75rem;
+  }
+  
+  .timeline-connector {
+    display: none; /* Hide connectors in vertical layout */
+  }
+  
+  /* Project Sidebar */
+  .projects-sidebar {
+    max-height: 200px;
+    padding: 0.75rem;
+  }
+  
+  .projects-sidebar-header {
+    margin-bottom: 0.75rem;
+  }
+  
+  .projects-sidebar-header h3 {
+    font-size: 1rem;
+  }
+  
+  .project-list-item {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+  
+  .project-icon {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .project-info h4 {
+    font-size: 0.875rem;
+  }
+  
+  .status-text {
+    font-size: 0.75rem;
+  }
+  
+  .progress-text-mini {
+    font-size: 0.6875rem;
+  }
+  
+  /* Description Section */
+  .description-card {
+    padding: 1rem;
+  }
+  
+  .description-text p {
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+  
+  .meta-item {
+    font-size: 0.75rem;
+  }
+  
+  /* Form Elements - Better touch targets */
+  .form-input,
+  .form-select,
+  .form-textarea {
+    min-height: 44px;
+    padding: 0.75rem;
+    font-size: 1rem; /* Prevent zoom on iOS */
+  }
+  
+  .form-textarea {
+    min-height: 88px;
+  }
+  
+  /* Buttons - Better touch targets */
+  .btn-primary,
+  .btn-secondary,
+  .primary-action-btn,
+  .secondary-action-btn {
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  /* Modal Improvements */
+  .modal-header {
+    padding: 1rem;
+  }
+  
+  .modal-header h2 {
+    font-size: 1.25rem;
+  }
+  
+  .modal-body {
+    padding: 1rem;
+  }
+  
+  .modal-footer {
+    padding: 1rem;
+    gap: 0.5rem;
+  }
+  
+  /* Inline Sections */
+  .inline-section-header {
+    padding: 1rem;
+  }
+  
+  .inline-section-header h3 {
+    font-size: 1.125rem;
+  }
+  
+  .inline-section-content {
+    padding: 1rem;
+  }
+  
+  /* Team Modal */
+  .team-member {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+  
+  .member-avatar {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .member-info h4 {
+    font-size: 0.875rem;
+  }
+  
+  .member-role,
+  .member-email {
+    font-size: 0.75rem;
+  }
+  
+  /* API Key and DNS Records */
+  .key-item,
+  .dns-record {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+  
+  .key-name,
+  .dns-record-name {
+    font-size: 0.875rem;
+  }
+  
+  .key-value,
+  .dns-record-value {
+    font-size: 0.75rem;
+  }
+  
+  /* Design Cards */
+  .design-item {
+    min-height: 120px;
+  }
+  
+  .design-info {
+    padding: 0.5rem;
+  }
+  
+  .design-name {
+    font-size: 0.75rem;
+  }
+  
+  .design-date {
+    font-size: 0.6875rem;
+  }
+  
+  /* Request Cards */
+  .request-card {
+    padding: 1rem;
+  }
+  
+  .request-title-section h4 {
+    font-size: 1rem;
+  }
+  
+  .request-description {
+    font-size: 0.875rem;
+  }
+  
+  .priority-badge,
+  .status-badge {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.6875rem;
+  }
+  
+  .device-tag {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.6875rem;
+  }
+}
+
+/* Extra Small Mobile Devices (max-width: 360px) */
+@media (max-width: 360px) {
+  .projects-management-container {
+    margin: 0;
+  }
+  
+  .projects-header-section {
+    padding: 0.75rem;
+  }
+  
+  .projects-title h1 {
+    font-size: 1.25rem;
+  }
+  
+  .project-details-view {
+    padding: 0.5rem;
+  }
+  
+  .project-details-header {
+    padding: 0.75rem 0.5rem;
+  }
+  
+  .overview-card {
+    padding: 0.75rem;
+  }
+  
+  .feature-card-main {
+    padding: 0.75rem;
+  }
+  
+  .timeline-horizontal {
+    padding: 0.75rem;
+  }
+  
+  .projects-sidebar {
+    padding: 0.5rem;
+  }
+  
+  .description-card {
+    padding: 0.75rem;
+  }
+}
+
+/* Landscape Mobile Optimization */
+@media (max-width: 768px) and (orientation: landscape) {
+  .projects-main-content {
+    flex-direction: row;
+  }
+  
+  .projects-sidebar {
+    width: 300px;
+    max-height: 100%;
+  }
+  
+  .project-details-view {
+    flex: 1;
+  }
+  
+  .overview-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .features-grid-main {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .timeline-horizontal {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+  
+  .timeline-step {
+    flex-direction: column;
+    min-width: 120px;
+  }
+  
+  .timeline-step-content {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  
+  .timeline-connector {
+    display: block;
+  }
+}
+
+/* Improve Focus and Accessibility */
+@media (max-width: 768px) {
+  /* Better focus indicators for mobile */
+  button:focus,
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+  
+  /* Remove hover states on touch devices */
+  @media (hover: none) and (pointer: coarse) {
+    .project-list-item:hover,
+    .feature-card-main:hover,
+    .overview-card:hover,
+    .request-card:hover,
+    .design-item:hover {
+      transform: none;
+      box-shadow: initial;
+    }
+  }
+  
+  /* Better tap highlighting */
+  button,
+  .clickable {
+    -webkit-tap-highlight-color: rgba(59, 130, 246, 0.1);
+  }
+  
+  /* Improve scroll behavior */
+  .projects-sidebar,
+  .timeline-horizontal,
+  .features-grid-main {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+}
