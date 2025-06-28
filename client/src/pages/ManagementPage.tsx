@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Settings, LogOut } from 'lucide-react';
+import { Settings, LogOut, MessageCircle, GitPullRequest, Star } from 'lucide-react';
 import ontogenyIcon from '../assets/otogeny-icon.png';
-import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
+import { doc, setDoc, addDoc, collection, updateDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
+import { UserAvatar } from '../utils/avatarGenerator';
 
 // Custom hooks
 import { useDashboardData } from '../hooks/useDashboardData';
@@ -12,7 +13,9 @@ import { useProjectModals } from '../hooks/useProjectModals';
 
 // Components
 import AdminDashboard from '../components/AdminDashboard';
-import Footer from '../components/Footer';
+import ChatSystem from '../components/ChatSystem';
+import SettingsPage from '../components/SettingsPage';
+
 import AIChatModal from '../components/AIChatModal';
 import CreateProjectModal, { ProjectFormData } from '../components/modals/CreateProjectModal';
 import EditProjectModal from '../components/modals/EditProjectModal';
@@ -31,6 +34,13 @@ import '../styles/UserRequestedProjectModal.css';
 const ManagementPage: React.FC = () => {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
+  const [showChat, setShowChat] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [selectedChatUserId, setSelectedChatUserId] = useState<string | undefined>(undefined);
+  const [currentView, setCurrentView] = useState<'dashboard' | 'requested-projects' | 'requested-features'>('dashboard');
+  const [unaddressedProjects, setUnaddressedProjects] = useState<any[]>([]);
+  const [unaddressedFeatures, setUnaddressedFeatures] = useState<any[]>([]);
+  const [alertCounts, setAlertCounts] = useState({ projects: 0, features: 0 });
 
   // Custom hooks
   const dashboardData = useDashboardData(currentUser);
@@ -48,6 +58,70 @@ const ManagementPage: React.FC = () => {
       dashboardData.toggleAdminStatus();
     }
   }, [currentUser, navigate, dashboardData.loading, dashboardData.isAdmin]);
+
+  // Fetch unaddressed requests
+  const fetchUnaddressedRequests = async () => {
+    try {
+      // Fetch unaddressed project requests (status: pending, requested, under-review)
+      // Note: Removed 'deleted != true' filter to avoid multiple inequality filters
+      const projectsQuery = query(
+        collection(db, 'projects'),
+        where('type', '==', 'user-requested'),
+        where('status', 'in', ['pending', 'requested', 'under-review']),
+        orderBy('createdAt', 'desc')
+      );
+      
+      const projectsSnapshot = await getDocs(projectsQuery);
+      const projects = projectsSnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+        .filter((project: any) => !project.deleted); // Filter out deleted projects on client side
+
+      // Fetch unaddressed feature requests (projects with features that haven't been addressed)
+      // Note: Using separate queries to avoid multiple inequality filters
+      const featuresQuery = query(
+        collection(db, 'projects'),
+        where('type', '==', 'user-requested'),
+        where('status', 'in', ['pending', 'requested', 'under-review']),
+        orderBy('createdAt', 'desc')
+      );
+      
+      const featuresSnapshot = await getDocs(featuresQuery);
+      const features = featuresSnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+        .filter((project: any) => 
+          !project.deleted && 
+          project.features && 
+          project.features.trim() !== ''
+        ); // Filter on client side for deleted and empty features
+
+      setUnaddressedProjects(projects);
+      setUnaddressedFeatures(features);
+      setAlertCounts({
+        projects: projects.length,
+        features: features.length
+      });
+
+    } catch (error) {
+      console.error('Error fetching unaddressed requests:', error);
+    }
+  };
+
+  // Fetch unaddressed requests on component mount and periodically
+  useEffect(() => {
+    if (currentUser && dashboardData.isAdmin) {
+      fetchUnaddressedRequests();
+      
+      // Set up periodic refresh every 30 seconds
+      const interval = setInterval(fetchUnaddressedRequests, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [currentUser, dashboardData.isAdmin]);
 
   // Handle logout
   const handleLogout = async () => {
@@ -91,13 +165,15 @@ const ManagementPage: React.FC = () => {
     }
   };
 
-  // Handle project update
+  // Handle project update without closing modal
   const handleProjectUpdate = async () => {
-    modals.closeEditProjectModal();
-    // Refresh data as needed
+    // Refresh data in background without closing the modal
     if (dashboardData.selectedUser) {
-      dashboardData.handleUserSelect(dashboardData.selectedUser);
+      await dashboardData.handleUserSelect(dashboardData.selectedUser);
     }
+    // Refresh alert counts
+    await fetchUnaddressedRequests();
+    // Note: Modal stays open so user can continue editing or make more changes
   };
 
   // Handle admin project modal opening - route to correct modal based on project type
@@ -160,6 +236,56 @@ const ManagementPage: React.FC = () => {
     }
   };
 
+  // Handle project deletion (soft delete)
+  const handleDeleteProject = async (projectId: string) => {
+    try {
+      await updateDoc(doc(db, 'projects', projectId), {
+        deleted: true,
+        deletedAt: new Date(),
+        deletedBy: currentUser?.uid
+      });
+
+      // Refresh user projects
+      if (dashboardData.selectedUser) {
+        await dashboardData.handleUserSelect(dashboardData.selectedUser);
+      }
+      
+      console.log('Project deleted successfully');
+    } catch (error) {
+      console.error('Error deleting project:', error);
+    }
+  };
+
+  // Handle project restoration
+  const handleRestoreProject = async (projectId: string) => {
+    try {
+      await updateDoc(doc(db, 'projects', projectId), {
+        deleted: false,
+        deletedAt: null,
+        restoredAt: new Date(),
+        restoredBy: currentUser?.uid
+      });
+
+      // Refresh user projects
+      if (dashboardData.selectedUser) {
+        await dashboardData.handleUserSelect(dashboardData.selectedUser);
+      }
+      
+      console.log('Project restored successfully');
+    } catch (error) {
+      console.error('Error restoring project:', error);
+    }
+  };
+
+  // Handle navigation to messages with specific user
+  const handleNavigateToMessages = (userId: string) => {
+    const targetUser = dashboardData.allUsers.find(user => user.id === userId);
+    if (targetUser) {
+      setSelectedChatUserId(userId);
+      setShowChat(true);
+    }
+  };
+
   // Show loading state
   if (dashboardData.loading) {
     return (
@@ -197,18 +323,93 @@ const ManagementPage: React.FC = () => {
           </div>
           
           <div className="nav-center">
-            <div className="management-nav-links">
+            <div className="nav-tabs-section">
               <button 
-                className="nav-link"
-                onClick={() => navigate('/dashboard')}
+                className={`nav-request-tab ${currentView === 'requested-projects' ? 'active' : ''}`}
+                onClick={() => {
+                  setCurrentView('requested-projects');
+                  setShowChat(false);
+                  setSelectedChatUserId(undefined);
+                  // Refresh data when switching to this view
+                  fetchUnaddressedRequests();
+                }}
+                title="View Requested Projects"
               >
-                User Dashboard
+                <GitPullRequest size={18} />
+                <span>Requested Projects</span>
+                {alertCounts.projects > 0 && (
+                  <span className="nav-alert-badge">{alertCounts.projects}</span>
+                )}
+              </button>
+              <button 
+                className={`nav-request-tab ${currentView === 'requested-features' ? 'active' : ''}`}
+                onClick={() => {
+                  setCurrentView('requested-features');
+                  setShowChat(false);
+                  setSelectedChatUserId(undefined);
+                  // Refresh data when switching to this view
+                  fetchUnaddressedRequests();
+                }}
+                title="View Requested Features"
+              >
+                <Star size={18} />
+                <span>Requested Features</span>
+                {alertCounts.features > 0 && (
+                  <span className="nav-alert-badge">{alertCounts.features}</span>
+                )}
+              </button>
+              <button 
+                className={`nav-request-tab ${currentView === 'dashboard' ? 'active' : ''}`}
+                onClick={() => {
+                  setCurrentView('dashboard');
+                  setShowChat(false);
+                  setSelectedChatUserId(undefined);
+                }}
+                title="Back to Dashboard"
+              >
+                <MessageCircle size={18} />
+                <span>User Management</span>
               </button>
             </div>
           </div>
           
           <div className="nav-right">
-            <button className="nav-tab" title="Settings">
+            <div className="user-profile-section">
+              <UserAvatar
+                photoURL={currentUser?.photoURL}
+                displayName={currentUser?.displayName || 'Admin'}
+                size={32}
+              />
+              <span className="user-name">{currentUser?.displayName || 'Admin'}</span>
+            </div>
+            <button 
+              className="nav-link-button"
+              onClick={() => navigate('/dashboard')}
+              title="Switch to User Dashboard"
+            >
+              User Dashboard
+            </button>
+            <button 
+              className={`nav-tab ${showChat ? 'active' : ''}`} 
+              onClick={() => {
+                if (showChat) {
+                  setSelectedChatUserId(undefined);
+                }
+                setShowChat(!showChat);
+                setShowSettings(false); // Close settings when opening chat
+              }}
+              title="User Chat"
+            >
+              <MessageCircle size={20} />
+            </button>
+            <button 
+              className={`nav-tab ${showSettings ? 'active' : ''}`} 
+              onClick={() => {
+                setShowSettings(!showSettings);
+                setShowChat(false); // Close chat when opening settings
+              }}
+              title="Settings"
+            >
               <Settings size={20} />
             </button>
             <button className="nav-tab" onClick={handleLogout} title="Logout">
@@ -217,20 +418,149 @@ const ManagementPage: React.FC = () => {
           </div>
         </nav>
 
-        {/* Main Admin Content */}
-        <AdminDashboard
-          allUsers={dashboardData.allUsers}
-          selectedUser={dashboardData.selectedUser}
-          userProjects={dashboardData.userProjects}
-          usersLoading={dashboardData.usersLoading}
-          userSearchQuery={dashboardData.userSearchQuery}
-          sortByAlerts={dashboardData.sortByAlerts}
-          onUserSelect={dashboardData.handleUserSelect}
-          onUserSearchChange={dashboardData.setUserSearchQuery}
-          onToggleAlertSort={dashboardData.toggleAlertSort}
-          onCreateProject={modals.openCreateProjectModal}
-          onOpenAdminProject={handleOpenAdminProject}
-        />
+        {/* Main Content Area */}
+        {showSettings ? (
+          <SettingsPage 
+            isOpen={showSettings}
+            currentUser={currentUser}
+            onClose={() => setShowSettings(false)}
+          />
+        ) : showChat ? (
+          <ChatSystem 
+            currentUser={currentUser ? {
+              id: currentUser.uid,
+              name: currentUser.displayName || 'Admin',
+              avatar: currentUser.photoURL || undefined
+            } : undefined}
+            allUsers={dashboardData.allUsers}
+            preselectedUserId={selectedChatUserId}
+          />
+        ) : currentView === 'requested-projects' ? (
+          <div className="requested-projects-view">
+            <div className="requests-header">
+              <h2>Unaddressed Project Requests</h2>
+              <p>Review and respond to user project requests that need your attention.</p>
+              <button 
+                className="refresh-btn"
+                onClick={fetchUnaddressedRequests}
+                title="Refresh requests"
+              >
+                Refresh
+              </button>
+            </div>
+            <div className="requests-grid">
+              {unaddressedProjects.length > 0 ? (
+                unaddressedProjects.map((project) => (
+                  <div 
+                    key={project.id} 
+                    className="request-card"
+                    onClick={() => modals.openUserRequestedModal(project)}
+                  >
+                    <div className="request-header">
+                      <h3>{project.name || project.projectName}</h3>
+                      <span className={`status-badge ${project.status}`}>
+                        {project.status}
+                      </span>
+                    </div>
+                    <p className="request-description">
+                      {project.description?.substring(0, 150)}...
+                    </p>
+                    <div className="request-meta">
+                      <span>Priority: {project.priority}</span>
+                      <span>
+                        Requested: {project.createdAt?.seconds 
+                          ? new Date(project.createdAt.seconds * 1000).toLocaleDateString()
+                          : new Date(project.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-requests">
+                  <GitPullRequest size={64} />
+                  <h3>No pending project requests</h3>
+                  <p>All project requests have been addressed!</p>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : currentView === 'requested-features' ? (
+          <div className="requested-features-view">
+            <div className="requests-header">
+              <h2>Unaddressed Feature Requests</h2>
+              <p>Review and respond to user feature requests that need your attention.</p>
+              <button 
+                className="refresh-btn"
+                onClick={fetchUnaddressedRequests}
+                title="Refresh requests"
+              >
+                Refresh
+              </button>
+            </div>
+            <div className="requests-grid">
+              {unaddressedFeatures.length > 0 ? (
+                unaddressedFeatures.map((project) => (
+                  <div 
+                    key={project.id} 
+                    className="request-card"
+                    onClick={() => modals.openUserRequestedModal(project)}
+                  >
+                    <div className="request-header">
+                      <h3>{project.name || project.projectName}</h3>
+                      <span className={`status-badge ${project.status}`}>
+                        {project.status}
+                      </span>
+                    </div>
+                    <div className="features-preview">
+                      <strong>Requested Features:</strong>
+                      <div className="features-list">
+                        {project.features?.split('\n').slice(0, 3).map((feature: string, index: number) => (
+                          <div key={index} className="feature-item">
+                            {feature.length > 80 ? `${feature.substring(0, 80)}...` : feature}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="request-meta">
+                      <span>Priority: {project.priority}</span>
+                      <span>
+                        Requested: {project.createdAt?.seconds 
+                          ? new Date(project.createdAt.seconds * 1000).toLocaleDateString()
+                          : new Date(project.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-requests">
+                  <Star size={64} />
+                  <h3>No pending feature requests</h3>
+                  <p>All feature requests have been addressed!</p>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <AdminDashboard
+            allUsers={dashboardData.allUsers}
+            selectedUser={dashboardData.selectedUser}
+            userProjects={dashboardData.userProjects}
+            allProjects={dashboardData.allProjects}
+            usersLoading={dashboardData.usersLoading}
+            userProjectsLoading={dashboardData.userProjectsLoading}
+            userSearchQuery={dashboardData.userSearchQuery}
+            sortByAlerts={dashboardData.sortByAlerts}
+            onUserSelect={dashboardData.handleUserSelect}
+            onUserSearchChange={dashboardData.setUserSearchQuery}
+            onToggleAlertSort={dashboardData.toggleAlertSort}
+            onCreateProject={modals.openCreateProjectModal}
+            onOpenAdminProject={handleOpenAdminProject}
+            onDeleteProject={handleDeleteProject}
+            onRestoreProject={handleRestoreProject}
+            onNavigateToMessages={handleNavigateToMessages}
+            currentUser={currentUser}
+          />
+        )}
       </div>
       
       {/* Create Project Modal */}
@@ -255,10 +585,13 @@ const ManagementPage: React.FC = () => {
         isOpen={modals.showUserRequestedModal}
         onClose={modals.closeUserRequestedModal}
         project={modals.selectedUserProject}
-        onUpdate={() => {
+        onUpdate={async () => {
+          // Refresh data in background without closing the modal
           if (dashboardData.selectedUser) {
-            dashboardData.handleUserSelect(dashboardData.selectedUser);
+            await dashboardData.handleUserSelect(dashboardData.selectedUser);
           }
+          await fetchUnaddressedRequests();
+          // Note: Modal stays open so user can continue working
         }}
         currentUser={currentUser}
         onOpenAdminProject={handleOpenAdminProjectById}
@@ -312,8 +645,6 @@ const ManagementPage: React.FC = () => {
         mode={modals.selectedProjectForFeature ? 'feature-request' : 'project-request'}
         project={modals.selectedProjectForFeature}
       />
-
-      <Footer />
     </>
   );
 };

@@ -37,11 +37,14 @@ export const useDashboardData = (currentUser: any) => {
   const [requestedProjects, setRequestedProjects] = useState<Project[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [userProjects, setUserProjects] = useState<Project[]>([]);
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
   
   // Loading states
   const [customerProjectsLoading, setCustomerProjectsLoading] = useState(true);
   const [requestedProjectsLoading, setRequestedProjectsLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(true);
+  const [userProjectsLoading, setUserProjectsLoading] = useState(false);
+  const [allProjectsLoading, setAllProjectsLoading] = useState(false);
   
   // User management states
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -174,8 +177,42 @@ export const useDashboardData = (currentUser: any) => {
     }
   };
 
+  // Load all projects from all users (admin only)
+  const loadAllProjects = async () => {
+    setAllProjectsLoading(true);
+    try {
+      // Load both regular projects and user requests from all users
+      const [projectsSnapshot, requestsSnapshot] = await Promise.all([
+        getDocs(query(collection(db, 'projects'), orderBy('createdAt', 'desc'))),
+        getDocs(query(collection(db, 'user_project_requests'), orderBy('createdAt', 'desc')))
+      ]);
+
+      const projects = projectsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        type: 'admin-created',
+        ...doc.data()
+      }));
+
+      const requests = requestsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        type: 'user-requested',
+        ...doc.data()
+      }));
+
+      // Combine and filter out any projects without proper IDs
+      const allProjectsCombined = [...projects, ...requests].filter(p => p.id && p.id.trim());
+      
+      setAllProjects(allProjectsCombined as Project[]);
+    } catch (error) {
+      console.error('Error loading all projects:', error);
+    } finally {
+      setAllProjectsLoading(false);
+    }
+  };
+
   // Load user projects (admin selecting a user)
   const loadUserProjects = async (userId: string) => {
+    setUserProjectsLoading(true);
     try {
       // Load both regular projects and user requests
       const [projectsSnapshot, requestsSnapshot] = await Promise.all([
@@ -217,6 +254,8 @@ export const useDashboardData = (currentUser: any) => {
       setUserProjects([...validProjects, ...validRequests] as Project[]);
     } catch (error) {
       console.error('Error loading user projects:', error);
+    } finally {
+      setUserProjectsLoading(false);
     }
   };
 
@@ -257,12 +296,14 @@ export const useDashboardData = (currentUser: any) => {
     setCustomerProjects([]);
     setRequestedProjects([]);
     setAllUsers([]);
+    setAllProjects([]);
     
     // Load appropriate data after a brief delay
     setTimeout(() => {
       if (!isAdmin) {
         // Switching to admin mode
         loadAllUsers();
+        loadAllProjects();
       } else {
         // Switching to user mode
         loadCustomerProjects();
@@ -300,6 +341,7 @@ export const useDashboardData = (currentUser: any) => {
       if (isAdmin) {
         console.log('👑 User is admin, also loading all users for admin features');
         loadAllUsers();
+        loadAllProjects();
       }
     } else {
       console.log('❌ Conditions not met for data loading');
@@ -316,6 +358,7 @@ export const useDashboardData = (currentUser: any) => {
     requestedProjects,
     allUsers: filteredUsers,
     userProjects,
+    allProjects,
     selectedUser,
     userSearchQuery,
     sortByAlerts,
@@ -324,6 +367,8 @@ export const useDashboardData = (currentUser: any) => {
     customerProjectsLoading,
     requestedProjectsLoading,
     usersLoading,
+    userProjectsLoading,
+    allProjectsLoading,
     
     // Actions
     setUserSearchQuery,
@@ -332,6 +377,7 @@ export const useDashboardData = (currentUser: any) => {
     toggleAdminStatus,
     loadCustomerProjects,
     loadRequestedProjects,
-    loadAllUsers
+    loadAllUsers,
+    loadAllProjects
   };
 }; 

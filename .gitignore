@@ -38,3 +38,9 @@ firebase-debug.*.log
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# Firebase Admin SDK credentials
+server/config/firebase-admin-sdk.json
+
+# Node modules
+server/node_modules/
+**/node_modules/
