@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Activity, TrendingUp, Clock, CheckCircle, BarChart3, Calendar, Users, Settings, FileText, Plus, ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import Sidebar from './Sidebar';
-import ProjectNavbar from './ProjectNavbar';
+
+// Components with UX-focused organization
 import ProjectRequestSection from './ProjectRequestSection';
 import RequestedProjectsSection from './RequestedProjectsSection';
 import ActiveProjectsSection from './ActiveProjectsSection';
 import CompletedProjectsSection from './CompletedProjectsSection';
-import MessagesSection from './MessagesSection';
+import UserChatSystem from './UserChatSystem';
 import EnhancedProjectRequestModal from './EnhancedProjectRequestModal';
+import SettingsPage from './SettingsPage';
 import { projectService } from '../services/projectService';
 
 interface Project {
@@ -35,8 +37,6 @@ interface UserDashboardProps {
   onOpenAIChat: () => void;
   onOpenCustomerProject: (project: Project) => void;
   onFeatureRequest: (project: Project) => void;
-  onSidebarStateChange?: (collapsed: boolean) => void;
-  sidebarCollapsed?: boolean;
 }
 
 const UserDashboard: React.FC<UserDashboardProps> = ({
@@ -47,30 +47,39 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
   onOpenAIChat,
   onOpenCustomerProject,
   onFeatureRequest,
-  onSidebarStateChange,
-  sidebarCollapsed: externalSidebarCollapsed,
 }) => {
-  const [activeSection, setActiveSection] = useState('active-projects');
-  const [internalSidebarCollapsed, setInternalSidebarCollapsed] = useState(false);
+  const [activeSection, setActiveSection] = useState('dashboard');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showEnhancedModal, setShowEnhancedModal] = useState(false);
+  const [settingsSection, setSettingsSection] = useState<string | null>(null);
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
-  // Use external sidebar state if provided, otherwise use internal state
-  const sidebarCollapsed = externalSidebarCollapsed !== undefined ? externalSidebarCollapsed : internalSidebarCollapsed;
-
-  console.log('🎛️ UserDashboard rendered');
-  console.log('📊 customerProjects received:', customerProjects);
-  console.log('📈 customerProjects.length:', customerProjects?.length || 0);
-  console.log('⏳ customerProjectsLoading:', customerProjectsLoading);
-  console.log('🎯 activeSection:', activeSection);
+  // Calculate project statistics for information chunking
+  const projectStats = {
+    active: customerProjects?.filter(p => p.status === 'in-progress' || p.status === 'planning').length || 0,
+    completed: customerProjects?.filter(p => p.status === 'completed').length || 0,
+    requested: requestedProjects?.length || 0,
+    total: customerProjects?.length || 0
+  };
 
   const handleSectionChange = (section: string) => {
     if (section === 'open-project-modal') {
       setShowEnhancedModal(true);
       return;
     }
+    if (section === 'messages') {
+      navigate('/messages');
+      return;
+    }
+    
+    // Handle settings sections - show settings inline
+    if (section === 'settings' || section === 'profile' || section === 'security' || section === 'payment' || section === 'notifications') {
+      setSettingsSection(section);
+      setActiveSection('settings');
+      return;
+    }
+    
     setActiveSection(section);
   };
 
@@ -79,7 +88,8 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
       console.log('Submitting project:', projectData);
       
       if (!currentUser) {
-        alert('You must be logged in to submit a project request.');
+        // Non-intrusive error handling - no alerts per user preference
+        console.error('User must be logged in to submit a project request');
         return;
       }
       
@@ -98,13 +108,14 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
       // Navigate to requested projects to see the new submission
       setActiveSection('requested-projects');
       
-      // You could also show a toast notification here
-      alert('Project request submitted successfully! You can track its progress in the Requested Projects section.');
-      
     } catch (error) {
       console.error('Error submitting project:', error);
-      alert('Failed to submit project request. Please try again.');
     }
+  };
+
+  const handleProjectSelect = (project: Project) => {
+    setSelectedProject(project);
+    setActiveSection('active-projects');
   };
 
   // Handle navigation from completed projects empty state
@@ -119,35 +130,158 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
     };
   }, []);
 
-  const toggleSidebar = () => {
-    setInternalSidebarCollapsed(!sidebarCollapsed);
-    if (onSidebarStateChange) {
-      onSidebarStateChange(!sidebarCollapsed);
-    }
-  };
+  // UX-focused navigation structure - Hick's Law (Limited choices)
+  const navigationSections = [
+    { id: 'dashboard', label: 'Overview', icon: Activity, description: 'Dashboard overview' },
+    { id: 'active-projects', label: 'Active Projects', icon: TrendingUp, description: 'Projects in progress' },
+    { id: 'requested-projects', label: 'Requests', icon: Clock, description: 'Pending requests' },
+    { id: 'completed-projects', label: 'Completed', icon: CheckCircle, description: 'Finished projects' },
+  ];
+
+  const renderNavigationBar = () => (
+    <div className="dashboard-navigation">
+      <div className="nav-sections">
+        {navigationSections.map((section) => (
+          <button
+            key={section.id}
+            className={`nav-link ${activeSection === section.id ? 'active' : ''}`}
+            onClick={() => handleSectionChange(section.id)}
+            aria-label={section.description}
+          >
+            <section.icon size={20} />
+            <span className="nav-label">{section.label}</span>
+            {section.id === 'active-projects' && projectStats.active > 0 && (
+              <span className="nav-badge">{projectStats.active}</span>
+            )}
+            {section.id === 'requested-projects' && projectStats.requested > 0 && (
+              <span className="nav-badge">{projectStats.requested}</span>
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Project chunks implementation - Miller's Law
+  const renderProjectChunks = () => (
+    <div className="project-chunks-ux">
+      {/* Project Overview Chunk */}
+      <div className="project-chunk-ux">
+        <div className="chunk-header-ux">
+          <Activity className="chunk-icon-ux" size={24} />
+          <h2 className="chunk-title-ux">Project Overview</h2>
+        </div>
+        <div className="chunk-content-ux">
+          <div className="project-stats-grid">
+            <div className="stat-item">
+              <TrendingUp size={20} />
+              <span className="stat-number">{projectStats.active}</span>
+              <span className="stat-label">Active</span>
+            </div>
+            <div className="stat-item">
+              <CheckCircle size={20} />
+              <span className="stat-number">{projectStats.completed}</span>
+              <span className="stat-label">Completed</span>
+            </div>
+            <div className="stat-item">
+              <Clock size={20} />
+              <span className="stat-number">{projectStats.requested}</span>
+              <span className="stat-label">Pending</span>
+            </div>
+          </div>
+          <button 
+            className="chunk-action-button"
+            onClick={onOpenAIChat}
+          >
+            <Plus size={16} />
+            New Project Request
+          </button>
+        </div>
+      </div>
+
+      {/* Recent Activity Chunk */}
+      <div className="project-chunk-ux">
+        <div className="chunk-header-ux">
+          <BarChart3 className="chunk-icon-ux" size={24} />
+          <h2 className="chunk-title-ux">Recent Activity</h2>
+        </div>
+        <div className="chunk-content-ux">
+          {customerProjects.slice(0, 3).map((project) => (
+            <div key={project.id} className="activity-item">
+              <div className="activity-info">
+                <span className="activity-title">{project.name || project.projectName}</span>
+                <span className="activity-status">{project.status}</span>
+              </div>
+              <ArrowRight size={16} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick Actions Chunk */}
+      <div className="project-chunk-ux">
+        <div className="chunk-header-ux">
+          <Settings className="chunk-icon-ux" size={24} />
+          <h2 className="chunk-title-ux">Quick Actions</h2>
+        </div>
+        <div className="chunk-content-ux">
+          <div className="quick-actions-grid">
+            <button 
+              className="quick-action-button"
+              onClick={() => setActiveSection('active-projects')}
+            >
+              <TrendingUp size={16} />
+              View Projects
+            </button>
+            <button 
+              className="quick-action-button"
+              onClick={() => navigate('/messages')}
+            >
+              <FileText size={16} />
+              Messages
+            </button>
+            <button 
+              className="quick-action-button"
+              onClick={() => setActiveSection('settings')}
+            >
+              <Settings size={16} />
+              Settings
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   const renderSectionContent = () => {
-    console.log('🔄 renderSectionContent called with activeSection:', activeSection);
-    
     switch (activeSection) {
       case 'dashboard':
         return (
-          <>
-            <ProjectRequestSection onOpenAIChat={onOpenAIChat} />
+          <div className="dashboard-overview">
+            {renderProjectChunks()}
             
-            <RequestedProjectsSection 
-              requestedProjects={requestedProjects}
-              requestedProjectsLoading={requestedProjectsLoading}
-            />
-            
-            <ActiveProjectsSection 
-              customerProjects={customerProjects}
-              customerProjectsLoading={customerProjectsLoading}
-              onOpenCustomerProject={onOpenCustomerProject}
-              onFeatureRequest={onFeatureRequest}
-              sidebarCollapsed={sidebarCollapsed}
-            />
-          </>
+            {/* Progressive Disclosure - Show overview first */}
+            <div className="recent-projects">
+              <div className="section-header">
+                <h3>Recent Projects</h3>
+                <button 
+                  className="view-all-button"
+                  onClick={() => setActiveSection('active-projects')}
+                >
+                  View All <ArrowRight size={16} />
+                </button>
+              </div>
+              
+              <ActiveProjectsSection 
+                customerProjects={customerProjects.slice(0, 4)} // Show only first 4
+                customerProjectsLoading={customerProjectsLoading}
+                onOpenCustomerProject={onOpenCustomerProject}
+                onFeatureRequest={onFeatureRequest}
+                selectedProject={selectedProject}
+                onProjectSelect={setSelectedProject}
+              />
+            </div>
+          </div>
         );
       
       case 'requested-projects':
@@ -167,7 +301,6 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
             onFeatureRequest={onFeatureRequest}
             selectedProject={selectedProject}
             onProjectSelect={setSelectedProject}
-            sidebarCollapsed={sidebarCollapsed}
           />
         );
       
@@ -178,98 +311,20 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
             customerProjectsLoading={customerProjectsLoading}
             onOpenCustomerProject={onOpenCustomerProject}
             onFeatureRequest={onFeatureRequest}
-            sidebarCollapsed={sidebarCollapsed}
           />
         );
       
-      case 'project-analytics':
+      case 'settings':
         return (
           <div className="section-content">
-            <h2>Project Analytics</h2>
-            <p>Analytics and insights about your projects will be displayed here.</p>
-          </div>
-        );
-      
-      case 'time-tracking':
-        return (
-          <div className="section-content">
-            <h2>Time Tracking</h2>
-            <p>Time tracking and productivity metrics will be displayed here.</p>
-          </div>
-        );
-      
-      case 'achievements':
-        return (
-          <div className="section-content">
-            <h2>Achievements</h2>
-            <p>Your project milestones and achievements will be displayed here.</p>
-          </div>
-        );
-      
-      case 'calendar':
-        return (
-          <div className="section-content">
-            <h2>Calendar</h2>
-            <p>Project deadlines and scheduled meetings will be displayed here.</p>
-          </div>
-        );
-      
-      case 'messages':
-        return <MessagesSection />;
-      
-      case 'profile':
-        return (
-          <div className="section-content">
-            <h2>Profile Settings</h2>
-            <p>Manage your profile information and preferences.</p>
-          </div>
-        );
-      
-      case 'payment':
-        return (
-          <div className="section-content">
-            <h2>Payment & Billing</h2>
-            <p>Manage your payment methods and billing information.</p>
-          </div>
-        );
-      
-      case 'security':
-        return (
-          <div className="section-content">
-            <h2>Security Settings</h2>
-            <p>Manage two-factor authentication and security preferences.</p>
-          </div>
-        );
-      
-      case 'notifications':
-        return (
-          <div className="section-content">
-            <h2>Notification Settings</h2>
-            <p>Configure your notification preferences.</p>
-          </div>
-        );
-      
-      case 'documentation':
-        return (
-          <div className="section-content">
-            <h2>Documentation</h2>
-            <p>Access help documentation and guides.</p>
-          </div>
-        );
-      
-      case 'support-tickets':
-        return (
-          <div className="section-content">
-            <h2>Support Tickets</h2>
-            <p>View and manage your support requests.</p>
-          </div>
-        );
-      
-      case 'feature-requests':
-        return (
-          <div className="section-content">
-            <h2>Feature Requests</h2>
-            <p>Submit and track feature requests for existing projects.</p>
+            <SettingsPage
+              isOpen={true}
+              onClose={() => {
+                setSettingsSection(null);
+                setActiveSection('dashboard');
+              }}
+              currentUser={currentUser}
+            />
           </div>
         );
       
@@ -284,27 +339,12 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
   };
 
   return (
-    <div className="user-dashboard-wrapper">
-      {/* Left Sidebar */}
-      <Sidebar
-        activeSection={activeSection}
-        onSectionChange={handleSectionChange}
-        isCollapsed={sidebarCollapsed}
-        onToggleCollapse={toggleSidebar}
-      />
-      
-      {/* Project Navbar - Only show for active projects section */}
-      {activeSection === 'active-projects' && (
-        <ProjectNavbar
-          projects={customerProjects}
-          selectedProject={selectedProject}
-          onProjectSelect={setSelectedProject}
-          isCollapsed={sidebarCollapsed}
-        />
-      )}
-      
-      {/* Main Content */}
-      <div className={`user-dashboard-content-area ${sidebarCollapsed ? 'sidebar-collapsed' : ''} ${activeSection === 'active-projects' ? 'with-project-navbar' : ''}`}>
+    <div className="user-dashboard-modern">
+      {/* Navigation - Applying Hick's Law */}
+      {renderNavigationBar()}
+
+      {/* Main Content Area */}
+      <div className="dashboard-main-content">
         {renderSectionContent()}
       </div>
 
@@ -313,6 +353,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
         isOpen={showEnhancedModal}
         onClose={() => setShowEnhancedModal(false)}
         onSubmit={handleProjectSubmit}
+        activeProjects={customerProjects}
       />
     </div>
   );
