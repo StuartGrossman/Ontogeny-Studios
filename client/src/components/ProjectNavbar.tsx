@@ -1,6 +1,7 @@
 import React from 'react';
 import { Activity, CheckCircle, BarChart3, Settings, Target, GitBranch, FileText, Plus, Key, Palette, Globe } from 'lucide-react';
 import '../styles/ProjectNavbar.css';
+import '../styles/SecondaryActionNavbar.css';
 
 interface Project {
   id: string;
@@ -31,6 +32,11 @@ interface ProjectNavbarProps {
   onAddUIDesign?: () => void;
   onAddDNSRecords?: () => void;
   mode?: 'selection' | 'actions';
+  
+  // Notification counts
+  apiKeyRequestCount?: number;
+  dnsRequestCount?: number;
+  featureRequestCount?: number;
 }
 
 const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
@@ -44,7 +50,10 @@ const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
   onAddAPIKey,
   onAddUIDesign,
   onAddDNSRecords,
-  mode = 'selection'
+  mode = 'selection',
+  apiKeyRequestCount = 0,
+  dnsRequestCount = 0,
+  featureRequestCount = 0
 }) => {
   const activeProjects = projects?.filter(p => p.status === 'in-progress' || p.status === 'planning') || [];
   const completedProjects = projects?.filter(p => p.status === 'completed') || [];
@@ -61,16 +70,16 @@ const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
   // Project Actions Mode
   if (mode === 'actions' && project) {
     return (
-      <div className={`project-actions-navbar ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
-        <div className="project-actions-content">
-          <div className="project-actions-left">
-            <div className="current-project-info">
-              <div className="current-project-icon">
+      <div className={`secondary-action-navbar ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
+        <div className="secondary-action-navbar-content">
+          <div className="secondary-action-navbar-left">
+            <div className="secondary-action-project-info">
+              <div className="secondary-action-project-icon">
                 {getProjectIcon(project)}
               </div>
-              <div className="current-project-details">
-                <span className="current-project-name">{project.name}</span>
-                <span className={`current-project-status ${project.status}`}>
+              <div className="secondary-action-project-details">
+                <span className="secondary-action-project-name">{project.name}</span>
+                <span className={`secondary-action-project-status ${project.status}`}>
                   {project.status === 'completed' ? 'Completed' : 
                    project.status === 'in-progress' ? 'In Progress' :
                    project.status === 'planning' ? 'Planning' : project.status}
@@ -79,61 +88,105 @@ const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
             </div>
           </div>
           
-          <div className="project-actions-center">
-            <div className="action-buttons-group">
+          <div className="secondary-action-navbar-center">
+            <div className="secondary-action-buttons-group">
               {project.status !== 'completed' && (
                 <button 
-                  className="action-btn primary"
+                  className="secondary-action-btn primary"
                   onClick={onAddFeature}
                 >
-                  <Plus size={16} />
+                  <Plus size={14} />
                   Add Feature
                 </button>
               )}
               
               <button 
-                className="action-btn secondary"
+                className="secondary-action-btn secondary"
                 onClick={onViewRequests}
               >
-                <FileText size={16} />
+                <FileText size={14} />
                 View Requests
               </button>
               
-              <button 
-                className="action-btn secondary"
-                onClick={onAddAPIKey}
-              >
-                <Key size={16} />
-                Add API Key
-              </button>
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <button 
+                  className="secondary-action-btn secondary"
+                  onClick={onAddAPIKey}
+                >
+                  <Key size={14} />
+                  API Keys
+                </button>
+                {apiKeyRequestCount > 0 && (
+                  <span className="notification-badge" style={{ 
+                    position: 'absolute', 
+                    top: '-5px', 
+                    right: '-5px',
+                    background: '#ffffff',
+                    color: '#000000',
+                    borderRadius: '50%',
+                    width: '16px',
+                    height: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '9px',
+                    fontWeight: 'bold',
+                    border: '2px solid #000000'
+                  }}>
+                    {apiKeyRequestCount}
+                  </span>
+                )}
+              </div>
               
               <button 
-                className="action-btn secondary"
+                className="secondary-action-btn secondary"
                 onClick={onAddUIDesign}
               >
-                <Palette size={16} />
-                Add UI Design
+                <Palette size={14} />
+                UI Design
               </button>
               
-              <button 
-                className="action-btn secondary"
-                onClick={onAddDNSRecords}
-              >
-                <Globe size={16} />
-                DNS Records
-              </button>
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <button 
+                  className="secondary-action-btn secondary"
+                  onClick={onAddDNSRecords}
+                >
+                  <Globe size={14} />
+                  DNS Records
+                </button>
+                {dnsRequestCount > 0 && (
+                  <span className="notification-badge" style={{ 
+                    position: 'absolute', 
+                    top: '-5px', 
+                    right: '-5px',
+                    background: '#ffffff',
+                    color: '#000000',
+                    borderRadius: '50%',
+                    width: '16px',
+                    height: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '9px',
+                    fontWeight: 'bold',
+                    border: '2px solid #000000'
+                  }}>
+                    {dnsRequestCount}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           
-          <div className="project-actions-right">
+          <div className="secondary-action-navbar-right">
             {(project.liveLink || project.link || project.websiteUrl) && (
               <a 
                 href={project.liveLink || project.link || project.websiteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="action-btn tertiary small"
+                className="secondary-action-btn secondary small"
               >
-                <BarChart3 size={14} />
+                <BarChart3 size={12} />
                 Live
               </a>
             )}
