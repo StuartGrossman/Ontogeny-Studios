@@ -1,6 +1,6 @@
 const DEEPSEEK_API_KEY = 'sk-62b86883848c4907bdbdc730ac77eadd';
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
-const SERVER_URL = 'http://localhost:5000/api';
+const SERVER_URL = 'http://localhost:3002/api';
 
 export interface Message {
   id: string;
@@ -177,36 +177,43 @@ class AIService {
           messages: [
             {
               role: 'system',
-              content: `You are a specialized Project Feature Consultant at Ontogeny Labs. Your ONLY focus is helping clients define comprehensive feature lists for their software projects.
+              content: `You are a specialized Feature Consultant at Ontogeny Labs. You help clients define new features for their existing projects by building on each conversation message.
 
-🎯 YOUR MISSION:
-- Guide clients to articulate ALL features they want in their project
-- Ask specific follow-up questions about functionality, user experience, and requirements
-- Help organize features into clear, actionable categories
-- Once you have a comprehensive feature list, offer to submit it as a project request
+🎯 CRITICAL INSTRUCTIONS:
+- ALWAYS acknowledge what the user has already told you
+- BUILD on previous messages - never ignore context
+- Reference specific details they've mentioned
+- Ask targeted follow-up questions based on their input
 
-📋 CONVERSATION FLOW:
-1. First, understand their basic project idea
-2. Ask detailed questions about specific features they want
-3. Probe for additional functionality they might need
-4. Organize features into a clean, bulleted list
-5. When feature gathering feels complete, present the final list and ask: "Would you like me to submit this project request to our development team?"
+📋 CONVERSATION RULES:
+1. **Read the full conversation** - understand what's been discussed
+2. **Acknowledge user input** - "Great! You want to add [their feature]..."
+3. **Build specificity** - ask targeted questions about their exact feature
+4. **Avoid repetition** - never ask the same question twice
 
-💡 QUESTION EXAMPLES:
-- "What specific user actions do you want to support?"
-- "How should users interact with [feature]?"
-- "What data do you need to track/store?"
-- "Do you need admin/user role differences?"
-- "What integrations or third-party services?"
-- "Any specific security or performance requirements?"
+🔧 COMMON INTEGRATIONS TO RECOGNIZE:
+- **Mailgun/Email APIs**: Email delivery, notifications, marketing emails
+- **Payment APIs**: Stripe, PayPal, subscription billing
+- **Auth APIs**: OAuth, social login, SSO
+- **Notification APIs**: SMS, push notifications, webhooks
+- **Storage APIs**: AWS S3, file uploads, CDN
 
-✅ FORMATTING:
-- Use bullet points for features
-- Use emojis for visual appeal
-- Keep responses concise but thorough
-- Always end with a specific follow-up question
+💡 SMART FOLLOW-UP STRATEGY:
+When user mentions an integration like "Mailgun API":
+✅ "Perfect! A Mailgun email integration for [project]. What types of emails do you need to send?"
+❌ "What exactly should this feature do?" (too generic)
 
-Remember: Your goal is comprehensive feature definition, not technical implementation details.`
+When user says "send emails to clients":
+✅ "Got it! Client email notifications via Mailgun. What triggers these emails?"
+❌ Repeating the same generic questions
+
+🎯 RESPONSE FORMAT:
+1. **Acknowledge**: "Great! You want to add [specific feature]..."
+2. **Clarify**: Ask ONE specific follow-up question
+3. **Build**: Reference what they've already shared
+4. **Progress**: Move the conversation forward
+
+NEVER give repetitive responses. Each message should build on the previous ones and move toward a complete feature specification.`
             },
             ...messages
           ],
@@ -334,42 +341,102 @@ Remember: Your goal is comprehensive feature definition, not technical implement
 
   async saveConversation(conversation: Conversation): Promise<void> {
     try {
-      // Save to server
-      const response = await fetch(`${SERVER_URL}/plans/save-conversation`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          conversationId: conversation.id,
-          userId: conversation.userId,
-          messages: conversation.messages,
-          title: conversation.title,
-          createdAt: conversation.createdAt.toISOString(),
-          updatedAt: conversation.updatedAt.toISOString()
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
-      }
-
-      const result = await response.json();
+      // Primary: Save to Firestore
+      await this.saveToFirestore(conversation);
+      console.log(`✅ Conversation saved to Firestore: ${conversation.id}`);
       
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to save conversation');
+      // Backup: Save to server
+      try {
+        await this.saveToServer(conversation);
+        console.log(`📦 Conversation backed up to server: ${conversation.id}`);
+      } catch (serverError) {
+        console.warn('Server backup failed, continuing with Firestore only');
       }
-
-      console.log('Conversation saved to server:', result.filePath);
       
-      // Also save to localStorage as backup
+      // Also save to localStorage as final backup
       this.saveToLocalStorage(conversation);
       
     } catch (error) {
-      console.error('Error saving conversation to server:', error);
+      console.error('❌ Primary Firestore save failed:', error);
       
-      // Fallback to localStorage only
-      this.saveToLocalStorage(conversation);
+      // Try server backup if Firestore fails
+      try {
+        await this.saveToServer(conversation);
+        console.log('📦 Saved to server as backup');
+      } catch (serverError) {
+        console.error('❌ Server backup also failed:', serverError);
+        
+        // Final fallback to localStorage
+        this.saveToLocalStorage(conversation);
+        console.log('💾 Saved to localStorage as final fallback');
+      }
+    }
+  }
+
+  private async saveToFirestore(conversation: Conversation): Promise<void> {
+    try {
+      // Import Firestore functions
+      const { collection, addDoc, updateDoc, doc, setDoc } = await import('firebase/firestore');
+      const { db } = await import('../firebase');
+      
+      // Save conversation with setDoc to ensure consistent document ID
+      await setDoc(doc(db, 'ai_conversations', conversation.id), {
+        id: conversation.id,
+        userId: conversation.userId,
+        messages: conversation.messages.map(msg => ({
+          ...msg,
+          timestamp: msg.timestamp
+        })),
+        title: conversation.title,
+        createdAt: conversation.createdAt,
+        updatedAt: new Date(),
+        mode: 'project-request', // Default mode
+        status: 'active'
+      });
+
+      // Also save metadata for debugging purposes
+      await addDoc(collection(db, 'conversation_metadata'), {
+        conversationId: conversation.id,
+        userId: conversation.userId,
+        title: conversation.title,
+        messageCount: conversation.messages.length,
+        createdAt: conversation.createdAt,
+        updatedAt: new Date(),
+        lastActivity: new Date(),
+        contextQuality: this.analyzeContextQuality(conversation.messages),
+        tags: this.extractTags(conversation.messages)
+      });
+      
+    } catch (error) {
+      console.error('Firestore save error:', error);
+      throw error;
+    }
+  }
+
+  private async saveToServer(conversation: Conversation): Promise<void> {
+    const response = await fetch(`${SERVER_URL}/plans/save-conversation`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        conversationId: conversation.id,
+        userId: conversation.userId,
+        messages: conversation.messages,
+        title: conversation.title,
+        createdAt: conversation.createdAt.toISOString(),
+        updatedAt: new Date().toISOString()
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to save conversation');
     }
   }
 
@@ -908,6 +975,38 @@ IMPORTANT: Return ONLY the JSON array, no additional text or formatting.`
     }
 
     return contextFeatures;
+  }
+
+  private analyzeContextQuality(messages: Message[]): 'excellent' | 'good' | 'fair' | 'poor' {
+    const userMessages = messages.filter(msg => msg.sender === 'user');
+    const aiMessages = messages.filter(msg => msg.sender === 'ai');
+    
+    if (userMessages.length >= 3 && aiMessages.length >= 3) {
+      return 'excellent';
+    } else if (userMessages.length >= 2 && aiMessages.length >= 2) {
+      return 'good';
+    } else if (userMessages.length >= 1 && aiMessages.length >= 1) {
+      return 'fair';
+    }
+    return 'poor';
+  }
+
+  private extractTags(messages: Message[]): string[] {
+    const tags: string[] = [];
+    const allText = messages.map(msg => msg.text).join(' ').toLowerCase();
+    
+    // Extract common project-related tags
+    if (allText.includes('web') || allText.includes('website')) tags.push('web');
+    if (allText.includes('mobile') || allText.includes('app')) tags.push('mobile');
+    if (allText.includes('api')) tags.push('api');
+    if (allText.includes('database')) tags.push('database');
+    if (allText.includes('ecommerce') || allText.includes('e-commerce')) tags.push('ecommerce');
+    if (allText.includes('dashboard')) tags.push('dashboard');
+    if (allText.includes('authentication') || allText.includes('login')) tags.push('auth');
+    if (allText.includes('payment')) tags.push('payment');
+    if (allText.includes('chat') || allText.includes('messaging')) tags.push('messaging');
+    
+    return tags;
   }
 }
 

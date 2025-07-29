@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy, where, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, where } from 'firebase/firestore';
 import { db } from '../firebase';
+import { checkAndCreateUserAdmin } from '../utils/checkUserAdmin';
 
 interface User {
   id: string;
@@ -62,19 +63,10 @@ export const useDashboardData = (currentUser: any) => {
     }
     
     try {
-      console.log('📡 Fetching user document from Firestore...');
-      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-      console.log('📄 User doc exists:', userDoc.exists());
-      
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        console.log('👤 User data:', userData);
-        console.log('👑 isAdmin value:', userData.isAdmin);
-        setIsAdmin(userData.isAdmin === true);
-      } else {
-        console.log('❌ User document does not exist');
-        setIsAdmin(false);
-      }
+      console.log('📡 Checking/creating user admin status...');
+      const isUserAdmin = await checkAndCreateUserAdmin(currentUser);
+      console.log('👑 User admin status:', isUserAdmin);
+      setIsAdmin(isUserAdmin);
     } catch (error) {
       console.error('❌ Error checking admin status:', error);
       setIsAdmin(false);
@@ -162,6 +154,17 @@ export const useDashboardData = (currentUser: any) => {
   const loadAllUsers = async () => {
     setUsersLoading(true);
     try {
+      console.log('🔍 Loading all users for admin...');
+      console.log('👤 Current user:', currentUser?.uid);
+      console.log('👑 Is admin:', isAdmin);
+      
+      // Only proceed if user is confirmed admin
+      if (!isAdmin) {
+        console.log('❌ User is not admin, cannot load all users');
+        setAllUsers([]);
+        return;
+      }
+
       const usersQuery = query(collection(db, 'users'), orderBy('displayName'));
       const querySnapshot = await getDocs(usersQuery);
       const users = querySnapshot.docs.map(doc => ({
@@ -169,9 +172,12 @@ export const useDashboardData = (currentUser: any) => {
         ...doc.data()
       })) as User[];
       
+      console.log('✅ Successfully loaded users:', users.length);
       setAllUsers(users);
     } catch (error) {
-      console.error('Error loading users:', error);
+      console.error('❌ Error loading users:', error);
+      // Set empty array on error
+      setAllUsers([]);
     } finally {
       setUsersLoading(false);
     }
@@ -181,6 +187,17 @@ export const useDashboardData = (currentUser: any) => {
   const loadAllProjects = async () => {
     setAllProjectsLoading(true);
     try {
+      console.log('🔍 Loading all projects for admin...');
+      console.log('👤 Current user:', currentUser?.uid);
+      console.log('👑 Is admin:', isAdmin);
+      
+      // Only proceed if user is confirmed admin
+      if (!isAdmin) {
+        console.log('❌ User is not admin, cannot load all projects');
+        setAllProjects([]);
+        return;
+      }
+
       // Load both regular projects and user requests from all users
       const [projectsSnapshot, requestsSnapshot] = await Promise.all([
         getDocs(query(collection(db, 'projects'), orderBy('createdAt', 'desc'))),
@@ -202,9 +219,17 @@ export const useDashboardData = (currentUser: any) => {
       // Combine and filter out any projects without proper IDs
       const allProjectsCombined = [...projects, ...requests].filter(p => p.id && p.id.trim());
       
+      console.log('✅ Successfully loaded all projects:', {
+        totalProjects: projects.length,
+        totalRequests: requests.length,
+        combined: allProjectsCombined.length
+      });
+      
       setAllProjects(allProjectsCombined as Project[]);
     } catch (error) {
-      console.error('Error loading all projects:', error);
+      console.error('❌ Error loading all projects:', error);
+      // Set empty array on error
+      setAllProjects([]);
     } finally {
       setAllProjectsLoading(false);
     }
@@ -214,6 +239,16 @@ export const useDashboardData = (currentUser: any) => {
   const loadUserProjects = async (userId: string) => {
     setUserProjectsLoading(true);
     try {
+      console.log('🔍 Loading projects for user:', userId);
+      console.log('👑 Is admin:', isAdmin);
+      
+      // Only proceed if user is confirmed admin
+      if (!isAdmin) {
+        console.log('❌ User is not admin, cannot load other user projects');
+        setUserProjects([]);
+        return;
+      }
+
       // Load both regular projects and user requests
       const [projectsSnapshot, requestsSnapshot] = await Promise.all([
         getDocs(query(
@@ -244,7 +279,7 @@ export const useDashboardData = (currentUser: any) => {
       const validProjects = projects.filter(p => p.id && p.id.trim());
       const validRequests = requests.filter(r => r.id && r.id.trim());
       
-      console.log('Loaded projects:', {
+      console.log('✅ Loaded user projects:', {
         totalProjects: validProjects.length,
         totalRequests: validRequests.length,
         filteredOutProjects: projects.length - validProjects.length,
@@ -253,7 +288,9 @@ export const useDashboardData = (currentUser: any) => {
 
       setUserProjects([...validProjects, ...validRequests] as Project[]);
     } catch (error) {
-      console.error('Error loading user projects:', error);
+      console.error('❌ Error loading user projects:', error);
+      // Set empty array on error
+      setUserProjects([]);
     } finally {
       setUserProjectsLoading(false);
     }

@@ -1,7 +1,9 @@
 export { default as AddFeatureModal } from './AddFeatureModal';
 export { default as AddAPIKeyModal } from './AddAPIKeyModal';
+export { default as AddRequiredAPIKeyModal } from './AddRequiredAPIKeyModal';
 export { default as AddUIDesignModal } from './AddUIDesignModal';
 export { default as AddDNSRecordsModal } from './AddDNSRecordsModal';
+export { default as AddRequiredDNSRecordModal } from './AddRequiredDNSRecordModal';
 export { default as ChatModal } from './ChatModal';
 export { default as CreateProjectModal } from './CreateProjectModal';
 export { default as EditProjectModal } from './EditProjectModal';
@@ -13,4 +15,5 @@ export { default as ProjectDetailsModal } from './ProjectDetailsModal';
 export { default as SendMessageModal } from './SendMessageModal';
 export { default as SignupModal } from './SignupModal';
 export { default as UserManagementModal } from './UserManagementModal';
-export { default as UserRequestedProjectModal } from './UserRequestedProjectModal'; 
+export { default as UserRequestedProjectModal } from './UserRequestedProjectModal';
+export { default as SecureDeleteProjectModal } from './SecureDeleteProjectModal'; 

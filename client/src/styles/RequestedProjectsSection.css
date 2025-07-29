@@ -205,14 +205,7 @@
   transition: all 0.2s ease;
 }
 
-.features-header:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-}
-
-.features-header.clickable:hover {
-  background: #e2e8f0;
-}
+/* Removed hover effects on features header */
 
 .features-title {
   display: flex;

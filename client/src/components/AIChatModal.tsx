@@ -109,7 +109,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onNextStep, 
   const { currentUser } = useAuth();
   const getInitialMessage = () => {
     if (mode === 'feature-request') {
-      return `👋 Welcome to Ontogeny Labs Feature Consultant!\n\nI'm here to help you define a new feature for your project "${project?.name}". Let's work together to create a detailed feature specification that our development team can implement.\n\n🎯 **What I need from you:**\n• Describe the feature you want to add\n• Explain why this feature is needed\n• Share any specific functionality requirements\n• Mention any API integrations needed\n\nThe more detail you provide, the better I can help you refine and organize your feature requirements. What feature would you like to add to ${project?.name}?`;
+      return `👋 Welcome! I'm your Feature Consultant for "${project?.name}".\n\nI'll help you define a new feature by asking specific questions and building on everything you tell me. I never repeat questions and always acknowledge what you've shared.\n\n🚀 **Let's start simple:**\nWhat new feature do you want to add to ${project?.name}?\n\n💡 *Examples: "Mailgun email integration", "Stripe payment processing", "User dashboard", "PDF export", etc.*`;
     } else {
       return "👋 Welcome to Ontogeny Labs Project Consultant!\n\nI'm here to help you define the features for your new software project. Let's work together to create a comprehensive feature list that our development team can bring to life.\n\n🎯 **What I need from you:**\n• Tell me about your project idea\n• Describe the features you envision\n• Share any specific requirements or goals\n\nThe more detail you provide, the better I can help you refine and organize your feature requirements. What project are you thinking about building?";
     }
@@ -138,12 +138,45 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onNextStep, 
   }, [messages]);
 
   useEffect(() => {
-    if (isOpen && !conversationId) {
-      // Create new conversation when modal opens
-      const newConversationId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      setConversationId(newConversationId);
+    if (isOpen && !conversationId && currentUser) {
+      // Create new conversation when modal opens with proper initialization
+      const initializeConversation = async () => {
+        try {
+          const newConversationId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          
+          // Create conversation metadata in Firestore for better tracking
+          const { collection, addDoc } = await import('firebase/firestore');
+          const { db } = await import('../firebase');
+          
+          await addDoc(collection(db, 'conversation_metadata'), {
+            id: newConversationId,
+            userId: currentUser.uid,
+            title: mode === 'feature-request' ? `Feature Discussion for ${project?.name}` : 'New Project Planning',
+            mode,
+            status: 'active',
+            projectId: project?.id,
+            projectName: project?.name,
+            messageCount: 1, // Initial AI message
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            lastActivity: new Date(),
+            tags: [mode, project?.name || 'new-project'].filter(Boolean)
+          });
+          
+          setConversationId(newConversationId);
+          console.log(`✅ Conversation initialized: ${newConversationId} for ${mode}`);
+          
+        } catch (error) {
+          console.error('❌ Error initializing conversation:', error);
+          // Fallback to simple ID generation
+          const newConversationId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          setConversationId(newConversationId);
+        }
+      };
+      
+      initializeConversation();
     }
-  }, [isOpen, conversationId]);
+  }, [isOpen, conversationId, currentUser, mode, project]);
 
   const submitProjectRequest = async (projectName: string, features: string, description: string) => {
     if (!currentUser) return false;
@@ -237,7 +270,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onNextStep, 
           }
         }
         
-        // Save conversation
+        // Save conversation with enhanced metadata
         if (currentUser) {
           const conversation: Conversation = {
             id: conversationId,
@@ -250,8 +283,33 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onNextStep, 
           
           try {
             await aiService.saveConversation(conversation);
+            
+            // Update metadata with current status
+            const { collection, query, where, getDocs, updateDoc } = await import('firebase/firestore');
+            const { db } = await import('../firebase');
+            
+            const metadataQuery = query(
+              collection(db, 'conversation_metadata'),
+              where('id', '==', conversationId)
+            );
+            
+            const metadataSnapshot = await getDocs(metadataQuery);
+            
+            if (!metadataSnapshot.empty) {
+              const metadataDoc = metadataSnapshot.docs[0];
+              await updateDoc(metadataDoc.ref, {
+                messageCount: finalMessages.length,
+                updatedAt: new Date(),
+                lastActivity: new Date(),
+                                 contextQuality: 'good', // Will be analyzed by aiService
+                hasProjectSubmission: response.shouldSubmitProject || false
+              });
+            }
+            
+            console.log(`✅ Conversation saved with metadata: ${conversationId}`);
+            
           } catch (error) {
-            console.error('Error saving conversation:', error);
+            console.error('❌ Error saving conversation:', error);
           }
         }
       } else {

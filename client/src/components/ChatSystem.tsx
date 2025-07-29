@@ -354,11 +354,11 @@ const ChatSystem: React.FC<ChatSystemProps> = ({ currentUser, allUsers = [], pre
         }
       }
 
-      // Handle text message separately
+      // Handle text message separately (preserve formatting including line breaks)
       if (messageInput.trim()) {
         await addDoc(collection(db, 'chats', chatId, 'messages'), {
           senderId: currentUser.id,
-          content: messageInput.trim(),
+          content: messageInput, // Don't trim here to preserve formatting
           type: 'text',
           createdAt: new Date(),
           chatId
@@ -590,13 +590,19 @@ const ChatSystem: React.FC<ChatSystemProps> = ({ currentUser, allUsers = [], pre
                 >
                   <Paperclip size={20} />
                 </button>
-                <input
-                  type="text"
+                <textarea
                   placeholder={selectedImage ? "Add a message with your image..." : "Type your message..."}
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
                   onKeyPress={handleKeyPress}
                   className="message-input"
+                  rows={1}
+                  style={{
+                    resize: 'none',
+                    minHeight: '24px',
+                    maxHeight: '120px',
+                    overflow: 'auto'
+                  }}
                 />
                 <button 
                   className={`input-action-btn ${showEmojiPicker ? 'active' : ''}`}

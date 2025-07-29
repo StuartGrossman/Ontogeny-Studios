@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, User, Shield, Phone, Check, AlertCircle, Loader, Key, Lock, Smartphone } from 'lucide-react';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { 
   multiFactor, 
   PhoneAuthProvider, 
@@ -80,6 +80,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, currentUse
         }
         setRecaptchaVerifier(null);
       }
+      
+      // Remove the reCAPTCHA container
+      const container = document.getElementById('recaptcha-container');
+      if (container) {
+        container.remove();
+      }
     };
   }, [isOpen, currentUser]);
 
@@ -93,6 +99,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, currentUse
         console.warn('Error clearing reCAPTCHA on modal close:', error);
       }
       setRecaptchaVerifier(null);
+      
+      // Remove the reCAPTCHA container
+      const container = document.getElementById('recaptcha-container');
+      if (container) {
+        container.remove();
+      }
     }
   }, [isOpen]);
 
@@ -104,35 +116,31 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, currentUse
 
   const initializeRecaptcha = async () => {
     try {
-      // Clear any existing verifier first - but more safely
+      // Only initialize if we don't already have a verifier
       if (recaptchaVerifier) {
-        try {
-          // Try to clear - if it fails, the verifier was already destroyed
-          recaptchaVerifier.clear();
-          console.log('Successfully cleared existing reCAPTCHA verifier');
-        } catch (clearError) {
-          console.warn('reCAPTCHA verifier was already destroyed or invalid:', clearError);
-        }
-        setRecaptchaVerifier(null);
+        console.log('reCAPTCHA verifier already exists, skipping initialization');
+        return;
       }
 
       if (auth.currentUser) {
-        console.log('Initializing reCAPTCHA verifier with render()');
+        console.log('Initializing reCAPTCHA verifier...');
         
-        // Wait longer to ensure everything is cleaned up
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Ensure the container exists and is completely clean
-        const container = document.getElementById('recaptcha-container');
-        if (container) {
-          container.innerHTML = '';
-          // Force DOM reflow
-          container.offsetHeight;
+        // Create a completely new container each time
+        const existingContainer = document.getElementById('recaptcha-container');
+        if (existingContainer) {
+          existingContainer.remove();
         }
+        
+        // Create new container
+        const newContainer = document.createElement('div');
+        newContainer.id = 'recaptcha-container';
+        newContainer.style.position = 'absolute';
+        newContainer.style.left = '-9999px';
+        newContainer.style.top = '-9999px';
+        document.body.appendChild(newContainer);
         
         console.log('Creating new reCAPTCHA verifier...');
         
-        // Create fresh verifier
         const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
           size: 'invisible',
           callback: () => {
@@ -160,8 +168,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, currentUse
         setRecaptchaVerifier(verifier);
         console.log('reCAPTCHA verifier initialized and rendered successfully');
         
-        // Wait longer to ensure verifier is completely stable
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Wait a bit to ensure verifier is stable
+        await new Promise(resolve => setTimeout(resolve, 1000));
         console.log('reCAPTCHA verifier ready for use');
       }
     } catch (error) {
@@ -368,34 +376,17 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, currentUse
     setError('');
     
     try {
-            // ALWAYS create fresh verifier to avoid lifecycle issues (especially in development)
-      console.log('Creating fresh reCAPTCHA verifier for phone verification...');
-      
-      // Clear any existing verifier
-      if (recaptchaVerifier) {
-        try {
-          recaptchaVerifier.clear();
-          console.log('Cleared existing verifier before creating fresh one');
-        } catch (clearError) {
-          console.warn('Error clearing existing verifier:', clearError);
-        }
-        setRecaptchaVerifier(null);
-      }
-      
-      // Wait for complete cleanup
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Initialize fresh verifier
-      await initializeRecaptcha();
-      
-      // Wait longer for the fresh verifier to be completely ready
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      // Ensure we have a valid reCAPTCHA verifier
       if (!recaptchaVerifier) {
-        throw new Error('Failed to initialize fresh reCAPTCHA verifier. Please refresh the page and try again.');
+        console.log('No reCAPTCHA verifier found, initializing...');
+        await initializeRecaptcha();
+        
+        if (!recaptchaVerifier) {
+          throw new Error('Failed to initialize reCAPTCHA verifier. Please refresh the page and try again.');
+        }
       }
       
-      console.log('Fresh reCAPTCHA verifier is ready, proceeding with phone verification...');
+      console.log('Using existing reCAPTCHA verifier for phone verification...');
 
       // Get a fresh multi-factor session
       const multiFactorUser = multiFactor(auth.currentUser);
@@ -585,43 +576,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, currentUse
     }
   };
 
-  const disablePhoneVerification = async () => {
-    if (!auth.currentUser) return;
-    
-    setPhoneVerificationLoading(true);
-    setError('');
-    
-    try {
-      const multiFactorUser = multiFactor(auth.currentUser);
-      const enrolledFactors = multiFactorUser.enrolledFactors;
-      const phoneFactors = enrolledFactors.filter(factor => factor.factorId === 'phone');
-      
-      for (const factor of phoneFactors) {
-        await multiFactorUser.unenroll(factor);
-      }
-      
-      setIsPhoneVerified(false);
-      setPhoneNumber('');
-      setVerificationCode('');
-      setVerificationId('');
-      setPhoneVerificationSteps(prev => prev.map(step => ({
-        ...step,
-        status: step.step === 1 ? 'active' : 'pending'
-      })));
-      
-      setSuccess('Phone verification disabled');
-    } catch (error: any) {
-      console.error('Disable phone verification error:', error);
-      if (error.code === 'auth/requires-recent-login') {
-        setError('For security, you need to sign in again before disabling 2FA.');
-        setShowReauthModal(true);
-      } else {
-        setError(error.message || 'Failed to disable phone verification');
-      }
-    } finally {
-      setPhoneVerificationLoading(false);
-    }
-  };
+
 
   const updateSecondaryPassword = async () => {
     if (!currentUser) return;
@@ -641,20 +596,100 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, currentUse
     setSuccess('');
     
     try {
+      // Update the secondary password in Firestore
       await updateDoc(doc(db, 'users', currentUser.uid), {
         secondaryPassword: newSecondaryPassword
       });
+      
+      // Update API and DNS requests with the new password
+      await updateAPIAndDNSRequests(newSecondaryPassword);
       
       setHasSecondaryPassword(true);
       setNewSecondaryPassword('');
       setConfirmSecondaryPassword('');
       setShowPasswordChangeFlow(false);
       setTwoFactorAction(null);
-      setSuccess('Secondary password updated successfully');
+      setSuccess('Secondary password updated successfully. API and DNS requests have been updated.');
     } catch (error: any) {
       setError(error.message || 'Failed to update secondary password');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateAPIAndDNSRequests = async (newPassword: string) => {
+    try {
+      console.log('🔄 Updating API and DNS requests with new secondary password...');
+      
+      // Get all user's projects
+      const projectsQuery = query(
+        collection(db, 'projects'),
+        where('userId', '==', currentUser.uid),
+        where('status', 'in', ['planning', 'in-progress'])
+      );
+      
+      const projectsSnapshot = await getDocs(projectsQuery);
+      const projects = projectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      console.log(`📋 Found ${projects.length} active projects for user`);
+      
+      let updatedRequests = 0;
+      
+      // Update each project's API and DNS requests
+      for (const project of projects) {
+        try {
+          // Update API key requests
+          const apiKeysQuery = query(
+            collection(db, 'admin_projects', project.id, 'required_api_keys'),
+            where('status', '==', 'pending')
+          );
+          
+          const apiKeysSnapshot = await getDocs(apiKeysQuery);
+          const apiKeyUpdates = apiKeysSnapshot.docs.map(doc => 
+            updateDoc(doc.ref, {
+              lastUpdated: new Date(),
+              passwordUpdatedAt: new Date()
+            })
+          );
+          
+          if (apiKeyUpdates.length > 0) {
+            await Promise.all(apiKeyUpdates);
+            updatedRequests += apiKeyUpdates.length;
+            console.log(`✅ Updated ${apiKeyUpdates.length} API key requests for project ${project.id}`);
+          }
+          
+          // Update DNS record requests
+          const dnsRecordsQuery = query(
+            collection(db, 'admin_projects', project.id, 'required_dns_records'),
+            where('status', '==', 'pending')
+          );
+          
+          const dnsRecordsSnapshot = await getDocs(dnsRecordsQuery);
+          const dnsRecordUpdates = dnsRecordsSnapshot.docs.map(doc => 
+            updateDoc(doc.ref, {
+              lastUpdated: new Date(),
+              passwordUpdatedAt: new Date()
+            })
+          );
+          
+          if (dnsRecordUpdates.length > 0) {
+            await Promise.all(dnsRecordUpdates);
+            updatedRequests += dnsRecordUpdates.length;
+            console.log(`✅ Updated ${dnsRecordUpdates.length} DNS record requests for project ${project.id}`);
+          }
+          
+        } catch (projectError) {
+          console.warn(`⚠️ Error updating requests for project ${project.id}:`, projectError);
+          // Continue with other projects even if one fails
+        }
+      }
+      
+      console.log(`🎉 Successfully updated ${updatedRequests} total API and DNS requests`);
+      
+    } catch (error) {
+      console.error('❌ Error updating API and DNS requests:', error);
+      // Don't throw error here - password update should still succeed
+      // Just log the error for debugging
     }
   };
 
@@ -666,18 +701,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, currentUse
       return;
     }
     
-    // If 2FA is enabled, start the 2FA verification process for password change
-    setTwoFactorAction('change-password');
+    // If 2FA is already enabled, allow direct password change
+    setShowPasswordChangeFlow(true);
+    setTwoFactorAction(null);
     setError('');
-    setSuccess('Please verify your identity with 2FA to change your secondary password.');
-    
-    // Reset verification state for password change flow
-    setVerificationCode('');
-    setVerificationId('');
-    setPhoneVerificationSteps(prev => prev.map(step => ({
-      ...step,
-      status: step.step === 1 ? 'completed' : step.step === 2 ? 'active' : 'pending'
-    })));
+    setSuccess('You can now change your secondary password.');
   };
 
   const resetMessages = () => {
@@ -705,50 +733,65 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, currentUse
   if (!isOpen) return null;
 
   return (
-    <div className="settings-overlay">
-      <div className="settings-modal-enhanced">
-        <div className="settings-header">
-          <h2>Account Settings</h2>
-          <button className="close-btn" onClick={onClose}>
-            <X size={20} />
-          </button>
-        </div>
+    <div className="settings-page-inline">
+      <div className="settings-content-inline">
+
 
         <div className="settings-content">
-          <div className="settings-sidebar">
-            <button 
-              className={`sidebar-item ${activeSection === 'profile' ? 'active' : ''}`}
-              onClick={() => {
-                setActiveSection('profile');
-                resetMessages();
-                resetPasswordFlow();
-              }}
-            >
-              <User size={18} />
-              Profile
-            </button>
-            <button 
-              className={`sidebar-item ${activeSection === 'two-factor' ? 'active' : ''}`}
-              onClick={() => {
-                setActiveSection('two-factor');
-                resetMessages();
-                resetPasswordFlow();
-              }}
-            >
-              <Smartphone size={18} />
-              Two-Factor Auth
-            </button>
-            <button 
-              className={`sidebar-item ${activeSection === 'secondary-password' ? 'active' : ''}`}
-              onClick={() => {
-                setActiveSection('secondary-password');
-                resetMessages();
-                resetPasswordFlow();
-              }}
-            >
-              <Lock size={18} />
-              Secondary Password
-            </button>
+          {/* Secondary Navigation Bar - Updated to match ProjectNavbar design */}
+          <div className="settings-secondary-navbar">
+            <div className="settings-navbar-content">
+              <div className="settings-navbar-left">
+                <div className="settings-navbar-header">
+                  <User size={20} />
+                  <span>Account Settings</span>
+                </div>
+              </div>
+              
+              <div className="settings-navbar-center">
+                <div className="settings-nav-items">
+                  <button 
+                    className={`settings-nav-item ${activeSection === 'profile' ? 'active' : ''}`}
+                    onClick={() => {
+                      setActiveSection('profile');
+                      resetMessages();
+                      resetPasswordFlow();
+                    }}
+                  >
+                    <User size={16} />
+                    <span>Profile</span>
+                  </button>
+                  <button 
+                    className={`settings-nav-item ${activeSection === 'two-factor' ? 'active' : ''}`}
+                    onClick={() => {
+                      setActiveSection('two-factor');
+                      resetMessages();
+                      resetPasswordFlow();
+                    }}
+                  >
+                    <Smartphone size={16} />
+                    <span>Two-Factor Auth</span>
+                  </button>
+                  <button 
+                    className={`settings-nav-item ${activeSection === 'secondary-password' ? 'active' : ''}`}
+                    onClick={() => {
+                      setActiveSection('secondary-password');
+                      resetMessages();
+                      resetPasswordFlow();
+                    }}
+                  >
+                    <Lock size={16} />
+                    <span>Secondary Password</span>
+                  </button>
+                </div>
+              </div>
+              
+              <div className="settings-navbar-right">
+                <button className="settings-close-btn" onClick={onClose}>
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="settings-main">
@@ -963,14 +1006,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, currentUse
                       <h4>Two-Factor Authentication Enabled</h4>
                       <p>Your account is protected with SMS verification.</p>
                     </div>
-                    <button
-                      className="action-btn secondary"
-                      onClick={disablePhoneVerification}
-                      disabled={phoneVerificationLoading}
-                    >
-                      {phoneVerificationLoading ? <Loader size={16} className="spinning" /> : <Phone size={16} />}
-                      Disable 2FA
-                    </button>
                   </div>
                 )}
               </div>
@@ -1020,7 +1055,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, currentUse
                 {isPhoneVerified && !showPasswordChangeFlow && (
                   <div className="password-actions">
                     <h4>{hasSecondaryPassword ? 'Change Secondary Password' : 'Set Secondary Password'}</h4>
-                    <p>Two-factor authentication is required to {hasSecondaryPassword ? 'change' : 'set'} your secondary password.</p>
+                    <p>Two-factor authentication is enabled. You can now {hasSecondaryPassword ? 'change' : 'set'} your secondary password.</p>
                     
                     <button
                       className="action-btn primary"
@@ -1098,47 +1133,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, currentUse
                   </div>
                 )}
 
-                {twoFactorAction === 'change-password' && !showPasswordChangeFlow && (
-                  <div className="two-factor-verification">
-                    <h4>Verify Your Identity</h4>
-                    <p>Enter the verification code sent to your phone to proceed with password change.</p>
-                    
-                    <div className="verification-code-group">
-                      <input
-                        type="text"
-                        value={verificationCode}
-                        onChange={(e) => setVerificationCode(e.target.value)}
-                        placeholder="Enter 6-digit code"
-                        className="form-input-enhanced verification-code-input"
-                        maxLength={6}
-                        disabled={phoneVerificationLoading}
-                      />
-                      <button
-                        className="action-btn primary"
-                        onClick={verifyPhoneCode}
-                        disabled={phoneVerificationLoading || !verificationCode.trim()}
-                      >
-                        {phoneVerificationLoading ? <Loader size={16} className="spinning" /> : <Check size={16} />}
-                        Verify
-                      </button>
-                      <button
-                        className="resend-code-btn"
-                        onClick={sendPhoneVerification}
-                        disabled={phoneVerificationLoading}
-                      >
-                        Resend Code
-                      </button>
-                    </div>
 
-                    <button
-                      className="action-btn secondary"
-                      onClick={resetPasswordFlow}
-                      disabled={phoneVerificationLoading}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -1203,8 +1198,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, currentUse
           </div>
         )}
         
-        {/* Hidden reCAPTCHA container */}
-        <div id="recaptcha-container"></div>
+        {/* reCAPTCHA container is created dynamically */}
       </div>
     </div>
   );

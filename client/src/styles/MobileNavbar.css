@@ -1,0 +1,238 @@
+/* Mobile Navbar Styles */
+.mobile-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #000000;
+  border-bottom: 1px solid #333333;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+  z-index: 1000;
+  height: 60px;
+}
+
+.mobile-navbar-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  height: 100%;
+}
+
+.mobile-navbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.mobile-navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.mobile-navbar-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+}
+
+.mobile-navbar-text {
+  font-size: 1.125rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ffffff 0%, #cccccc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.mobile-navbar-right {
+  display: flex;
+  align-items: center;
+}
+
+.mobile-navbar-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: #333333;
+  color: #ffffff;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mobile-navbar-menu-btn:hover {
+  background: #ffffff;
+  color: #000000;
+}
+
+/* Mobile Menu Overlay */
+.mobile-navbar-overlay {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  backdrop-filter: blur(4px);
+}
+
+.mobile-navbar-menu {
+  background: #000000;
+  height: 100%;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* User Info Section */
+.mobile-navbar-user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.mobile-navbar-user-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.mobile-navbar-user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mobile-navbar-user-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.mobile-navbar-user-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-navbar-user-email {
+  font-size: 0.875rem;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Navigation Items */
+.mobile-navbar-nav-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mobile-navbar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: none;
+  border: none;
+  color: #64748b;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.mobile-navbar-nav-item:hover {
+  background: rgba(102, 126, 234, 0.1);
+  color: #1e293b;
+}
+
+.mobile-navbar-nav-item.logout-item {
+  color: #ef4444;
+}
+
+.mobile-navbar-nav-item.logout-item:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+/* Section Styling */
+.mobile-navbar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mobile-navbar-section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  padding: 0.5rem 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .mobile-navbar-content {
+    padding: 0 0.75rem;
+  }
+  
+  .mobile-navbar-icon {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .mobile-navbar-text {
+    font-size: 1rem;
+  }
+  
+  .mobile-navbar-menu {
+    padding: 0.75rem;
+  }
+  
+  .mobile-navbar-user-info {
+    padding: 0.75rem;
+  }
+  
+  .mobile-navbar-user-avatar {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .mobile-navbar-nav-item {
+    padding: 0.75rem;
+    font-size: 0.95rem;
+  }
+} 

@@ -113,13 +113,14 @@
 }
 
 .admin-toggle.is-admin {
-  background: #2c5282;
+  background: #000000;
   color: white;
-  border-color: #2c5282;
+  border-color: #000000;
 }
 
 .admin-toggle.is-admin:hover {
-  background: #2b6cb0;
+  background: #ffffff;
+  color: #000000;
 }
 
 @media (max-width: 768px) {

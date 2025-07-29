@@ -9,7 +9,6 @@ import {
   CreditCard, 
   Shield, 
   Bell, 
-  HelpCircle, 
   MessageSquare, 
   Calendar, 
   Download, 
@@ -38,6 +37,8 @@ interface SidebarProps {
   onSectionChange: (section: string) => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  onProjectSelect?: (project: any) => void;
+  projects?: any[];
 }
 
 interface ProjectStats {
@@ -54,7 +55,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   activeSection, 
   onSectionChange, 
   isCollapsed = false,
-  onToggleCollapse 
+  onToggleCollapse,
+  onProjectSelect,
+  projects = []
 }) => {
   const { currentUser } = useAuth();
   const [projectStats, setProjectStats] = useState<ProjectStats>({
@@ -66,9 +69,10 @@ const Sidebar: React.FC<SidebarProps> = ({
     inProgress: 0,
     overdue: 0
   });
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['projects']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['active-projects']));
   const [notifications, setNotifications] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
+
 
   // Ensure parent sections are expanded when child sections are active
   useEffect(() => {
@@ -79,23 +83,45 @@ const Sidebar: React.FC<SidebarProps> = ({
       newExpanded.add('projects');
     }
     
-    // If any statistics sub-item is active, expand statistics
-    if (['project-analytics', 'time-tracking', 'achievements'].includes(activeSection)) {
-      newExpanded.add('statistics');
-    }
-    
     // If any settings sub-item is active, expand settings
     if (['profile', 'payment', 'security', 'notifications'].includes(activeSection)) {
       newExpanded.add('settings');
     }
     
-    // If any help sub-item is active, expand help
-    if (['documentation', 'support-tickets', 'feature-requests'].includes(activeSection)) {
-      newExpanded.add('help');
-    }
+
     
     setExpandedSections(newExpanded);
   }, [activeSection]);
+
+  // Auto-expand active projects when sidebar is opened and there are active projects
+  useEffect(() => {
+    const activeProjects = projects.filter((p: any) => p.status === 'in-progress' || p.status === 'planning');
+    const completedProjects = projects.filter((p: any) => p.status === 'completed');
+    
+    console.log('🔄 Sidebar projects update:', {
+      totalProjects: projects.length,
+      activeProjects: activeProjects.length,
+      completedProjects: completedProjects.length,
+      isCollapsed,
+      activeProjectsList: activeProjects.map(p => ({ id: p.id, name: p.name || p.projectName, status: p.status }))
+    });
+    
+    if (!isCollapsed) {
+      const newExpanded = new Set(expandedSections);
+      
+      // Always auto-expand active projects section when sidebar is opened
+      newExpanded.add('active-projects');
+      console.log('✅ Auto-expanding active projects section');
+      
+      // Auto-expand completed projects if there are any
+      if (completedProjects.length > 0) {
+        newExpanded.add('completed-projects');
+        console.log('✅ Auto-expanding completed projects section');
+      }
+      
+      setExpandedSections(newExpanded);
+    }
+  }, [isCollapsed, projects]);
 
   useEffect(() => {
     if (currentUser) {
@@ -196,93 +222,69 @@ const Sidebar: React.FC<SidebarProps> = ({
     setExpandedSections(newExpanded);
   };
 
+
+
   const menuItems = [
+    // Enhanced project section with better organization
     {
-      id: 'request-new-project',
-      label: 'Request New Project',
-      icon: Plus,
-      description: 'Start a new project request',
-      badge: null,
-      isAction: true // This will trigger a modal instead of navigation
-    },
-    {
-      id: 'projects',
-      label: 'Projects',
-      icon: FileText,
-      description: 'Manage your projects',
-      badge: null,
+      id: 'active-projects',
+      label: 'Active Projects',
+      icon: Activity,
+      description: 'Projects in development',
+      badge: projects.filter((p: any) => p.status === 'in-progress' || p.status === 'planning').length,
+      badgeColor: 'green',
       isExpandable: true,
-      subItems: [
-        {
-          id: 'requested-projects',
-          label: 'Requested Projects',
-          icon: Plus,
-          description: 'Projects you\'ve requested',
-          badge: projectStats.pending > 0 ? projectStats.pending : null,
-          badgeColor: 'orange'
-        },
-        {
-          id: 'active-projects',
-          label: 'Active Projects',
-          icon: Activity,
-          description: 'Currently assigned projects',
-          badge: projectStats.inProgress > 0 ? projectStats.inProgress : null,
-          badgeColor: 'blue'
-        },
-        {
-          id: 'completed-projects',
-          label: 'Completed Projects',
-          icon: CheckCircle,
-          description: 'Finished projects',
-          badge: projectStats.completed > 0 ? projectStats.completed : null,
-          badgeColor: 'green'
-        }
-      ]
+      subItems: projects
+        .filter((project: any) => project.status === 'in-progress' || project.status === 'planning')
+        .map((project: any) => {
+          console.log('📋 Creating active project item:', {
+            id: project.id,
+            name: project.name || project.projectName,
+            status: project.status,
+            progress: project.progress
+          });
+          return {
+            id: `project-${project.id}`,
+            label: project.name || project.projectName || 'Unnamed Project',
+            icon: Activity,
+            description: `${project.status === 'in-progress' ? 'In Development' : 'Planning'} • ${project.progress || 0}% complete`,
+            isProject: true,
+            project: project,
+            progress: project.progress || 0,
+            status: project.status
+          };
+        })
     },
+    // Only show completed projects section if there are completed projects
+    ...(projects.filter((p: any) => p.status === 'completed').length > 0 ? [{
+      id: 'completed-projects',
+      label: 'Completed Projects',
+      icon: CheckCircle,
+      description: 'Finished projects',
+      badge: projects.filter((p: any) => p.status === 'completed').length,
+      badgeColor: 'blue',
+      isExpandable: true,
+      subItems: projects
+        .filter((project: any) => project.status === 'completed')
+        .map((project: any) => ({
+          id: `project-${project.id}`,
+          label: project.name || project.projectName || 'Unnamed Project',
+          icon: CheckCircle,
+          description: `Completed • ${project.progress || 100}%`,
+          isProject: true,
+          project: project,
+          progress: project.progress || 100,
+          status: project.status
+        }))
+    }] : []),
     {
       id: 'messages',
       label: 'Messages',
       icon: MessageCircle,
-      description: 'Direct messages and conversations',
       badge: unreadMessages > 0 ? unreadMessages : null,
       badgeColor: 'red'
     },
-    {
-      id: 'statistics',
-      label: 'Statistics',
-      icon: BarChart3,
-      description: 'Performance analytics',
-      badge: null,
-      isExpandable: true,
-      subItems: [
-        {
-          id: 'project-analytics',
-          label: 'Project Analytics',
-          icon: TrendingUp,
-          description: 'Project performance metrics'
-        },
-        {
-          id: 'time-tracking',
-          label: 'Time Tracking',
-          icon: Clock,
-          description: 'Time spent on projects'
-        },
-        {
-          id: 'achievements',
-          label: 'Achievements',
-          icon: Award,
-          description: 'Your accomplishments'
-        }
-      ]
-    },
-    {
-      id: 'calendar',
-      label: 'Calendar',
-      icon: Calendar,
-      description: 'Deadlines and meetings',
-      badge: projectStats.overdue > 0 ? projectStats.overdue : null,
-      badgeColor: 'red'
-    },
+    // Statistics and Calendar sections hidden for now
     {
       id: 'settings',
       label: 'Settings',
@@ -316,34 +318,6 @@ const Sidebar: React.FC<SidebarProps> = ({
           description: 'Email and push preferences'
         }
       ]
-    },
-    {
-      id: 'help',
-      label: 'Help & Support',
-      icon: HelpCircle,
-      description: 'Get assistance',
-      badge: null,
-      isExpandable: true,
-      subItems: [
-        {
-          id: 'documentation',
-          label: 'Documentation',
-          icon: FileText,
-          description: 'User guides and tutorials'
-        },
-        {
-          id: 'support-tickets',
-          label: 'Support Tickets',
-          icon: MessageSquare,
-          description: 'Get help from our team'
-        },
-        {
-          id: 'feature-requests',
-          label: 'Feature Requests',
-          icon: Star,
-          description: 'Suggest new features'
-        }
-      ]
     }
   ];
 
@@ -355,7 +329,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     return (
       <div key={item.id} className={`sidebar-item ${isSubItem ? 'sub-item' : ''}`}>
         <div
-          className={`sidebar-link ${isActive ? 'active' : ''} ${isCollapsed ? 'collapsed' : ''} ${item.isAction ? 'action-item' : ''}`}
+          className={`sidebar-link ${isActive ? 'active' : ''} ${isCollapsed ? 'collapsed' : ''} ${item.isAction ? 'action-item' : ''} ${item.isProject ? 'project-item' : ''}`}
           onClick={() => {
             if (item.isAction) {
               // Handle action items (like opening modals)
@@ -363,6 +337,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                 // This will be handled by the parent component
                 onSectionChange('open-project-modal');
               }
+            } else if (item.isProject && onProjectSelect) {
+              // Handle project selection
+              onProjectSelect(item.project);
             } else if (item.isExpandable && !isCollapsed) {
               toggleSection(item.id);
             } else {
@@ -381,6 +358,18 @@ const Sidebar: React.FC<SidebarProps> = ({
                   {item.description && (
                     <span className="sidebar-description">{item.description}</span>
                   )}
+                  {/* Project Progress Bar */}
+                  {item.isProject && item.progress !== undefined && (
+                    <div className="project-progress-mini">
+                      <div className="progress-bar-mini">
+                        <div 
+                          className="progress-fill-mini"
+                          style={{ width: `${item.progress}%` }}
+                        ></div>
+                      </div>
+                      <span className="progress-text-mini">{item.progress}%</span>
+                    </div>
+                  )}
                 </div>
                 <div className="sidebar-indicators">
                   {item.badge && (
@@ -393,6 +382,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                       {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                     </div>
                   )}
+                  {/* Project Status Indicator */}
+                  {item.isProject && item.status && (
+                    <div className={`project-status-indicator ${item.status}`}>
+                      <span className="status-dot-mini"></span>
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -402,7 +397,13 @@ const Sidebar: React.FC<SidebarProps> = ({
         {/* Sub-items */}
         {item.subItems && isExpanded && !isCollapsed && (
           <div className="sidebar-sub-items">
-            {item.subItems.map((subItem: any) => renderMenuItem(subItem, true))}
+            {item.subItems.length > 0 ? (
+              item.subItems.map((subItem: any) => renderMenuItem(subItem, true))
+            ) : (
+              <div className="sidebar-empty-state">
+                <span className="sidebar-empty-text">No {item.label.toLowerCase()} yet</span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -480,6 +481,8 @@ const Sidebar: React.FC<SidebarProps> = ({
           <ChevronRight className={`toggle-icon ${isCollapsed ? '' : 'rotated'}`} size={16} />
         </button>
       )}
+
+
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Users, RefreshCw, ArrowUp, ArrowDown, FolderPlus, CheckCircle, Edit3, MessageCircle, Folder, GitPullRequest, Star, Trash2, RotateCcw, Key } from 'lucide-react';
 import { UserAvatar } from '../utils/avatarGenerator';
 import APIKeysManagement from './APIKeysManagement';
+import SecureDeleteProjectModal from './modals/SecureDeleteProjectModal';
 import '../styles/Dashboard.css';
 
 interface User {
@@ -73,6 +74,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   currentUser,
 }) => {
   const [activeTab, setActiveTab] = useState<'active' | 'requested' | 'features' | 'api-keys'>('active');
+  const [showSecureDeleteModal, setShowSecureDeleteModal] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<{ id: string; name: string } | null>(null);
 
   // Filter projects based on active tab
   const getFilteredProjects = () => {
@@ -348,9 +351,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 className="delete-btn"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (window.confirm('Are you sure you want to delete this project? You can restore it later.')) {
-                                    onDeleteProject?.(project.id);
-                                  }
+                                  setProjectToDelete({
+                                    id: project.id,
+                                    name: project.name || project.projectName || 'Unknown Project'
+                                  });
+                                  setShowSecureDeleteModal(true);
                                 }}
                                 title="Delete project"
                               >
@@ -472,6 +477,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
       </div>
 
+      {/* Secure Delete Project Modal */}
+      {showSecureDeleteModal && projectToDelete && (
+        <SecureDeleteProjectModal
+          isOpen={showSecureDeleteModal}
+          onClose={() => {
+            setShowSecureDeleteModal(false);
+            setProjectToDelete(null);
+          }}
+          onConfirmDelete={async () => {
+            if (onDeleteProject) {
+              await onDeleteProject(projectToDelete.id);
+            }
+          }}
+          projectId={projectToDelete.id}
+          projectName={projectToDelete.name}
+          currentUser={currentUser}
+        />
+      )}
     </div>
   );
 };

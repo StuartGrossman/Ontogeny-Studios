@@ -170,6 +170,106 @@ class ProjectService {
     }
   }
 
+  // Get active projects (in-progress and approved)
+  async getActiveProjects(userId: string): Promise<ProjectData[]> {
+    try {
+      console.log('getActiveProjects called with userId:', userId);
+      
+      if (!userId) {
+        console.error('getActiveProjects: userId is required');
+        throw new Error('User ID is required');
+      }
+
+      let projects: ProjectData[] = [];
+
+      try {
+        // Try the optimized query with composite index first
+        console.log('Attempting optimized query with composite index...');
+        const q = query(
+          collection(db, 'projects'),
+          where('userId', '==', userId),
+          where('status', 'in', ['in-progress', 'planning', 'approved']),
+          orderBy('createdAt', 'desc')
+        );
+
+        console.log('Executing Firestore query for active projects from "projects" collection...');
+        const querySnapshot = await getDocs(q);
+        console.log('Query completed, found', querySnapshot.size, 'documents');
+        
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          console.log('Processing project:', { id: doc.id, name: data.name, status: data.status });
+          projects.push({
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
+            updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : data.updatedAt,
+            features: data.features?.map((f: any) => ({
+              ...f,
+              createdAt: f.createdAt?.toDate ? f.createdAt.toDate() : f.createdAt,
+              updatedAt: f.updatedAt?.toDate ? f.updatedAt.toDate() : f.createdAt
+            })) || []
+          } as ProjectData);
+        });
+
+        console.log('Successfully processed', projects.length, 'active projects with optimized query');
+        console.log('Project names:', projects.map(p => p.name));
+        return projects;
+
+      } catch (indexError: any) {
+        // If the composite index isn't ready yet, fall back to a simpler query
+        if (indexError.code === 'failed-precondition' && indexError.message.includes('index')) {
+          console.log('Composite index not ready, falling back to simple query...');
+          
+          // Fallback: Get all projects for the user and filter in memory
+          const fallbackQuery = query(
+            collection(db, 'projects'),
+            where('userId', '==', userId),
+            orderBy('createdAt', 'desc')
+          );
+
+          const fallbackSnapshot = await getDocs(fallbackQuery);
+          console.log('Fallback query completed, found', fallbackSnapshot.size, 'documents');
+
+          fallbackSnapshot.forEach((doc) => {
+            const data = doc.data();
+            // Filter for active statuses in memory
+            if (['in-progress', 'planning', 'approved'].includes(data.status)) {
+              console.log('Processing project (fallback):', { id: doc.id, name: data.name, status: data.status });
+              projects.push({
+                id: doc.id,
+                ...data,
+                createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
+                updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : data.updatedAt,
+                features: data.features?.map((f: any) => ({
+                  ...f,
+                  createdAt: f.createdAt?.toDate ? f.createdAt.toDate() : f.createdAt,
+                  updatedAt: f.updatedAt?.toDate ? f.updatedAt.toDate() : f.updatedAt
+                })) || []
+              } as ProjectData);
+            }
+          });
+
+          console.log('Successfully processed', projects.length, 'active projects with fallback query');
+          console.log('Project names:', projects.map(p => p.name));
+          return projects;
+        } else {
+          // Re-throw if it's not an index error
+          throw indexError;
+        }
+      }
+
+    } catch (error: any) {
+      console.error('Error fetching active projects:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
+      throw new Error('Failed to fetch active projects');
+    }
+  }
+
   // Get project features for admin review
   async getProjectFeatures(projectId: string): Promise<Feature[]> {
     try {
@@ -482,4 +582,7 @@ class ProjectService {
 
 // Export singleton instance
 export const projectService = new ProjectService();
-export default projectService; 
+export default projectService;
+
+// Export individual functions for direct use
+export const getActiveProjects = (userId: string) => projectService.getActiveProjects(userId); 

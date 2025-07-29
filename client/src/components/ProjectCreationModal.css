@@ -137,13 +137,14 @@ textarea.form-input {
 }
 
 .submit-button {
-  background: #2c5282;
-  border: 1px solid #2c5282;
+  background: #000000;
+  border: 1px solid #000000;
   color: white;
 }
 
 .submit-button:hover {
-  background: #2b6cb0;
+  background: #ffffff;
+  color: #000000;
 }
 
 .cancel-button:disabled,

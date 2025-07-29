@@ -118,99 +118,30 @@ const Dashboard: React.FC = () => {
     console.log('Opening customer project:', project);
   };
 
-  // Show loading state with skeleton screen
+  // Show simple loading state
   if (dashboardData.loading) {
     return (
       <div className="dashboard">
-        <div className="dashboard-loading-overlay">
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <h2>Loading your dashboard...</h2>
-            <p>Preparing your workspace</p>
-          </div>
-          {/* Loading skeleton */}
-          <div className="dashboard-skeleton">
-            <div className="skeleton-navbar"></div>
-            <div className="skeleton-content">
-              <div className="skeleton-card"></div>
-              <div className="skeleton-card"></div>
-              <div className="skeleton-card"></div>
-            </div>
-          </div>
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="dashboard modern-dashboard">
-      {/* Main Dashboard Content with UX Improvements */}
+    <div className="dashboard">
       <div className="dashboard-container">
-        <main className="dashboard-main">
-          <div className="dashboard-content">
-            {/* Welcome Section - Aesthetic-Usability Effect */}
-            <div className="welcome-section">
-              <div className="welcome-content">
-                <h1>Welcome back, {currentUser?.displayName || 'User'}!</h1>
-                <p>Here's what's happening with your projects today.</p>
-                
-                {/* Quick Actions - Hick's Law (Limited choices) */}
-                <div className="quick-actions">
-                  <button 
-                    className="request-project-button"
-                    onClick={modals.openAIChat}
-                  >
-                    Start New Project
-                  </button>
-                </div>
-              </div>
-              
-              {/* Dashboard Metrics - Miller's Law (Chunked info) */}
-              <div className="dashboard-metrics">
-                <div className="metric-card">
-                  <div className="metric-icon">📊</div>
-                  <div className="metric-content">
-                    <span className="metric-number">
-                      {dashboardData.customerProjects?.filter(p => p.status === 'in-progress' || p.status === 'planning').length || 0}
-                    </span>
-                    <span className="metric-label">Active Projects</span>
-                  </div>
-                </div>
-                
-                <div className="metric-card">
-                  <div className="metric-icon">✅</div>
-                  <div className="metric-content">
-                    <span className="metric-number">
-                      {dashboardData.customerProjects?.filter(p => p.status === 'completed').length || 0}
-                    </span>
-                    <span className="metric-label">Completed</span>
-                  </div>
-                </div>
-                
-                <div className="metric-card">
-                  <div className="metric-icon">📋</div>
-                  <div className="metric-content">
-                    <span className="metric-number">
-                      {dashboardData.requestedProjects?.length || 0}
-                    </span>
-                    <span className="metric-label">Requests</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Main Content with Progressive Disclosure */}
-            <UserDashboard
-              customerProjects={dashboardData.customerProjects}
-              requestedProjects={dashboardData.requestedProjects}
-              customerProjectsLoading={dashboardData.customerProjectsLoading}
-              requestedProjectsLoading={dashboardData.requestedProjectsLoading}
-              onOpenAIChat={modals.openAIChat}
-              onOpenCustomerProject={handleOpenCustomerProject}
-              onFeatureRequest={handleFeatureRequest}
-            />
-          </div>
-        </main>
+        <UserDashboard
+          customerProjects={dashboardData.customerProjects}
+          requestedProjects={dashboardData.requestedProjects}
+          customerProjectsLoading={dashboardData.customerProjectsLoading}
+          requestedProjectsLoading={dashboardData.requestedProjectsLoading}
+          onOpenAIChat={modals.openAIChat}
+          onOpenCustomerProject={handleOpenCustomerProject}
+          onFeatureRequest={handleFeatureRequest}
+        />
       </div>
 
       {/* Modals */}

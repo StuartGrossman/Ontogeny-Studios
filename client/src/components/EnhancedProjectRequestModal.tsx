@@ -11,6 +11,8 @@ interface UIFeature {
   complexity: 'Simple' | 'Moderate' | 'Complex';
   timeEstimate: number;
   isCustom?: boolean;
+  status?: string;
+  createdAt?: Date;
 }
 
 // For backwards compatibility
@@ -23,6 +25,8 @@ interface ProjectData {
   totalTimeEstimate: number;
   estimatedCost: number;
   timeline: string;
+  isNewProject?: boolean;
+  selectedProjectId?: string;
 }
 
 interface Message {
@@ -36,12 +40,19 @@ interface EnhancedProjectRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (projectData: ProjectData) => void;
+  activeProjects?: Array<{
+    id: string;
+    name?: string;
+    projectName?: string;
+    description?: string;
+  }>;
 }
 
 const EnhancedProjectRequestModal: React.FC<EnhancedProjectRequestModalProps> = ({
   isOpen,
   onClose,
-  onSubmit
+  onSubmit,
+  activeProjects = []
 }) => {
   const [step, setStep] = useState<'chat' | 'review'>('chat');
   const [messages, setMessages] = useState<Message[]>([
@@ -60,7 +71,9 @@ const EnhancedProjectRequestModal: React.FC<EnhancedProjectRequestModalProps> = 
     features: [],
     totalTimeEstimate: 0,
     estimatedCost: 0,
-    timeline: ''
+    timeline: '',
+    isNewProject: true,
+    selectedProjectId: ''
   });
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [editingFeature, setEditingFeature] = useState<string | null>(null);
@@ -323,7 +336,7 @@ What would you like to do next?`,
           id: 'social_1',
           title: 'User Profiles',
           description: 'Public user profiles with bio and activity',
-          category: 'Core Features',
+          category: 'Core Functionality',
           priority: 'High',
           complexity: 'Moderate',
           timeEstimate: 20
@@ -332,7 +345,7 @@ What would you like to do next?`,
           id: 'social_2',
           title: 'Post Creation',
           description: 'Create and share posts with text, images, and media',
-          category: 'Core Features',
+          category: 'Core Functionality',
           priority: 'High',
           complexity: 'Moderate',
           timeEstimate: 24
@@ -341,7 +354,7 @@ What would you like to do next?`,
           id: 'social_3',
           title: 'Follow System',
           description: 'Users can follow each other',
-          category: 'Core Features',
+          category: 'Core Functionality',
           priority: 'Medium',
           complexity: 'Moderate',
           timeEstimate: 16
@@ -350,7 +363,7 @@ What would you like to do next?`,
           id: 'social_4',
           title: 'Activity Feed',
           description: 'News feed showing user activities and posts',
-          category: 'Core Features',
+          category: 'Core Functionality',
           priority: 'Medium',
           complexity: 'Moderate',
           timeEstimate: 28
@@ -364,7 +377,7 @@ What would you like to do next?`,
         id: 'common_1',
         title: 'Email Notifications',
         description: 'Automated email notifications for important events',
-        category: 'Integrations',
+        category: 'Integration',
         priority: 'High',
         complexity: 'Moderate',
         timeEstimate: 16
@@ -373,7 +386,7 @@ What would you like to do next?`,
         id: 'common_2',
         title: 'User Dashboard',
         description: 'Main dashboard showing user overview and key metrics',
-        category: 'Core Features',
+        category: 'Core Functionality',
         priority: 'High',
         complexity: 'Moderate',
         timeEstimate: 20
@@ -389,7 +402,7 @@ What would you like to do next?`,
     // Extract feature information from natural language
     let title = '';
     let description = '';
-    let category: Feature['category'] = 'Core Features';
+    let category: Feature['category'] = 'Core Functionality';
     let priority: Feature['priority'] = 'Medium';
     let complexity: Feature['complexity'] = 'Moderate';
     let timeEstimate = 16;
@@ -398,34 +411,34 @@ What would you like to do next?`,
     if (lowerText.includes('payment') || lowerText.includes('stripe') || lowerText.includes('paypal')) {
       title = 'Payment Processing';
       description = 'Secure payment processing with multiple payment methods';
-      category = 'Integrations';
+      category = 'Integration';
       priority = 'High';
       complexity = 'Complex';
       timeEstimate = 32;
     } else if (lowerText.includes('notification') || lowerText.includes('email')) {
       title = 'Notification System';
       description = 'Send notifications to users via email and in-app';
-      category = 'Integrations';
+      category = 'Integration';
       priority = 'Medium';
       timeEstimate = 16;
     } else if (lowerText.includes('admin') || lowerText.includes('management')) {
       title = 'Admin Panel';
       description = 'Administrative interface for managing the application';
-      category = 'Admin';
+      category = 'Analytics';
       priority = 'High';
       complexity = 'Complex';
       timeEstimate = 40;
     } else if (lowerText.includes('chat') || lowerText.includes('messaging')) {
       title = 'Real-time Chat';
       description = 'Live messaging between users';
-      category = 'Core Features';
+      category = 'Communication';
       priority = 'High';
       complexity = 'Complex';
       timeEstimate = 36;
     } else if (lowerText.includes('search')) {
       title = 'Search Functionality';
       description = 'Search through content and data';
-      category = 'Core Features';
+      category = 'Core Functionality';
       priority = 'Medium';
       timeEstimate = 20;
     } else {
@@ -471,7 +484,7 @@ What would you like to do next?`,
       id: `custom_${Date.now()}`,
       title: 'New Feature',
       description: 'Click to edit this feature',
-      category: 'Core Features',
+      category: 'Core Functionality',
       priority: 'Medium',
       complexity: 'Moderate',
       timeEstimate: 8,
@@ -612,12 +625,12 @@ What would you like to do next?`,
                   {projectData.features.length > 0 && (
                     <div className="features-stats">
                       <div className="stat">
-                        <span className="stat-number">{projectData.totalTimeEstimate}h</span>
-                        <span className="stat-label">Time</span>
+                        <span className="stat-number">{projectData.totalTimeEstimate}</span>
+                        <span className="stat-label">Hours Est.</span>
                       </div>
                       <div className="stat">
-                        <span className="stat-number">${projectData.estimatedCost.toLocaleString()}</span>
-                        <span className="stat-label">Cost</span>
+                        <span className="stat-number">{projectData.timeline}</span>
+                        <span className="stat-label">Timeline</span>
                       </div>
                     </div>
                   )}
@@ -758,27 +771,103 @@ What would you like to do next?`,
               <div className="review-content">
                 <div className="review-layout">
                   <div className="project-details-section">
-                    <h4>Project Information</h4>
+                    <h4>Project Selection</h4>
+                    
+                    {/* Project Type Selection */}
                     <div className="form-group">
-                      <label>Project Name</label>
-                      <input
-                        type="text"
-                        value={projectData.name}
-                        onChange={(e) => setProjectData(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="Enter your project name"
-                        className="form-input"
-                      />
+                      <label>Choose Project Type</label>
+                      <div className="project-type-selection">
+                        <button
+                          type="button"
+                          className={`project-type-btn ${projectData.isNewProject ? 'active' : ''}`}
+                          onClick={() => setProjectData(prev => ({ 
+                            ...prev, 
+                            isNewProject: true, 
+                            selectedProjectId: '',
+                            name: prev.name || 'New Project'
+                          }))}
+                        >
+                          <Plus size={16} />
+                          Create New Project
+                        </button>
+                        {activeProjects.length > 0 && (
+                          <button
+                            type="button"
+                            className={`project-type-btn ${!projectData.isNewProject ? 'active' : ''}`}
+                            onClick={() => setProjectData(prev => ({ ...prev, isNewProject: false }))}
+                          >
+                            <List size={16} />
+                            Add to Existing Project
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <div className="form-group">
-                      <label>Project Description</label>
-                      <textarea
-                        value={projectData.description}
-                        onChange={(e) => setProjectData(prev => ({ ...prev, description: e.target.value }))}
-                        placeholder="Provide a detailed description"
-                        rows={4}
-                        className="form-textarea"
-                      />
-                    </div>
+
+                    {/* Existing Project Selection */}
+                    {!projectData.isNewProject && activeProjects.length > 0 && (
+                      <div className="form-group">
+                        <label>Select Existing Project</label>
+                        <select
+                          value={projectData.selectedProjectId}
+                          onChange={(e) => {
+                            const selectedProject = activeProjects.find(p => p.id === e.target.value);
+                            setProjectData(prev => ({ 
+                              ...prev, 
+                              selectedProjectId: e.target.value,
+                              name: selectedProject?.name || selectedProject?.projectName || 'Existing Project'
+                            }));
+                          }}
+                          className="form-select"
+                        >
+                          <option value="">Choose a project...</option>
+                          {activeProjects.map(project => (
+                            <option key={project.id} value={project.id}>
+                              {project.name || project.projectName || `Project ${project.id}`}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Project Details */}
+                    {projectData.isNewProject && (
+                      <>
+                        <div className="form-group">
+                          <label>Project Name</label>
+                          <input
+                            type="text"
+                            value={projectData.name}
+                            onChange={(e) => setProjectData(prev => ({ ...prev, name: e.target.value }))}
+                            placeholder="Enter your project name"
+                            className="form-input"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Project Description</label>
+                          <textarea
+                            value={projectData.description}
+                            onChange={(e) => setProjectData(prev => ({ ...prev, description: e.target.value }))}
+                            placeholder="Provide a detailed description"
+                            rows={4}
+                            className="form-textarea"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {/* Feature Request Details for Existing Projects */}
+                    {!projectData.isNewProject && (
+                      <div className="form-group">
+                        <label>Feature Request Details</label>
+                        <textarea
+                          value={projectData.description}
+                          onChange={(e) => setProjectData(prev => ({ ...prev, description: e.target.value }))}
+                          placeholder="Describe the features you want to add to this project..."
+                          rows={4}
+                          className="form-textarea"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div className="project-summary-section">
@@ -827,9 +916,14 @@ What would you like to do next?`,
                 <button 
                   className="submit-project-btn"
                   onClick={() => onSubmit(projectData)}
-                  disabled={!projectData.name || !projectData.description || projectData.features.length === 0}
+                  disabled={
+                    projectData.features.length === 0 || 
+                    !projectData.description ||
+                    (projectData.isNewProject && !projectData.name) ||
+                    (!projectData.isNewProject && !projectData.selectedProjectId)
+                  }
                 >
-                  Submit Project Request
+                  {projectData.isNewProject ? 'Submit New Project Request' : 'Submit Feature Request'}
                 </button>
               </div>
             </div>

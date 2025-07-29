@@ -6,6 +6,9 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
       allow read: if request.auth != null; // Allow reading other users for admin functionality
+      // Allow admins to list all users
+      allow list: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
     
     // Projects - users can read/write their own, admins can read/write all
@@ -16,12 +19,35 @@ service cloud.firestore {
       allow create: if request.auth != null && 
         (request.resource.data.userId == request.auth.uid || 
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+      // Allow admins to list all projects
+      allow list: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
     
     // Project requests - users can read/write their own, admins can read/write all  
     match /project-requests/{requestId} {
       allow read, write: if request.auth != null && 
         (resource.data.userId == request.auth.uid || 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+      // Allow admins to list all project requests
+      allow list: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
+    // Project requests (with underscore) - users can read/write their own, admins can read/write all  
+    match /project_requests/{requestId} {
+      allow read, write: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+      // Allow admins to list all project requests
+      allow list: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
+    // Project features - users can read features for their own projects, admins can read/write all
+    match /project_features/{featureId} {
+      allow read, write: if request.auth != null && 
+        (get(/databases/$(database)/documents/project_requests/$(resource.data.projectId)).data.userId == request.auth.uid || 
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
     }
     
@@ -33,6 +59,9 @@ service cloud.firestore {
       allow create: if request.auth != null && 
         (request.resource.data.requestedBy == request.auth.uid || 
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+      // Allow admins to list all user project requests
+      allow list: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
     
     // Admin projects - admins can read/write all, assigned users can read
@@ -94,6 +123,12 @@ service cloud.firestore {
       match /messages/{messageId} {
         allow read, create, update: if request.auth != null;
       }
+    }
+    
+    // Admin audit logs - admins can read/write, users cannot access
+    match /admin_audit_logs/{logId} {
+      allow read, write: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
   }
 } 

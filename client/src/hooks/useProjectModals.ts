@@ -9,6 +9,7 @@ interface ModalStates {
   meetingSchedulerModalOpen: boolean;
   featureRequestModalOpen: boolean;
   featureAssignmentModalOpen: boolean;
+  simpleFeatureRequestModalOpen: boolean;
 }
 
 interface ModalData {
@@ -19,6 +20,7 @@ interface ModalData {
   projectDetails: any;
   featureConversationData: any;
   featureRequestData: any;
+  selectedProjectForSimpleFeature: any;
 }
 
 export const useProjectModals = () => {
@@ -32,6 +34,7 @@ export const useProjectModals = () => {
     meetingSchedulerModalOpen: false,
     featureRequestModalOpen: false,
     featureAssignmentModalOpen: false,
+    simpleFeatureRequestModalOpen: false,
   });
 
   // Modal data
@@ -43,6 +46,7 @@ export const useProjectModals = () => {
     projectDetails: null,
     featureConversationData: null,
     featureRequestData: null,
+    selectedProjectForSimpleFeature: null,
   });
 
   // Helper function to update modal state
@@ -155,6 +159,16 @@ export const useProjectModals = () => {
     updateModalData('featureRequestData', null);
   };
 
+  const openSimpleFeatureRequestModal = (project: any) => {
+    updateModalData('selectedProjectForSimpleFeature', project);
+    updateModalState('simpleFeatureRequestModalOpen', true);
+  };
+
+  const closeSimpleFeatureRequestModal = () => {
+    updateModalState('simpleFeatureRequestModalOpen', false);
+    updateModalData('selectedProjectForSimpleFeature', null);
+  };
+
   // Workflow handlers
   const handleAIConsultationNextStep = (conversationData: any) => {
     closeAIChat();
@@ -224,6 +238,8 @@ export const useProjectModals = () => {
     closeFeatureRequestModal,
     openFeatureAssignmentModal,
     closeFeatureAssignmentModal,
+    openSimpleFeatureRequestModal,
+    closeSimpleFeatureRequestModal,
     
     // Workflow handlers
     handleAIConsultationNextStep,

@@ -406,7 +406,7 @@
 }
 
 .chat-body .send-button {
-  background: #4b5563;
+  background: #000000;
   color: white;
   border: none;
   border-radius: 50%;
@@ -421,7 +421,8 @@
 }
 
 .chat-body .send-button:hover:not(:disabled) {
-  background: #374151;
+  background: #ffffff;
+  color: #000000;
   transform: scale(1.05);
 }
 

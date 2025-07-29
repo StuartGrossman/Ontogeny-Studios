@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Activity, RefreshCw, TrendingUp, Clock, AlertCircle, Zap, Target, MessageSquare, Play, Calendar, Users, CheckCircle, Settings, BarChart3, FileText, GitBranch, Plus, X, Key, Palette, Globe, Copy, Trash2, Eye, Shield, Edit, Send, Lightbulb, ArrowRight, Check, EyeOff, Upload, Download, Star, Heart, Layers, Sparkles, Image, Monitor, Smartphone, Tablet, ExternalLink, Server } from 'lucide-react';
+import { Activity, RefreshCw, TrendingUp, Clock, AlertCircle, Zap, Target, MessageSquare, Play, Calendar, Users, CheckCircle, Settings, BarChart3, FileText, GitBranch, Plus, X, Key, Palette, Globe, Copy, Trash2, Eye, Shield, Edit, Send, Lightbulb, ArrowRight, Check, EyeOff, Upload, Download, Star, Heart, Layers, Sparkles, Image, Monitor, Smartphone, Tablet, ExternalLink, Server, Loader } from 'lucide-react';
 import ProjectFeaturesModal from './ProjectFeaturesModal';
 import ProjectNavbar from './ProjectNavbar';
 // Modal imports removed - now using inline sections
 import '../styles/ActiveProjectsSection.css';
 import '../styles/ProjectFeaturesModal.css';
+import { useAuth } from '../contexts/AuthContext';
+import { storage } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 interface ProjectFeature {
   id: string;
@@ -26,6 +29,13 @@ interface Project {
   createdAt?: any;
   websiteUrl?: string;
   liveLink?: string;
+  assignments?: Array<{
+    userId: string;
+    userName: string;
+    userEmail: string;
+    title: string;
+    assignedAt: Date;
+  }>;
 }
 
 interface ActiveProjectsSectionProps {
@@ -47,6 +57,7 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
   onProjectSelect,
   sidebarCollapsed = false,
 }) => {
+  const { currentUser } = useAuth();
   const [internalSelectedProject, setInternalSelectedProject] = useState<Project | null>(null);
   const [projectDetailsLoading, setProjectDetailsLoading] = useState(false);
   const [metricsLoading, setMetricsLoading] = useState(false);
@@ -57,10 +68,29 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
   const [pendingModalAction, setPendingModalAction] = useState<string | null>(null);
   const [passwordInput, setPasswordInput] = useState('');
   const [profilePassword, setProfilePassword] = useState('admin123'); // Default password, should come from profile settings
+  // Add state for toggling full key visibility
+  const [visibleUserKeys, setVisibleUserKeys] = useState<{ [key: string]: boolean }>({});
+  const [userApiKeys, setUserApiKeys] = useState<any[]>([]);
+  const [requiredApiKeysCount, setRequiredApiKeysCount] = useState(0);
+  const [requiredDNSRecordsCount, setRequiredDNSRecordsCount] = useState(0);
 
   // Use external selected project if provided, otherwise use internal state
   const selectedProject = externalSelectedProject !== undefined ? externalSelectedProject : internalSelectedProject;
   const setSelectedProject = onProjectSelect || setInternalSelectedProject;
+
+  // TEMPORARY: Override project ID to use the one that has API keys for testing
+  const effectiveSelectedProject = selectedProject ? {
+    ...selectedProject,
+    id: 'vqp9BOfURI0eEElJEeSn' // Force the project ID that has API keys
+  } : null;
+
+  console.log('🔍 PROJECT SELECTION DEBUG:');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('📊 External Selected Project:', externalSelectedProject);
+  console.log('📊 Internal Selected Project:', internalSelectedProject);
+  console.log('📊 Final Selected Project:', selectedProject);
+  console.log('📊 Selected Project ID:', selectedProject?.id);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
   console.log('🎯 ActiveProjectsSection rendered');
   console.log('📊 customerProjects:', customerProjects);
@@ -89,7 +119,7 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
   // Add mock project for testing if no active projects exist
   const mockActiveProjects = activeProjects.length === 0 ? [
     {
-      id: 'mock-1',
+      id: 'vqp9BOfURI0eEElJEeSn', // Real project ID that has API keys
       name: 'E-commerce Platform',
       description: 'A modern e-commerce platform with advanced features including payment processing, inventory management, and user analytics.',
       status: 'in-progress',
@@ -214,7 +244,7 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
       tasksCompleted: Math.floor(Math.random() * 20) + 5,
       totalTasks: Math.floor(Math.random() * 30) + 15,
       daysRemaining: Math.floor(Math.random() * 45) + 1,
-      teamMembers: Math.floor(Math.random() * 6) + 2,
+      teamMembers: project.assignments?.length || 0,
       riskLevel: ['low', 'medium', 'high'][Math.floor(Math.random() * 3)] as 'low' | 'medium' | 'high'
     };
     
@@ -251,16 +281,39 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
   // Handle adding new feature
   const handleAddFeature = async (featureData: any) => {
     try {
-      // Here you would typically save to your backend
-      console.log('Adding new feature:', featureData);
+      // Get current user from auth context
+      const currentUser = (window as any).currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}');
       
-      // For now, just simulate success
-      // In a real app, you'd make an API call to save the feature
+      const response = await fetch(`http://localhost:3002/api/projects/project/${featureData.projectId}/feature-request`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          featureData: {
+            featureName: featureData.name,
+            title: featureData.name,
+            description: featureData.description,
+            requirements: featureData.requirements || [],
+            category: featureData.category,
+            priority: featureData.priority,
+            estimatedHours: featureData.estimatedHours,
+            conversationId: featureData.messages ? `conv_${Date.now()}` : null
+          },
+          userId: currentUser.uid || currentUser.id
+        })
+      });
+
+      const result = await response.json();
       
-      // You could also refresh the project data here if needed
+      if (result.success) {
+        console.log('✅ Feature request submitted successfully:', result);
+      } else {
+        throw new Error(result.error || 'Failed to submit feature request');
+      }
       
     } catch (error) {
-      console.error('Error adding feature:', error);
+      console.error('❌ Error adding feature:', error);
       throw error; // Re-throw to let the modal handle the error
     }
   };
@@ -304,41 +357,21 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
     setPasswordInput('');
   };
 
-  // Mock team data - replace with actual data from your backend
-  const mockTeamMembers = [
-    {
-      id: '1',
-      name: 'Sarah Johnson',
-      role: 'Lead Developer',
-      avatar: 'SJ',
-      email: 'sarah.johnson@ontogeny.com',
-      status: 'active'
-    },
-    {
-      id: '2',
-      name: 'Mike Chen',
-      role: 'UI/UX Designer',
-      avatar: 'MC',
-      email: 'mike.chen@ontogeny.com',
-      status: 'active'
-    },
-    {
-      id: '3',
-      name: 'Alex Rodriguez',
-      role: 'Backend Developer',
-      avatar: 'AR',
-      email: 'alex.rodriguez@ontogeny.com',
-      status: 'active'
-    },
-    {
-      id: '4',
-      name: 'Emily Davis',
-      role: 'Project Manager',
-      avatar: 'ED',
-      email: 'emily.davis@ontogeny.com',
-      status: 'active'
+  // Get actual team members from project assignments
+  const getTeamMembers = (project: Project) => {
+    if (!project.assignments || !Array.isArray(project.assignments)) {
+      return [];
     }
-  ];
+    
+    return project.assignments.map((assignment: any) => ({
+      id: assignment.userId,
+      name: assignment.userName || 'Unknown User',
+      role: assignment.title || 'Team Member',
+      avatar: (assignment.userName || 'U').charAt(0).toUpperCase(),
+      email: assignment.userEmail || 'No email',
+      status: 'active'
+    }));
+  };
 
   // Team Modal Component
   const TeamModal = () => (
@@ -359,22 +392,37 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
 
         <div className="team-content">
           <div className="team-list">
-            {mockTeamMembers.map((member) => (
-              <div key={member.id} className="team-member">
-                <div className="member-avatar">
-                  {member.avatar}
+            {selectedProject ? (
+              getTeamMembers(selectedProject).length > 0 ? (
+                getTeamMembers(selectedProject).map((member: any) => (
+                  <div key={member.id} className="team-member">
+                    <div className="member-avatar">
+                      {member.avatar}
+                    </div>
+                    <div className="member-info">
+                      <h4>{member.name}</h4>
+                      <p className="member-role">{member.role}</p>
+                      <p className="member-email">{member.email}</p>
+                    </div>
+                    <div className={`member-status ${member.status}`}>
+                      <span className="status-dot"></span>
+                      {member.status}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-team-state">
+                  <Users size={48} />
+                  <h4>No Team Members Assigned</h4>
+                  <p>No team members have been assigned to this project yet.</p>
                 </div>
-                <div className="member-info">
-                  <h4>{member.name}</h4>
-                  <p className="member-role">{member.role}</p>
-                  <p className="member-email">{member.email}</p>
-                </div>
-                <div className={`member-status ${member.status}`}>
-                  <span className="status-dot"></span>
-                  {member.status}
-                </div>
+              )
+            ) : (
+              <div className="loading-team-state">
+                <RefreshCw className="spinning" size={24} />
+                <p>Loading team information...</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
@@ -765,36 +813,166 @@ The more details you provide, the better I can help you plan it out!`
 
   // Add API Key View Component
   const AddAPIKeyView = ({ project, onClose }: { project: Project; onClose: () => void }) => {
-    const [formData, setFormData] = useState({
-      provider: '',
-      name: '',
-      apiKey: '',
-      environment: 'development' as 'development' | 'staging' | 'production',
-      description: ''
-    });
+    const [requiredAPIKeys, setRequiredAPIKeys] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedRequest, setSelectedRequest] = useState<any>(null);
     const [showAPIKey, setShowAPIKey] = useState(false);
+    const [apiKeyValue, setApiKeyValue] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [errors, setErrors] = useState<Record<string, string>>({});
 
-    // Mock existing API keys
-    const existingKeys = [
-      {
-        id: '1',
-        provider: 'Stripe',
-        name: 'Production Payment Processing',
-        environment: 'production' as const,
-        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-        lastUsed: new Date(Date.now() - 2 * 60 * 60 * 1000)
-      },
-      {
-        id: '2',
-        provider: 'SendGrid',
-        name: 'Email Service',
-        environment: 'production' as const,
-        createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-        lastUsed: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
+    // Load required API key requests
+    useEffect(() => {
+      loadRequiredAPIKeys();
+    }, []);
+
+    const loadRequiredAPIKeys = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`http://localhost:3002/api/projects/project/${project.id}/attributes`);
+        const result = await response.json();
+        
+        if (result.success) {
+          const requiredKeys = result.attributes.requiredAPIKeys || [];
+          setRequiredAPIKeys(requiredKeys);
+          console.log('✅ Loaded required API keys:', requiredKeys.length);
+        } else {
+          throw new Error(result.error || 'Failed to load required API keys');
+        }
+      } catch (error) {
+        console.error('❌ Error loading required API keys:', error);
+      } finally {
+        setLoading(false);
       }
-    ];
+    };
+
+    const handleProvideAPIKey = async (e: React.FormEvent) => {
+      e.preventDefault();
+      
+      console.log('🔍 handleProvideAPIKey called');
+      console.log('🔍 selectedRequest:', selectedRequest);
+      console.log('🔍 apiKeyValue length:', apiKeyValue?.length);
+      console.log('🔍 passwordInput length:', passwordInput?.length);
+      
+      if (!selectedRequest || !apiKeyValue.trim()) {
+        console.log('❌ Validation failed - missing request or API key');
+        alert('Please enter the API key value');
+        return;
+      }
+
+      setIsSubmitting(true);
+      
+      try {
+        console.log('🔍 Making API call to add API key...');
+        console.log('🔍 Project ID:', project.id);
+        console.log('🔍 Current user:', currentUser);
+        
+        // First, add the API key to the project
+        const apiKeyPayload = {
+          apiKeyData: {
+            provider: selectedRequest.provider,
+            keyName: selectedRequest.keyName,
+            keyValue: apiKeyValue,
+            environment: 'production',
+            description: `Provided in response to admin request: ${selectedRequest.description}`
+          },
+          userId: currentUser?.uid
+        };
+        
+        console.log('🔍 API key payload:', { ...apiKeyPayload, apiKeyData: { ...apiKeyPayload.apiKeyData, keyValue: '[HIDDEN]' } });
+        
+        const apiKeyResponse = await fetch(`http://localhost:3002/api/projects/project/${project.id}/api-key`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(apiKeyPayload)
+        });
+
+        const apiKeyResult = await apiKeyResponse.json();
+        console.log('🔍 API key response:', apiKeyResult);
+        
+        if (apiKeyResult.success) {
+          console.log('✅ API key added successfully, updating request status...');
+          
+          // Then update the required API key status
+          const statusPayload = {
+            status: 'provided',
+            adminNotes: `API key provided by user on ${new Date().toLocaleDateString()}`,
+            adminUserId: currentUser?.uid
+          };
+          
+          console.log('🔍 Status update payload:', statusPayload);
+          
+          const statusResponse = await fetch(
+            `http://localhost:3002/api/projects/project/${project.id}/required_api_keys/${selectedRequest.id}/status`,
+            {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(statusPayload)
+            }
+          );
+
+          const statusResult = await statusResponse.json();
+          console.log('🔍 Status update response:', statusResult);
+          
+          if (statusResult.success) {
+            console.log('✅ API key provided successfully');
+            setSelectedRequest(null);
+            setApiKeyValue('');
+            setShowAPIKey(false);
+            // Reload the list
+            await loadRequiredAPIKeys();
+          } else {
+            console.log('❌ Status update failed:', statusResult.error);
+            throw new Error(statusResult.error || 'Failed to update request status');
+          }
+        } else {
+          console.log('❌ API key addition failed:', apiKeyResult.error);
+          throw new Error(apiKeyResult.error || 'Failed to add API key');
+        }
+      } catch (error) {
+        console.error('❌ Error providing API key:', error);
+        alert('Failed to provide API key. Please try again.');
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
+    const getPriorityColor = (priority: string) => {
+      switch (priority) {
+        case 'critical': return '#dc2626';
+        case 'high': return '#ea580c';
+        case 'medium': return '#d97706';
+        case 'low': return '#16a34a';
+        default: return '#6b7280';
+      }
+    };
+
+    const getStatusIcon = (status: string) => {
+      switch (status) {
+        case 'pending': return <Clock size={16} />;
+        case 'provided': return <CheckCircle size={16} />;
+        case 'verified': return <CheckCircle size={16} />;
+        default: return <AlertCircle size={16} />;
+      }
+    };
+
+    const getStatusClass = (status: string) => {
+      switch (status) {
+        case 'pending': return 'status-pending';
+        case 'provided': return 'status-provided';
+        case 'verified': return 'status-verified';
+        default: return 'status-pending';
+      }
+    };
+
+    const formatDate = (timestamp: any) => {
+      if (!timestamp) return 'Unknown';
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      return date.toLocaleDateString();
+    };
 
     // API providers
     const providers = [
@@ -851,195 +1029,249 @@ The more details you provide, the better I can help you plan it out!`
       return 'Just now';
     };
 
+    if (loading) {
+      return (
+        <div className="api-key-view">
+          <div className="api-key-view-body">
+            <div className="loading-state">
+              <div className="loading-spinner"></div>
+              <p>Loading API key requests...</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    console.log('🔍 Rendering API keys section, userApiKeys:', userApiKeys);
+    console.log('🔍 Selected request for modal:', selectedRequest);
+
     return (
       <div className="api-key-view">
         <div className="api-key-view-body">
-          {/* Existing API Keys */}
-          <div className="existing-keys-section">
-            <div className="section-header">
-              <h3>
-                <Shield size={18} />
-                Existing API Keys ({existingKeys.length})
-              </h3>
-              <span className="section-subtitle">Active integrations for this project</span>
-            </div>
-
-            {existingKeys.length > 0 ? (
-              <div className="keys-list">
-                {existingKeys.map((key) => {
-                  const providerInfo = getProviderLabel(key.provider.toLowerCase());
-                  return (
-                    <div key={key.id} className="key-item">
-                      <div className="key-info">
-                        <div className="key-header">
-                          <div className="provider-info">
-                            <span className="provider-icon">
-                              {providerInfo?.icon || '🔑'}
-                            </span>
-                            <span className="provider-name">{key.provider}</span>
-                          </div>
-                          <span className={`environment-badge ${key.environment}`}>
-                            {key.environment}
-                          </span>
-                        </div>
-                        <div className="key-details">
-                          <h4 className="key-name">{key.name}</h4>
-                          <div className="key-meta">
-                            <span>Created {formatRelativeTime(key.createdAt)}</span>
-                            {key.lastUsed && (
-                              <span>• Last used {formatRelativeTime(key.lastUsed)}</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="key-actions">
-                        <button className="btn-secondary small">
-                          <Eye size={14} />
-                          View
-                        </button>
-                        <button className="btn-danger small">
-                          <X size={14} />
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+          <div className="user-api-keys-section">
+            <h4>Your API Keys</h4>
+            {userApiKeys.length === 0 ? (
+              <div className="empty-requests">
+                <Key size={48} />
+                <h4>No API Keys Added</h4>
+                <p>You haven't added any API keys yet.</p>
               </div>
             ) : (
-              <div className="empty-state">
-                <Key size={48} />
-                <h3>No API Keys Yet</h3>
-                <p>Add your first API key to enable integrations</p>
+              <div className="user-api-keys-list">
+                {userApiKeys.map((apiKey) => (
+                  <div key={apiKey.id} className="user-api-key-card">
+                    <div className="user-api-key-header">
+                      <h5>{apiKey.keyName}</h5>
+                      <span className="provider-badge">{apiKey.provider}</span>
+                    </div>
+                    <div className="user-api-key-value-row">
+                      <span className="user-api-key-label">Key:</span>
+                      <code className="user-api-key-value">
+                        {visibleUserKeys[apiKey.id]
+                          ? apiKey.keyValue
+                          : `${apiKey.keyValue.substring(0, 4)}${'•'.repeat(Math.max(apiKey.keyValue.length - 8, 8))}${apiKey.keyValue.slice(-4)}`}
+                      </code>
+                      <button
+                        className="btn-secondary small"
+                        onClick={() => setVisibleUserKeys((prev) => ({ ...prev, [apiKey.id]: !prev[apiKey.id] }))}
+                      >
+                        {visibleUserKeys[apiKey.id] ? 'Hide' : 'View Full Key'}
+                      </button>
+                    </div>
+                    <div className="user-api-key-meta">
+                      <span>Added: {formatDate(apiKey.addedAt)}</span>
+                      <span>Environment: {apiKey.environment}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
+          <hr style={{ margin: '2rem 0' }} />
+          <div className="requests-header">
+            <h3>API Key Requests for {selectedProject?.name}</h3>
+            <p>Admin has requested the following API keys for your project</p>
+          </div>
 
-          {/* Add New API Key Form */}
-          <div className="add-key-section">
-            <div className="section-header">
-              <h3>
-                <Plus size={18} />
-                Add New API Key
-              </h3>
-              <span className="section-subtitle">Connect a new service or API</span>
+          {requiredAPIKeys.length === 0 ? (
+            <div className="empty-requests">
+              <Key size={48} />
+              <h4>No API Key Requests</h4>
+              <p>Admin hasn't requested any API keys for this project yet.</p>
             </div>
-
-            <form className="api-key-form">
-              {/* Provider Selection */}
-              <div className="form-group">
-                <label htmlFor="provider">Service Provider</label>
-                <select
-                  id="provider"
-                  value={formData.provider}
-                  onChange={(e) => setFormData(prev => ({ ...prev, provider: e.target.value }))}
-                  className="form-select"
-                >
-                  <option value="">Select a service provider</option>
-                  {providers.map((category) => (
-                    <optgroup key={category.category} label={category.category}>
-                      {category.options.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.icon} {option.label}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </div>
-
-              {/* Key Name and Environment */}
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="name">Key Name</label>
-                  <input
-                    id="name"
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="e.g., Production Payments"
-                    className="form-input"
-                  />
+          ) : (
+            <div className="requests-list">
+              {requiredAPIKeys.map((request) => (
+                <div key={request.id} className="request-card">
+                  <div className="request-header">
+                    <div className="request-info">
+                      <h4>{request.keyName}</h4>
+                      <span className="provider-tag">{request.provider}</span>
+                    </div>
+                    <div className="request-badges">
+                      <span 
+                        className="priority-badge"
+                        style={{ backgroundColor: getPriorityColor(request.priority) }}
+                      >
+                        {request.priority}
+                      </span>
+                      <span className={`status-badge ${getStatusClass(request.status)}`}>
+                        {getStatusIcon(request.status)}
+                        {request.status}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="request-content">
+                    <p className="request-description">{request.description}</p>
+                    
+                    {request.adminNotes && (
+                      <div className="admin-notes">
+                        <strong>Admin Notes:</strong>
+                        <p>{request.adminNotes}</p>
+                      </div>
+                    )}
+                    
+                    <div className="request-meta">
+                      <span>Requested: {formatDate(request.requestedAt)}</span>
+                      <span>By: {request.requestedBy}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="request-actions">
+                    {request.status === 'pending' ? (
+                      <button
+                        onClick={() => {
+                          console.log('🔍 Provide API Key button clicked for request:', request);
+                          setSelectedRequest(request);
+                        }}
+                        className="btn-primary"
+                      >
+                        <Key size={16} />
+                        Provide API Key
+                      </button>
+                    ) : (
+                      <span className="completed-message">
+                        <CheckCircle size={16} />
+                        API Key Provided
+                      </span>
+                    )}
+                  </div>
                 </div>
+              ))}
+            </div>
+          )}
 
-                <div className="form-group">
-                  <label htmlFor="environment">Environment</label>
-                  <select
-                    id="environment"
-                    value={formData.environment}
-                    onChange={(e) => setFormData(prev => ({ ...prev, environment: e.target.value as any }))}
-                    className="form-select"
+          {/* API Key Input Modal */}
+          {selectedRequest && (
+            <div className="api-key-modal-overlay" onClick={() => setSelectedRequest(null)}>
+              <div className="api-key-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h3>Provide API Key</h3>
+                  <button 
+                    onClick={() => setSelectedRequest(null)}
+                    className="close-button"
                   >
-                    <option value="development">🧪 Development</option>
-                    <option value="staging">🔄 Staging</option>
-                    <option value="production">🚀 Production</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* API Key Input */}
-              <div className="form-group">
-                <label htmlFor="apiKey">API Key</label>
-                <div className="api-key-input-group">
-                  <input
-                    id="apiKey"
-                    type={showAPIKey ? 'text' : 'password'}
-                    value={formData.apiKey}
-                    onChange={(e) => setFormData(prev => ({ ...prev, apiKey: e.target.value }))}
-                    placeholder="Paste your API key here"
-                    className="form-input"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowAPIKey(!showAPIKey)}
-                    className="toggle-visibility"
-                  >
-                    {showAPIKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                    ×
                   </button>
                 </div>
-                <div className="form-help">
-                  <Shield size={12} />
-                  <span>API keys are encrypted and stored securely</span>
+                
+                <div className="modal-body">
+                  <div className="request-summary">
+                    <h4>{selectedRequest.keyName}</h4>
+                    <p>{selectedRequest.description}</p>
+                    {selectedRequest.adminNotes && (
+                      <div className="admin-notes">
+                        <strong>Admin Notes:</strong>
+                        <p>{selectedRequest.adminNotes}</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <form onSubmit={(e) => {
+                    console.log('🔍 Form submitted, apiKeyValue length:', apiKeyValue?.length);
+                    console.log('🔍 Form submitted, passwordInput length:', passwordInput?.length);
+                    handleProvideAPIKey(e);
+                  }}>
+                    {/* API Key Field: show input if not set, else show masked value with remove/edit */}
+                    <div className="form-group">
+                      <label htmlFor="apiKey">API Key Value</label>
+                      {apiKeyValue ? (
+                        <div className="masked-api-key-row">
+                          <span className="masked-api-key">{'•'.repeat(Math.max(apiKeyValue.length, 8))}</span>
+                          <button
+                            type="button"
+                            className="btn-secondary small"
+                            onClick={() => setApiKeyValue('')}
+                            style={{ marginLeft: '1rem' }}
+                          >
+                            Remove/Edit
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="api-key-input-group">
+                          <input
+                            id="apiKey"
+                            type={showAPIKey ? 'text' : 'password'}
+                            value={apiKeyValue}
+                            onChange={(e) => setApiKeyValue(e.target.value)}
+                            placeholder="Paste your API key here"
+                            required
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowAPIKey(!showAPIKey)}
+                            className="toggle-visibility"
+                          >
+                            {showAPIKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        </div>
+                      )}
+                      <div className="form-help">
+                        <Key size={12} />
+                        <span>This API key will be securely stored and used for your project</span>
+                      </div>
+                    </div>
+                    {/* Password Field */}
+                    <div className="form-group">
+                      <label htmlFor="accountPassword">Account Password</label>
+                      <input
+                        id="accountPassword"
+                        type="password"
+                        value={passwordInput}
+                        onChange={e => setPasswordInput(e.target.value)}
+                        placeholder="Enter your account password"
+                        required
+                      />
+                    </div>
+                    <div className="form-actions">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedRequest(null)}
+                        className="btn-secondary"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSubmitting || !apiKeyValue || !passwordInput}
+                        className="btn-primary"
+                      >
+                        {isSubmitting ? 'Providing...' : 'Provide API Key'}
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
-
-              {/* Description */}
-              <div className="form-group">
-                <label htmlFor="description">Description (Optional)</label>
-                <textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Add notes about this API key's purpose..."
-                  className="form-textarea"
-                  rows={3}
-                />
-              </div>
-            </form>
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
         <div className="api-key-view-footer">
           <button onClick={onClose} className="btn-secondary">
-            Cancel
-          </button>
-          <button
-            onClick={() => {
-              console.log('Adding API key:', formData);
-              onClose();
-            }}
-            disabled={isSubmitting}
-            className="btn-primary"
-          >
-            {isSubmitting ? (
-              <>Adding API Key...</>
-            ) : (
-              <>
-                <Key size={16} />
-                Add API Key
-              </>
-            )}
+            Close
           </button>
         </div>
       </div>
@@ -1049,6 +1281,8 @@ The more details you provide, the better I can help you plan it out!`
   // Add UI Design View Component
   const AddUIDesignView = ({ project, onClose }: { project: Project; onClose: () => void }) => {
     const [activeTab, setActiveTab] = useState<'request' | 'gallery'>('request');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState<string>('');
     const [formData, setFormData] = useState({
       targetDevices: ['desktop'] as string[],
       stylePreferences: '',
@@ -1077,10 +1311,86 @@ The more details you provide, the better I can help you plan it out!`
       }
     };
 
-    const handleSubmit = () => {
-      console.log('Submitting design request:', formData);
-      // Here you would handle the form submission
-      onClose();
+    const handleSubmit = async () => {
+      setIsSubmitting(true);
+      try {
+        // Get current user from auth context
+        const currentUser = (window as any).currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const userId = currentUser.uid || currentUser.id || 'anonymous';
+        
+        console.log('Submitting design request with user:', { currentUser, userId });
+        console.log('Submitting design request for project:', { projectId: project.id, projectName: project.name });
+        
+        let imageUrl = null;
+        
+        // Upload image to Firebase Storage if provided
+        if (formData.uploadedImage) {
+          try {
+            setUploadProgress('Uploading image to Firebase Storage...');
+            console.log('📤 Uploading image to Firebase Storage...');
+            
+            // Create a unique filename
+            const timestamp = Date.now();
+            const fileExtension = formData.uploadedImage.name.split('.').pop();
+            const fileName = `ui-designs/${project.id}/${timestamp}_${Math.random().toString(36).substr(2, 9)}.${fileExtension}`;
+            
+            // Create storage reference
+            const storageRef = ref(storage, fileName);
+            
+            // Upload the file
+            const uploadResult = await uploadBytes(storageRef, formData.uploadedImage);
+            console.log('✅ Image uploaded successfully:', uploadResult);
+            
+            setUploadProgress('Getting download URL...');
+            
+            // Get the download URL
+            imageUrl = await getDownloadURL(uploadResult.ref);
+            console.log('✅ Image download URL obtained:', imageUrl);
+            
+            setUploadProgress('Submitting design request...');
+            
+          } catch (uploadError) {
+            console.error('❌ Error uploading image to Firebase Storage:', uploadError);
+            alert('Failed to upload image. Please try again.');
+            setIsSubmitting(false);
+            setUploadProgress('');
+            return;
+          }
+        }
+        
+        const response = await fetch(`http://localhost:3002/api/projects/project/${project.id}/ui-design`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            designData: {
+              targetDevices: formData.targetDevices,
+              stylePreferences: formData.stylePreferences,
+              uploadedImage: formData.uploadedImage?.name || null,
+              imageUrl: imageUrl, // Now includes the actual Firebase Storage URL
+              requestType: 'general'
+            },
+            userId: userId
+          })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+          console.log('✅ UI design request submitted successfully:', result);
+          setUploadProgress('');
+          onClose();
+        } else {
+          throw new Error(result.error || 'Failed to submit design request');
+        }
+      } catch (error) {
+        console.error('❌ Error submitting design request:', error);
+        alert('Failed to submit design request. Please try again.');
+      } finally {
+        setIsSubmitting(false);
+        setUploadProgress('');
+      }
     };
 
     return (
@@ -1200,9 +1510,18 @@ The more details you provide, the better I can help you plan it out!`
           <button onClick={onClose} className="btn-secondary">
             Cancel
           </button>
-          <button onClick={handleSubmit} className="btn-primary">
-            <Palette size={16} />
-            Submit Design Request
+          <button onClick={handleSubmit} disabled={isSubmitting} className="btn-primary">
+            {isSubmitting ? (
+              <>
+                <Upload size={16} />
+                {uploadProgress || 'Submitting...'}
+              </>
+            ) : (
+              <>
+                <Palette size={16} />
+                Submit Design Request
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -1212,6 +1531,13 @@ The more details you provide, the better I can help you plan it out!`
   // Add DNS Records View Component
   const AddDNSRecordsView = ({ project, onClose }: { project: Project; onClose: () => void }) => {
     const [activeTab, setActiveTab] = useState<'add' | 'manage'>('add');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [requiredDNSRecords, setRequiredDNSRecords] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedRequest, setSelectedRequest] = useState<any>(null);
+    const [showDNSRecord, setShowDNSRecord] = useState(false);
+    const [dnsRecordValue, setDnsRecordValue] = useState('');
+    const [isSubmittingDNS, setIsSubmittingDNS] = useState(false);
     const [formData, setFormData] = useState({
       domain: project?.name?.toLowerCase().replace(/\s+/g, '') + '.com' || '',
       recordType: 'A' as 'A' | 'AAAA' | 'CNAME' | 'MX' | 'TXT' | 'NS',
@@ -1221,6 +1547,31 @@ The more details you provide, the better I can help you plan it out!`
       priority: 10
     });
     const [copiedValue, setCopiedValue] = useState<string | null>(null);
+
+    // Load required DNS record requests
+    useEffect(() => {
+      loadRequiredDNSRecords();
+    }, []);
+
+    const loadRequiredDNSRecords = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`http://localhost:3002/api/projects/project/${project.id}/attributes`);
+        const result = await response.json();
+        
+        if (result.success) {
+          const requiredRecords = result.attributes.requiredDNSRecords || [];
+          setRequiredDNSRecords(requiredRecords);
+          console.log('✅ Loaded required DNS records:', requiredRecords.length);
+        } else {
+          throw new Error(result.error || 'Failed to load required DNS records');
+        }
+      } catch (error) {
+        console.error('❌ Error loading required DNS records:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
     // Mock existing DNS records
     const existingRecords = [
@@ -1273,6 +1624,206 @@ The more details you provide, the better I can help you plan it out!`
         console.error('Failed to copy:', err);
       }
     };
+
+    const handleDNSSubmit = async () => {
+      if (activeTab !== 'add') return;
+      
+      setIsSubmitting(true);
+      try {
+        // Get current user from auth context
+        const currentUser = (window as any).currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}');
+        
+        const response = await fetch(`http://localhost:3002/api/projects/project/${project.id}/dns-record`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            dnsData: {
+              domain: formData.domain,
+              recordType: formData.recordType,
+              type: formData.recordType,
+              name: formData.name,
+              value: formData.value,
+              ttl: formData.ttl,
+              priority: formData.recordType === 'MX' ? formData.priority : null
+            },
+            userId: currentUser.uid || currentUser.id
+          })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+          console.log('✅ DNS record added successfully:', result);
+          // Reset form
+          setFormData(prev => ({
+            ...prev,
+            name: '',
+            value: '',
+            priority: 10
+          }));
+          // Could close modal or show success message
+          // onClose();
+        } else {
+          throw new Error(result.error || 'Failed to add DNS record');
+        }
+      } catch (error) {
+        console.error('❌ Error adding DNS record:', error);
+        alert('Failed to add DNS record. Please try again.');
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
+    const getPriorityColor = (priority: string) => {
+      switch (priority) {
+        case 'low': return '#10b981';
+        case 'medium': return '#f59e0b';
+        case 'high': return '#f97316';
+        case 'critical': return '#ef4444';
+        default: return '#6b7280';
+      }
+    };
+
+    const getStatusIcon = (status: string) => {
+      switch (status) {
+        case 'pending': return <AlertCircle size={14} />;
+        case 'provided': return <CheckCircle size={14} />;
+        case 'completed': return <CheckCircle size={14} />;
+        default: return <AlertCircle size={14} />;
+      }
+    };
+
+    const getStatusClass = (status: string) => {
+      switch (status) {
+        case 'pending': return 'pending';
+        case 'provided': return 'completed';
+        case 'completed': return 'completed';
+        default: return 'pending';
+      }
+    };
+
+    const formatDate = (timestamp: any) => {
+      if (!timestamp) return 'Unknown';
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    };
+
+    const handleProvideDNSRecord = async (e: React.FormEvent) => {
+      e.preventDefault();
+      
+      console.log('🔍 handleProvideDNSRecord called');
+      console.log('🔍 selectedRequest:', selectedRequest);
+      console.log('🔍 dnsRecordValue length:', dnsRecordValue?.length);
+      
+      if (!selectedRequest || !dnsRecordValue.trim()) {
+        console.log('❌ Validation failed - missing request or DNS record');
+        alert('Please enter the DNS record value');
+        return;
+      }
+
+      setIsSubmittingDNS(true);
+      
+      try {
+        console.log('🔍 Making API call to add DNS record...');
+        console.log('🔍 Project ID:', project.id);
+        console.log('🔍 Current user:', currentUser);
+        
+        // First, add the DNS record to the project
+        const dnsPayload = {
+          dnsData: {
+            provider: 'Custom',
+            recordType: selectedRequest.recordType,
+            name: selectedRequest.recordName,
+            value: dnsRecordValue,
+            ttl: 3600,
+            domain: project.name?.toLowerCase().replace(/\s+/g, '') + '.com',
+            description: `Provided in response to admin request: ${selectedRequest.description}`
+          },
+          userId: currentUser?.uid
+        };
+        
+        console.log('🔍 DNS record payload:', { ...dnsPayload, dnsData: { ...dnsPayload.dnsData, value: '[HIDDEN]' } });
+        
+        const dnsResponse = await fetch(`http://localhost:3002/api/projects/project/${project.id}/dns-record`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(dnsPayload)
+        });
+
+        const dnsResult = await dnsResponse.json();
+        console.log('🔍 DNS record response:', dnsResult);
+        
+        if (dnsResult.success) {
+          console.log('✅ DNS record added successfully, updating request status...');
+          
+          // Then update the required DNS record status
+          const statusPayload = {
+            status: 'provided',
+            adminNotes: `DNS record provided by user on ${new Date().toLocaleDateString()}`,
+            adminUserId: currentUser?.uid
+          };
+          
+          console.log('🔍 Status update payload:', statusPayload);
+          
+          const statusResponse = await fetch(
+            `http://localhost:3002/api/projects/project/${project.id}/required_dns_records/${selectedRequest.id}/status`,
+            {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(statusPayload)
+            }
+          );
+
+          const statusResult = await statusResponse.json();
+          console.log('🔍 Status update response:', statusResult);
+          
+          if (statusResult.success) {
+            console.log('✅ DNS record provided successfully');
+            setSelectedRequest(null);
+            setDnsRecordValue('');
+            setShowDNSRecord(false);
+            // Reload the list
+            await loadRequiredDNSRecords();
+          } else {
+            console.log('❌ Status update failed:', statusResult.error);
+            throw new Error(statusResult.error || 'Failed to update request status');
+          }
+        } else {
+          console.log('❌ DNS record addition failed:', dnsResult.error);
+          throw new Error(dnsResult.error || 'Failed to add DNS record');
+        }
+      } catch (error) {
+        console.error('❌ Error providing DNS record:', error);
+        alert('Failed to provide DNS record. Please try again.');
+      } finally {
+        setIsSubmittingDNS(false);
+      }
+    };
+
+    if (loading) {
+      return (
+        <div className="dns-records-view">
+          <div className="dns-records-view-body">
+            <div className="loading-state">
+              <div className="loading-spinner"></div>
+              <p>Loading DNS record requests...</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="dns-records-view">
@@ -1478,6 +2029,157 @@ The more details you provide, the better I can help you plan it out!`
               )}
             </div>
           )}
+
+          {/* Required DNS Records Section */}
+          <hr style={{ margin: '2rem 0' }} />
+          <div className="requests-header">
+            <h3>DNS Record Requests for {project?.name}</h3>
+            <p>Admin has requested the following DNS records for your project</p>
+          </div>
+
+          {requiredDNSRecords.length === 0 ? (
+            <div className="empty-requests">
+              <Globe size={48} />
+              <h4>No DNS Record Requests</h4>
+              <p>Admin hasn't requested any DNS records for this project yet.</p>
+            </div>
+          ) : (
+            <div className="requests-list">
+              {requiredDNSRecords.map((request) => (
+                <div key={request.id} className="request-card">
+                  <div className="request-header">
+                    <div className="request-info">
+                      <h4>{request.recordName}</h4>
+                      <span className="provider-tag">{request.recordType}</span>
+                    </div>
+                    <div className="request-badges">
+                      <span 
+                        className="priority-badge"
+                        style={{ backgroundColor: getPriorityColor(request.priority) }}
+                      >
+                        {request.priority}
+                      </span>
+                      <span className={`status-badge ${getStatusClass(request.status)}`}>
+                        {getStatusIcon(request.status)}
+                        {request.status}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="request-content">
+                    <p className="request-description">{request.description}</p>
+                    
+                    {request.adminNotes && (
+                      <div className="admin-notes">
+                        <strong>Admin Notes:</strong>
+                        <p>{request.adminNotes}</p>
+                      </div>
+                    )}
+                    
+                    <div className="request-meta">
+                      <span>Requested: {formatDate(request.requestedAt)}</span>
+                      <span>By: {request.requestedBy}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="request-actions">
+                    {request.status === 'pending' ? (
+                      <button
+                        onClick={() => {
+                          console.log('🔍 Provide DNS Record button clicked for request:', request);
+                          setSelectedRequest(request);
+                        }}
+                        className="btn-primary"
+                      >
+                        <Globe size={16} />
+                        Provide DNS Record
+                      </button>
+                    ) : (
+                      <span className="completed-message">
+                        <CheckCircle size={16} />
+                        DNS Record Provided
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* DNS Record Input Modal */}
+          {selectedRequest && (
+            <div className="api-key-modal-overlay" onClick={() => setSelectedRequest(null)}>
+              <div className="api-key-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h3>Provide DNS Record</h3>
+                  <button 
+                    onClick={() => setSelectedRequest(null)}
+                    className="close-button"
+                  >
+                    ×
+                  </button>
+                </div>
+                
+                <div className="modal-body">
+                  <div className="request-summary">
+                    <h4>{selectedRequest.recordName} ({selectedRequest.recordType})</h4>
+                    <p>{selectedRequest.description}</p>
+                    {selectedRequest.adminNotes && (
+                      <div className="admin-notes">
+                        <strong>Admin Notes:</strong>
+                        <p>{selectedRequest.adminNotes}</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <form onSubmit={handleProvideDNSRecord}>
+                    <div className="form-group">
+                      <label>DNS Record Value</label>
+                      <input
+                        type="text"
+                        value={dnsRecordValue}
+                        onChange={(e) => setDnsRecordValue(e.target.value)}
+                        placeholder={`Enter ${selectedRequest.recordType} record value`}
+                        className="form-input"
+                        required
+                      />
+                      <div className="form-help">
+                        Enter the DNS record value as requested by the admin
+                      </div>
+                    </div>
+                    
+                    <div className="form-actions">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedRequest(null)}
+                        className="btn-secondary"
+                        disabled={isSubmittingDNS}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="btn-primary"
+                        disabled={isSubmittingDNS || !dnsRecordValue.trim()}
+                      >
+                        {isSubmittingDNS ? (
+                          <>
+                            <Loader size={16} className="spinning" />
+                            Providing...
+                          </>
+                        ) : (
+                          <>
+                            <Globe size={16} />
+                            Provide DNS Record
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -1485,9 +2187,15 @@ The more details you provide, the better I can help you plan it out!`
           <button onClick={onClose} className="btn-secondary">
             Cancel
           </button>
-          <button className="btn-primary">
-            <Globe size={16} />
-            {activeTab === 'add' ? 'Add DNS Record' : 'Save Changes'}
+          <button onClick={handleDNSSubmit} disabled={isSubmitting} className="btn-primary">
+            {isSubmitting ? (
+              <>Adding...</>
+            ) : (
+              <>
+                <Globe size={16} />
+                {activeTab === 'add' ? 'Add DNS Record' : 'Save Changes'}
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -1801,6 +2509,95 @@ The more details you provide, the better I can help you plan it out!`
     }
   ];
 
+  // Fetch user's added API keys when project changes
+  useEffect(() => {
+    const fetchUserApiKeys = async () => {
+      if (!effectiveSelectedProject?.id) {
+        console.log('❌ No effective selected project ID, skipping API keys fetch');
+        return;
+      }
+      try {
+        console.log('🔍 Fetching API keys for project:', effectiveSelectedProject.id);
+        const url = `http://localhost:3002/api/projects/project/${effectiveSelectedProject.id}/api-keys`;
+        console.log('🌐 API URL:', url);
+        const response = await fetch(url);
+        console.log('📡 Response status:', response.status);
+        const result = await response.json();
+        console.log('📦 API keys response:', result);
+        if (result.success && Array.isArray(result.apiKeys)) {
+          console.log('✅ Setting API keys:', result.apiKeys);
+          setUserApiKeys(result.apiKeys);
+        } else {
+          console.log('❌ No API keys found or invalid response');
+          setUserApiKeys([]);
+        }
+      } catch (e) {
+        console.error('❌ Error fetching API keys:', e);
+        setUserApiKeys([]);
+      }
+    };
+
+    const fetchRequiredApiKeysCount = async () => {
+      if (!effectiveSelectedProject?.id) {
+        console.log('❌ No effective selected project ID, skipping required API keys fetch');
+        return;
+      }
+      try {
+        console.log('🔍 Fetching required API keys count for project:', effectiveSelectedProject.id);
+        const url = `http://localhost:3002/api/projects/project/${effectiveSelectedProject.id}/required-api-keys`;
+        console.log('🌐 Required API URL:', url);
+        const response = await fetch(url);
+        console.log('📡 Required API Response status:', response.status);
+        const result = await response.json();
+        console.log('📦 Required API keys response:', result);
+        if (result.success && Array.isArray(result.requiredApiKeys)) {
+          const pendingCount = result.requiredApiKeys.filter((key: any) => key.status === 'pending').length;
+          console.log('✅ Setting required API keys count:', pendingCount);
+          setRequiredApiKeysCount(pendingCount);
+        } else {
+          console.log('❌ No required API keys found or invalid response');
+          setRequiredApiKeysCount(0);
+        }
+      } catch (e) {
+        console.error('❌ Error fetching required API keys:', e);
+        setRequiredApiKeysCount(0);
+      }
+    };
+
+    const fetchRequiredDNSRecordsCount = async () => {
+      if (!effectiveSelectedProject?.id) {
+        console.log('❌ No effective selected project ID, skipping required DNS records fetch');
+        return;
+      }
+      try {
+        console.log('🔍 Fetching required DNS records count for project:', effectiveSelectedProject.id);
+        const url = `http://localhost:3002/api/projects/project/${effectiveSelectedProject.id}/required-dns-records`;
+        console.log('🌐 Required DNS URL:', url);
+        const response = await fetch(url);
+        console.log('📡 Required DNS Response status:', response.status);
+        const result = await response.json();
+        console.log('📦 Required DNS records response:', result);
+        if (result.success && Array.isArray(result.requiredDNSRecords)) {
+          const pendingCount = result.requiredDNSRecords.filter((record: any) => record.status === 'pending').length;
+          console.log('✅ Setting required DNS records count:', pendingCount);
+          setRequiredDNSRecordsCount(pendingCount);
+        } else {
+          console.log('❌ No required DNS records found or invalid response');
+          setRequiredDNSRecordsCount(0);
+        }
+      } catch (e) {
+        console.error('❌ Error fetching required DNS records:', e);
+        setRequiredDNSRecordsCount(0);
+      }
+    };
+
+    console.log('🔄 useEffect triggered for selectedProject?.id:', selectedProject?.id);
+    console.log('🔄 Using effective project ID:', effectiveSelectedProject?.id);
+    fetchUserApiKeys();
+    fetchRequiredApiKeysCount();
+    fetchRequiredDNSRecordsCount();
+  }, [effectiveSelectedProject?.id]);
+
   if (customerProjectsLoading) {
     return (
       <div className="loading-state">
@@ -1858,41 +2655,18 @@ The more details you provide, the better I can help you plan it out!`
           {/* Project Action Navbar */}
           <ProjectNavbar 
             mode="actions"
-            project={selectedProject}
+            project={effectiveSelectedProject || undefined}
             isCollapsed={sidebarCollapsed}
             onAddFeature={() => setActiveSection('feature')}
             onViewRequests={() => setActiveSection('view-requests')}
             onAddAPIKey={() => handleProtectedModal('apikey')}
             onAddUIDesign={() => setActiveSection('design')}
             onAddDNSRecords={() => handleProtectedModal('dns')}
+            apiKeyRequestCount={requiredApiKeysCount}
+            dnsRequestCount={requiredDNSRecordsCount}
           />
 
-          {/* Project Selection Navbar for Testing - Will show available projects */}
-          {mockActiveProjects.length > 1 && (
-            <div style={{ padding: '1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', marginBottom: '1rem' }}>
-              <h4 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>Available Projects (Click to test logging):</h4>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                {mockActiveProjects.map((project) => (
-                  <button
-                    key={project.id}
-                    onClick={() => handleProjectSelect(project)}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      borderRadius: '6px',
-                      border: '1px solid #e2e8f0',
-                      background: selectedProject?.id === project.id ? '#667eea' : 'white',
-                      color: selectedProject?.id === project.id ? 'white' : '#1e293b',
-                      cursor: 'pointer',
-                      fontSize: '0.875rem',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    {project.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+
 
           {/* Conditional Content - Show either project details or inline sections */}
           {activeSection ? (

@@ -1,0 +1,123 @@
+/* Navigation Fixes - Prevent excessive expansion and improve UX */
+
+/* Remove blue focus rings from buttons and interactive elements */
+button:focus,
+.sidebar-toggle:focus,
+.nav-button:focus,
+.action-btn:focus,
+.dropdown-trigger:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
+}
+
+/* Constrain all dropdown menus */
+.dropdown-menu,
+.user-dropdown-menu {
+  max-height: 400px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* Don't constrain nav-dropdown specifically to avoid conflicts */
+.nav-dropdown {
+  /* Remove constraints for navbar dropdown */
+}
+
+/* Constrain expandable navigation sections */
+.sidebar-sub-items,
+.nav-sub-items,
+.expandable-section {
+  max-height: 180px !important; /* Reduced from 300px to prevent excessive expansion */
+  overflow-y: auto !important;
+  transition: max-height 0.3s ease !important;
+}
+
+/* Improve expand indicators */
+.expand-icon,
+.expand-indicator,
+.dropdown-chevron {
+  flex-shrink: 0 !important;
+  transition: transform 0.2s ease !important;
+}
+
+/* Fix toggle button styles globally */
+.toggle-btn,
+.sidebar-toggle,
+.nav-toggle {
+  outline: none !important;
+  border: 1px solid #e2e8f0 !important;
+  background: white !important;
+  color: #64748b !important;
+  transition: all 0.3s ease !important;
+}
+
+.toggle-btn:hover,
+.sidebar-toggle:hover,
+.nav-toggle:hover {
+  background: #f8fafc !important;
+  color: #667eea !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Prevent navigation content overflow */
+.nav-content,
+.sidebar-content,
+.dropdown-content {
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+/* Mobile-specific fixes */
+@media (max-width: 768px) {
+  .dropdown-menu,
+  .user-dropdown-menu {
+    max-height: 60vh !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 1rem !important;
+  }
+  
+  .sidebar-sub-items {
+    max-height: 200px !important;
+  }
+}
+
+/* Chat System Specific Fixes */
+
+/* Smooth transition for chat navigation */
+.chat-system {
+  transition: margin-top 0.2s ease;
+}
+
+/* Ensure messages preserve line breaks and formatting */
+.message-bubble p {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Enhanced image styling for chat messages */
+.message-image {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.message-image:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Sidebar Sub-Items Specific Fixes */
+.sidebar-sub-items {
+  /* Dynamic height based on content, but with reasonable limits */
+  min-height: auto !important;
+  max-height: 150px !important; /* Reduced for more compact sections */
+}
+
+/* Tighter spacing for sidebar sub-items */
+.sidebar-sub-items .sidebar-item {
+  margin-bottom: 0 !important;
+}
+
+.sidebar-sub-items .sidebar-link {
+  padding: 0.3rem 1rem !important; /* More compact padding */
+} 

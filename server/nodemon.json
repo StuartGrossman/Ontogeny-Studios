@@ -1,0 +1,18 @@
+{
+  "watch": [
+    "index.js",
+    "routes/",
+    "config/"
+  ],
+  "ext": "js,json",
+  "ignore": [
+    "node_modules/",
+    "*.log",
+    "*.txt"
+  ],
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "delay": "1000",
+  "verbose": true
+} 

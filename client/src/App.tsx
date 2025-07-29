@@ -2,10 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
+import MFAModal from './components/modals/MFAModal';
 import Examples from './pages/Examples';
 import Dashboard from './pages/Dashboard';
 import ManagementPage from './pages/ManagementPage';
-import MessagesPage from './pages/MessagesPage';
+import UserMessagesPage from './pages/UserMessagesPage';
+import SettingsPageRoute from './pages/SettingsPage';
 import InventoryPage from './pages/InventoryPage';
 import CustomerPortalPage from './pages/CustomerPortalPage';
 import APIIntegrationPage from './pages/APIIntegrationPage';
@@ -37,15 +39,14 @@ const App: React.FC = () => {
 
 const Main: React.FC = () => {
   const location = useLocation();
-  const { currentUser, signInWithGoogle } = useAuth();
+  const { currentUser, signInWithGoogle, showMFAPrompt, setShowMFAPrompt } = useAuth();
 
   const codeContentRef = useRef<HTMLDivElement>(null);
   const [codeBoxOpacity, setCodeBoxOpacity] = useState(1);
   const [isHoveringRightSide] = useState(false);
 
-  // Don't show the main navbar on the dashboard pages since they have their own navigation
-  const dashboardPaths = ['/dashboard', '/management', '/messages', '/inventory', '/customer-portal', '/api-integration', '/payroll', '/scheduling', '/logistics'];
-  const shouldShowNavbar = !dashboardPaths.includes(location.pathname);
+  // Show navbar on all pages now that sidebar is removed
+  const shouldShowNavbar = true;
 
   useEffect(() => {
     const codeContent = codeContentRef.current;
@@ -303,7 +304,12 @@ const Main: React.FC = () => {
         } />
         <Route path="/messages" element={
           <ProtectedRoute>
-            <MessagesPage />
+            <UserMessagesPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/settings" element={
+          <ProtectedRoute>
+            <SettingsPageRoute />
           </ProtectedRoute>
         } />
         <Route path="/inventory" element={<InventoryPage />} />
@@ -313,6 +319,7 @@ const Main: React.FC = () => {
         <Route path="/scheduling" element={<SchedulingPage />} />
         <Route path="/logistics" element={<LogisticsPage />} />
       </Routes>
+      {showMFAPrompt && <MFAModal onClose={() => setShowMFAPrompt(false)} />}
     </>
   );
 };

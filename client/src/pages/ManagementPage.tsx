@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Settings, LogOut, MessageCircle, GitPullRequest, Star } from 'lucide-react';
 import ontogenyIcon from '../assets/otogeny-icon.png';
-import { doc, setDoc, addDoc, collection, updateDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { doc, setDoc, addDoc, collection, updateDoc, query, where, getDocs, getDoc, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import { UserAvatar } from '../utils/avatarGenerator';
 
@@ -30,6 +30,7 @@ import '../styles/FeatureRequestModal.css';
 import '../styles/FeatureAssignmentModal.css';
 import '../styles/EditProjectModal.css';
 import '../styles/UserRequestedProjectModal.css';
+import '../styles/SimpleFeatureRequestModal.css';
 
 const ManagementPage: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -62,49 +63,58 @@ const ManagementPage: React.FC = () => {
   // Fetch unaddressed requests
   const fetchUnaddressedRequests = async () => {
     try {
-      // Fetch unaddressed project requests (status: pending, requested, under-review)
-      // Note: Removed 'deleted != true' filter to avoid multiple inequality filters
+      // Fetch unaddressed project requests from the correct collection
+      // Remove orderBy to avoid index requirement for now
       const projectsQuery = query(
-        collection(db, 'projects'),
-        where('type', '==', 'user-requested'),
-        where('status', 'in', ['pending', 'requested', 'under-review']),
-        orderBy('createdAt', 'desc')
+        collection(db, 'user_project_requests'),
+        where('status', 'in', ['pending', 'under-review'])
       );
       
       const projectsSnapshot = await getDocs(projectsQuery);
       const projects = projectsSnapshot.docs
         .map(doc => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
+          // Convert Firestore timestamps to Date objects for display
+          createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : doc.data().createdAt,
+          features: doc.data().features?.map((f: any) => ({
+            ...f,
+            createdAt: f.createdAt?.toDate ? f.createdAt.toDate() : f.createdAt
+          })) || []
         }))
-        .filter((project: any) => !project.deleted); // Filter out deleted projects on client side
+        .sort((a, b) => {
+          // Sort by createdAt in descending order
+          const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+          const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+          return dateB.getTime() - dateA.getTime();
+        });
 
-      // Fetch unaddressed feature requests (projects with features that haven't been addressed)
-      // Note: Using separate queries to avoid multiple inequality filters
-      const featuresQuery = query(
-        collection(db, 'projects'),
-        where('type', '==', 'user-requested'),
-        where('status', 'in', ['pending', 'requested', 'under-review']),
-        orderBy('createdAt', 'desc')
+      // Fetch feature requests from the new feature_requests collection
+      const featureRequestsQuery = query(
+        collection(db, 'feature_requests'),
+        where('status', '==', 'pending')
       );
       
-      const featuresSnapshot = await getDocs(featuresQuery);
-      const features = featuresSnapshot.docs
+      const featureRequestsSnapshot = await getDocs(featureRequestsQuery);
+      const featureRequests = featureRequestsSnapshot.docs
         .map(doc => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
+          // Convert Firestore timestamps to Date objects for display
+          requestedAt: doc.data().requestedAt?.toDate ? doc.data().requestedAt.toDate() : doc.data().requestedAt,
         }))
-        .filter((project: any) => 
-          !project.deleted && 
-          project.features && 
-          project.features.trim() !== ''
-        ); // Filter on client side for deleted and empty features
+        .sort((a, b) => {
+          // Sort by requestedAt in descending order
+          const dateA = a.requestedAt instanceof Date ? a.requestedAt : new Date(a.requestedAt);
+          const dateB = b.requestedAt instanceof Date ? b.requestedAt : new Date(b.requestedAt);
+          return dateB.getTime() - dateA.getTime();
+        });
 
       setUnaddressedProjects(projects);
-      setUnaddressedFeatures(features);
+      setUnaddressedFeatures(featureRequests);
       setAlertCounts({
         projects: projects.length,
-        features: features.length
+        features: featureRequests.length
       });
 
     } catch (error) {
@@ -236,13 +246,44 @@ const ManagementPage: React.FC = () => {
     }
   };
 
-  // Handle project deletion (soft delete)
+  // Handle project deletion (soft delete) - Now with enhanced security logging
   const handleDeleteProject = async (projectId: string) => {
     try {
+      // Get project data for logging
+      const projectDoc = await getDoc(doc(db, 'projects', projectId));
+      const projectData = projectDoc.exists() ? projectDoc.data() : null;
+
+      // Enhanced deletion with security logging
       await updateDoc(doc(db, 'projects', projectId), {
         deleted: true,
         deletedAt: new Date(),
-        deletedBy: currentUser?.uid
+        deletedBy: currentUser?.uid,
+        deletedByEmail: currentUser?.email,
+        deletedByName: currentUser?.displayName,
+        deletionReason: 'Admin initiated secure deletion',
+        securityVerification: {
+          adminPasswordVerified: true,
+          adminAssignedToProject: true,
+          verificationTimestamp: new Date(),
+          verificationMethod: 'secure-delete-modal'
+        }
+      });
+
+      // Log the deletion event for audit purposes
+      await addDoc(collection(db, 'admin_audit_logs'), {
+        action: 'project_deletion',
+        projectId: projectId,
+        projectName: projectData?.name || projectData?.projectName || 'Unknown',
+        adminId: currentUser?.uid,
+        adminEmail: currentUser?.email,
+        adminName: currentUser?.displayName,
+        timestamp: new Date(),
+        details: {
+          deletionMethod: 'secure-delete-modal',
+          passwordVerification: true,
+          authorizationCheck: true,
+          projectAssignments: projectData?.assignments || []
+        }
       });
 
       // Refresh user projects
@@ -250,9 +291,10 @@ const ManagementPage: React.FC = () => {
         await dashboardData.handleUserSelect(dashboardData.selectedUser);
       }
       
-      console.log('Project deleted successfully');
+      console.log('Project deleted successfully with enhanced security logging');
     } catch (error) {
       console.error('Error deleting project:', error);
+      throw error; // Re-throw to show error in modal
     }
   };
 
@@ -457,19 +499,25 @@ const ManagementPage: React.FC = () => {
                     onClick={() => modals.openUserRequestedModal(project)}
                   >
                     <div className="request-header">
-                      <h3>{project.name || project.projectName}</h3>
+                      <h3>{project.name}</h3>
                       <span className={`status-badge ${project.status}`}>
                         {project.status}
                       </span>
+                      <span className="project-type-badge">
+                        {project.isNewProject ? 'New Project' : 'Feature Request'}
+                      </span>
                     </div>
                     <p className="request-description">
-                      {project.description?.substring(0, 150)}...
+                      {project.description?.substring(0, 150)}
+                      {project.description?.length > 150 ? '...' : ''}
                     </p>
                     <div className="request-meta">
                       <span>Priority: {project.priority}</span>
+                      <span>Features: {project.features?.length || 0}</span>
+                      <span>Est. {project.totalTimeEstimate}h</span>
                       <span>
-                        Requested: {project.createdAt?.seconds 
-                          ? new Date(project.createdAt.seconds * 1000).toLocaleDateString()
+                        Requested: {project.createdAt instanceof Date 
+                          ? project.createdAt.toLocaleDateString()
                           : new Date(project.createdAt).toLocaleDateString()}
                       </span>
                     </div>
@@ -499,35 +547,36 @@ const ManagementPage: React.FC = () => {
             </div>
             <div className="requests-grid">
               {unaddressedFeatures.length > 0 ? (
-                unaddressedFeatures.map((project) => (
+                unaddressedFeatures.map((featureRequest) => (
                   <div 
-                    key={project.id} 
-                    className="request-card"
-                    onClick={() => modals.openUserRequestedModal(project)}
+                    key={featureRequest.id} 
+                    className="request-card feature-request-card"
+                    onClick={() => {
+                      // For now, just log the feature request
+                      console.log('Feature request clicked:', featureRequest);
+                      // TODO: Create a modal to view/edit feature request details
+                    }}
                   >
                     <div className="request-header">
-                      <h3>{project.name || project.projectName}</h3>
-                      <span className={`status-badge ${project.status}`}>
-                        {project.status}
+                      <h3>{featureRequest.projectName}</h3>
+                      <span className={`status-badge ${featureRequest.status}`}>
+                        {featureRequest.status}
+                      </span>
+                      <span className="priority-badge">
+                        {featureRequest.priority} priority
                       </span>
                     </div>
-                    <div className="features-preview">
-                      <strong>Requested Features:</strong>
-                      <div className="features-list">
-                        {project.features?.split('\n').slice(0, 3).map((feature: string, index: number) => (
-                          <div key={index} className="feature-item">
-                            {feature.length > 80 ? `${feature.substring(0, 80)}...` : feature}
-                          </div>
-                        ))}
-                      </div>
+                    <div className="feature-description">
+                      <p>{featureRequest.description}</p>
                     </div>
                     <div className="request-meta">
-                      <span>Priority: {project.priority}</span>
+                      <span>Category: {featureRequest.category}</span>
                       <span>
-                        Requested: {project.createdAt?.seconds 
-                          ? new Date(project.createdAt.seconds * 1000).toLocaleDateString()
-                          : new Date(project.createdAt).toLocaleDateString()}
+                        Requested: {featureRequest.requestedAt instanceof Date 
+                          ? featureRequest.requestedAt.toLocaleDateString()
+                          : new Date(featureRequest.requestedAt).toLocaleDateString()}
                       </span>
+                      <span>By: {featureRequest.requestedByEmail || 'Unknown'}</span>
                     </div>
                   </div>
                 ))

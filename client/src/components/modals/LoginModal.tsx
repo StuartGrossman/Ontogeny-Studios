@@ -1,27 +1,44 @@
 import { useState } from 'react';
 import { LoginModalProps } from '../../types';
+import { useAuth } from '../../contexts/AuthContext';
 import './Modal.css';
 
 const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSignupClick, onLoginSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, authError, clearAuthError } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    clearAuthError();
     try {
-      // TODO: Implement actual login logic
-      // For now, simulate a successful login
-      onLoginSuccess({
-        id: '1',
-        name: 'Demo User',
-        email: email,
-        role: 'user',
-      });
-    } catch (err) {
-      setError('Invalid email or password');
+      await signInWithGoogle();
+      onClose();
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    clearAuthError();
+    
+    try {
+      if (isSignUp) {
+        await signUpWithEmail(email, password);
+      } else {
+        await signInWithEmail(email, password);
+      }
+      onClose();
+    } catch (error) {
+      console.error('Email auth error:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -29,11 +46,27 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSignupClick, onLogin
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Sign In</h2>
+          <h2>{isSignUp ? 'Create Account' : 'Sign In'}</h2>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
         <div className="modal-content">
-          <form onSubmit={handleSubmit}>
+          {/* Google Sign In Button */}
+          <div className="auth-section">
+            <button 
+              type="button" 
+              className="button button-google" 
+              onClick={handleGoogleSignIn}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Signing in...' : 'Continue with Google'}
+            </button>
+            <div className="auth-divider">
+              <span>or</span>
+            </div>
+          </div>
+
+          {/* Email/Password Form */}
+          <form onSubmit={handleEmailAuth}>
             <div className="form-group">
               <label htmlFor="email">Email</label>
               <input
@@ -42,6 +75,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSignupClick, onLogin
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="form-group">
@@ -52,13 +86,26 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSignupClick, onLogin
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={isLoading}
+                minLength={6}
               />
             </div>
-            {error && <div className="error-message">{error}</div>}
+            {authError && <div className="error-message">{authError}</div>}
             <div className="modal-actions">
-              <button type="submit" className="button button-primary">Sign In</button>
-              <button type="button" className="button" onClick={onSignupClick}>
-                Create Account
+              <button 
+                type="submit" 
+                className="button button-primary"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Processing...' : (isSignUp ? 'Create Account' : 'Sign In')}
+              </button>
+              <button 
+                type="button" 
+                className="button button-secondary"
+                onClick={() => setIsSignUp(!isSignUp)}
+                disabled={isLoading}
+              >
+                {isSignUp ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
               </button>
             </div>
           </form>

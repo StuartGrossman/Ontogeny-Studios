@@ -21,8 +21,11 @@ import {
   PlayCircle,
   PauseCircle,
   ExternalLink,
-  UserPlus
+  UserPlus,
+  Settings
 } from 'lucide-react';
+import ProjectAttributesView from '../ProjectAttributesView';
+import '../../styles/ProjectAttributesView.css';
 
 interface Task {
   id: string;
@@ -269,6 +272,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
   const [tempFeatureTime, setTempFeatureTime] = useState<number>(0);
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'project' | 'client-attributes'>('project');
 
   // Generate task ID
   const generateTaskId = () => {
@@ -699,8 +703,28 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
             </div>
           )}
 
-          {/* Two Column Layout */}
-          <div className="modal-two-column-layout">
+          {/* Tab Navigation */}
+          <div className="project-tabs">
+            <button
+              className={`project-tab ${activeTab === 'project' ? 'active' : ''}`}
+              onClick={() => setActiveTab('project')}
+            >
+              <Target size={16} />
+              Project Details
+            </button>
+            <button
+              className={`project-tab ${activeTab === 'client-attributes' ? 'active' : ''}`}
+              onClick={() => setActiveTab('client-attributes')}
+            >
+              <Settings size={16} />
+              Client Attributes
+            </button>
+          </div>
+
+          {/* Content Area */}
+          {activeTab === 'project' ? (
+            /* Project Details View */
+            <div className="modal-two-column-layout">
             {/* Left Column: Project Information */}
             <div className="left-column-info">
               {/* Description Button */}
@@ -949,6 +973,20 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
               </div>
             </div>
           </div>
+        ) : (
+          /* Client Attributes View */
+          <div className="client-attributes-container">
+            <ProjectAttributesView 
+              projectId={project.id}
+              projectName={formData.name}
+              currentUser={(window as any).currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}')}
+              onAttributeUpdate={() => {
+                // Refresh project data if needed
+                onUpdate();
+              }}
+            />
+          </div>
+        )}
         </div>
       </div>
 

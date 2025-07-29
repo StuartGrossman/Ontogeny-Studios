@@ -50,7 +50,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                   e.currentTarget.style.display = 'none';
                 }}
               />
-              <p className="image-caption">{message.content}</p>
+              <p className="image-caption" style={{ whiteSpace: 'pre-wrap' }}>{message.content}</p>
             </div>
           ) : message.isUploading ? (
             <div className="upload-progress-container">
@@ -64,7 +64,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               <span className="upload-progress-text">{message.uploadProgress || 0}%</span>
             </div>
           ) : (
-            <p>{message.content}</p>
+            <p style={{ whiteSpace: 'pre-wrap' }}>{message.content}</p>
           )}
         </div>
         <span className="message-time">
