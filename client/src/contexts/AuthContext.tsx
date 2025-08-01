@@ -9,7 +9,8 @@ import {
   MultiFactorError,
   getMultiFactorResolver,
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword
+  signInWithEmailAndPassword,
+  MultiFactorResolver
 } from 'firebase/auth';
 import { auth } from '../firebase';
 
@@ -25,6 +26,8 @@ interface AuthContextType {
   // MFA related
   showMFAPrompt: boolean;
   setShowMFAPrompt: (show: boolean) => void;
+  mfaResolver: MultiFactorResolver | undefined;
+  setMfaResolver: (resolver: MultiFactorResolver | undefined) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,9 +45,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [showMFAPrompt, setShowMFAPrompt] = useState(false);
+  const [mfaResolver, setMfaResolver] = useState<MultiFactorResolver>();
 
   const clearAuthError = () => {
     setAuthError(null);
+    setMfaResolver(undefined);
+  };
+
+  const handleMFARequired = (error: MultiFactorError) => {
+    const resolver = getMultiFactorResolver(auth, error);
+    setMfaResolver(resolver);
+    setShowMFAPrompt(true);
+    setAuthError('Multi-factor authentication required. Please complete the verification process.');
   };
 
   const signInWithGoogle = async () => {
@@ -59,8 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Handle MFA requirement
       if (authError.code === 'auth/multi-factor-auth-required') {
-        setShowMFAPrompt(true);
-        setAuthError('Multi-factor authentication required. Please complete the verification process.');
+        handleMFARequired(error as MultiFactorError);
         return;
       }
       
@@ -103,8 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Handle MFA requirement for email/password
       if (authError.code === 'auth/multi-factor-auth-required') {
-        setShowMFAPrompt(true);
-        setAuthError('Multi-factor authentication required. Please complete the verification process.');
+        handleMFARequired(error as MultiFactorError);
         return;
       }
       
@@ -183,6 +193,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (user) {
         setAuthError(null);
         setShowMFAPrompt(false);
+        setMfaResolver(undefined);
       }
     });
 
@@ -199,7 +210,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     authError,
     clearAuthError,
     showMFAPrompt,
-    setShowMFAPrompt
+    setShowMFAPrompt,
+    mfaResolver,
+    setMfaResolver
   };
 
   return (

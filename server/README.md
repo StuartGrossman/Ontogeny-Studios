@@ -10,7 +10,21 @@ cd server
 npm install
 ```
 
-### 2. Firebase Admin SDK Configuration
+### 2. Environment Variables
+Create a `.env` file in the server directory with the following variables:
+```bash
+# Stripe Configuration
+STRIPE_SECRET_KEY=your_stripe_secret_key_here
+STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key_here
+
+# Client URL
+CLIENT_URL=http://localhost:5173
+
+# Optional: Stripe Webhook Secret
+# STRIPE_WEBHOOK_SECRET=your_webhook_secret_here
+```
+
+### 3. Firebase Admin SDK Configuration
 
 You have two options to configure Firebase Admin SDK:
 
@@ -33,7 +47,7 @@ cp server/config/firebase-admin-template.json server/config/firebase-admin-sdk.j
 # Edit firebase-admin-sdk.json with your actual credentials
 ```
 
-### 3. Start the Server
+### 4. Start the Server
 ```bash
 npm run dev  # Development with nodemon
 # or

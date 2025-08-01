@@ -17,6 +17,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { getUnreadMessageCount } from '../services/messagingService';
 import { getActiveProjects } from '../services/projectService';
 import ontogenyIcon from '../assets/otogeny-icon.png';
+import { db } from '../firebase';
+import { modalEvents } from '../utils/modalEvents';
+
 import '../styles/Navbar.css';
 
 const Navbar: React.FC = () => {
@@ -80,25 +83,44 @@ const Navbar: React.FC = () => {
     };
   }, [currentUser?.uid]);
 
-  // Close dropdowns when clicking outside
+  // Load active projects when user changes
+  useEffect(() => {
+    if (currentUser?.uid) {
+      loadActiveProjects();
+    }
+  }, [currentUser?.uid]);
+
+
+
+  // Close dropdowns when clicking outside or navigating
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
+      // Close project dropdown
       if (!target.closest('.nav-dropdown')) {
         setActiveDropdown(null);
       }
+      // Close user menu if click is outside the menu and button
+      if (!target.closest('.nav-user-profile')) {
+        setShowUserMenu(false);
+      }
+    };
+
+    // Close user menu on navigation
+    const handleRouteChange = () => {
+      setShowUserMenu(false);
     };
 
     document.addEventListener('click', handleClickOutside);
+    window.addEventListener('popstate', handleRouteChange);
+
     return () => {
       document.removeEventListener('click', handleClickOutside);
+      window.removeEventListener('popstate', handleRouteChange);
     };
   }, []);
 
-  // Debug activeDropdown state changes
-  useEffect(() => {
-    console.log('🔄 activeDropdown state changed to:', activeDropdown);
-  }, [activeDropdown]);
+
 
   const handleLogin = async () => {
     clearAuthError();
@@ -113,31 +135,15 @@ const Navbar: React.FC = () => {
 
   const loadActiveProjects = async () => {
     if (!currentUser?.uid) {
-      console.log('No authenticated user, skipping active projects load');
       return;
     }
     
     setLoadingProjects(true);
     try {
-      console.log('🔍 Loading active projects for user:', currentUser.uid);
-      console.log('🔍 User email:', currentUser.email);
-      console.log('🔍 User display name:', currentUser.displayName);
-      
       const projects = await getActiveProjects(currentUser.uid);
-      console.log('📊 Projects returned from getActiveProjects:', projects);
-      console.log('📊 Project count:', projects.length);
-      console.log('📊 Project details:', projects.map(p => ({
-        id: p.id,
-        name: p.name,
-        status: p.status,
-        userId: p.userId
-      })));
-      
       setActiveProjects(projects);
-      console.log('✅ Successfully set active projects in state');
     } catch (error) {
-      console.error('❌ Error loading active projects:', error);
-      // Don't show error to user, just set empty array
+      console.error('Error loading active projects:', error);
       setActiveProjects([]);
     } finally {
       setLoadingProjects(false);
@@ -163,28 +169,8 @@ const Navbar: React.FC = () => {
             <span className="nav-brand-text">Ontogeny Labs</span>
           </Link>
           
-          {/* Page Title */}
-          {location.pathname === '/dashboard' && (
-            <span className="nav-title-link active">
-              Dashboard
-            </span>
-          )}
-          {location.pathname === '/examples' && (
-            <Link 
-              to="/examples" 
-              className="nav-title-link active"
-            >
-              Project Examples
-            </Link>
-          )}
-          {location.pathname !== '/' && location.pathname !== '/examples' && location.pathname !== '/dashboard' && (
-            <Link 
-              to="/examples" 
-              className="nav-title-link"
-            >
-              Project Examples
-            </Link>
-          )}
+
+
         </div>
         
         {/* Center Section - Navigation */}
@@ -193,16 +179,35 @@ const Navbar: React.FC = () => {
             <>
               {/* Dashboard/Management Button - Context Aware */}
               {location.pathname === '/management' ? (
-                <Link to="/dashboard" className="nav-button">
+                <Link to="/dashboard" className="nav-button icon-only" title="Dashboard">
                   <Activity size={20} />
-                  <span>Dashboard</span>
                 </Link>
               ) : (
-                <Link to="/management" className="nav-button">
+                <Link to="/management" className="nav-button icon-only" title="Management">
                   <Settings size={20} />
-                  <span>Management</span>
                 </Link>
               )}
+
+              {/* Active Projects Button */}
+              <Link to="/dashboard" className="nav-button">
+                <Activity size={20} />
+                <span>Active Projects</span>
+              </Link>
+
+              {/* Requests Button */}
+              <button 
+                className="nav-button"
+                onClick={() => {
+                  if (location.pathname === '/dashboard') {
+                    modalEvents.openModal('requests');
+                  } else {
+                    navigate('/management');
+                  }
+                }}
+              >
+                <MessageCircle size={20} />
+                <span>Requests</span>
+              </button>
 
               {/* Projects Dropdown */}
               <div className="nav-dropdown">
@@ -211,15 +216,10 @@ const Navbar: React.FC = () => {
                   className={`nav-button dropdown-toggle ${activeDropdown === 'projects' ? 'active' : ''}`}
                   onClick={(e) => {
                     e.stopPropagation();
-                    console.log('🔽 Projects dropdown clicked!');
-                    console.log('Current activeDropdown:', activeDropdown);
-                    console.log('Current user:', currentUser?.uid);
                     if (!currentUser?.uid) {
-                      console.log('User not authenticated, cannot load projects');
                       return;
                     }
                     if (activeDropdown !== 'projects') {
-                      console.log('Loading active projects...');
                       loadActiveProjects();
                     }
                     const newState = activeDropdown === 'projects' ? null : 'projects';
@@ -230,6 +230,8 @@ const Navbar: React.FC = () => {
                   <span>Projects</span>
                   <ChevronDown size={16} />
                 </button>
+
+
                 {activeDropdown === 'projects' && (
                   <div className="nav-dropdown-menu" onClick={(e) => e.stopPropagation()}>
                     {loadingProjects ? (
@@ -246,8 +248,13 @@ const Navbar: React.FC = () => {
                             className="nav-dropdown-item" 
                             onClick={() => setActiveDropdown(null)}
                           >
-                            <Folder size={16} />
-                            <span>{project.name}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              <Folder size={16} />
+                              <span>{project.name}</span>
+                            </div>
+                            {project.createdBy === currentUser?.uid && project.userId !== currentUser?.uid && (
+                              <span className="project-owner-indicator">(for {project.userEmail || 'User'})</span>
+                            )}
                           </Link>
                         ))}
                         <div className="nav-dropdown-divider"></div>
@@ -295,8 +302,8 @@ const Navbar: React.FC = () => {
                 </Link>
               </div>
 
-              {/* User Profile - Desktop Hidden, Mobile Only */}
-              <div className="nav-user-profile desktop-hidden">
+              {/* User Profile - Desktop */}
+              <div className="nav-user-profile">
                 <button 
                   className="nav-button user-button"
                   onClick={() => setShowUserMenu(!showUserMenu)}
@@ -331,11 +338,21 @@ const Navbar: React.FC = () => {
                       </div>
                     </div>
                     <div className="user-menu-items">
-                      <Link to="/settings" className="user-menu-item">
+                      <Link 
+                        to="/settings" 
+                        className="user-menu-item"
+                        onClick={() => setShowUserMenu(false)}
+                      >
                         <Settings size={16} />
                         <span>Settings</span>
                       </Link>
-                      <button className="user-menu-item logout-item" onClick={handleLogout}>
+                      <button 
+                        className="user-menu-item logout-item" 
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          handleLogout();
+                        }}
+                      >
                         <LogOut size={16} />
                         <span>Logout</span>
                       </button>
@@ -365,7 +382,7 @@ const Navbar: React.FC = () => {
         <div className="mobile-menu">
           {currentUser ? (
             <>
-              {/* Main Navigation */}
+                            {/* Main Navigation */}
               <div className="mobile-menu-section">
                 <h3 className="mobile-menu-section-title">Navigation</h3>
                 <Link 
@@ -374,7 +391,15 @@ const Navbar: React.FC = () => {
                   onClick={() => setShowMobileMenu(false)}
                 >
                   <Activity size={18} />
-                  <span>Dashboard</span>
+                  <span>Active Projects</span>
+                </Link>
+                <Link 
+                  to="/management" 
+                  className="mobile-menu-item"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  <MessageCircle size={18} />
+                  <span>Requests</span>
                 </Link>
                 <Link 
                   to="/messages" 
@@ -438,6 +463,8 @@ const Navbar: React.FC = () => {
           )}
         </div>
       )}
+
+
     </nav>
     </>
   );

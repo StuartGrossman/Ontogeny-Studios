@@ -1243,10 +1243,10 @@
 .modal-content {
   background: white;
   border-radius: 16px;
-  padding: 2rem;
-  max-width: 500px;
-  width: 90%;
-  max-height: 80vh;
+  padding: 0;
+  max-width: 800px;
+  width: 95%;
+  max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   animation: modalSlideIn 0.3s ease;
@@ -1263,13 +1263,15 @@
   }
 }
 
-.modal-header {
+.modal-content .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 1.5rem;
+  background: #000000 !important;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
 }
 
 .modal-title-section {
@@ -1281,12 +1283,12 @@
 .modal-title-section h2 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #1e293b;
+  color: #ffffff;
   margin: 0;
 }
 
 .modal-title-section p {
-  color: #64748b;
+  color: #cccccc;
   font-size: 0.875rem;
   margin: 0;
 }
@@ -1296,15 +1298,19 @@
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #64748b;
+  color: black;
   transition: all 0.2s ease;
   padding: 0.5rem;
   border-radius: 8px;
 }
 
 .modal-close-btn:hover {
-  background: #f1f5f9;
-  color: #1e293b;
+  background: rgba(255, 255, 255, 0.1);
+  color: black;
+}
+
+.modal-body {
+  padding: 1.5rem;
 }
 
 .modal-actions {
@@ -1312,8 +1318,9 @@
   gap: 1rem;
   justify-content: flex-end;
   margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e2e8f0;
+  padding: 1.5rem;
+  border-top: 1px solid #333333;
+  background: #000000;
 }
 
 .btn-primary {
@@ -1505,17 +1512,26 @@
 @media (max-width: 768px) {
   .modal-content {
     width: 95%;
-    padding: 1.5rem;
+    padding: 0;
   }
   
   .modal-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
+    padding: 1rem;
+    background: #000000;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    margin-bottom: 0;
   }
   
   .modal-actions {
     flex-direction: column;
+    padding: 1rem;
+    background: #000000;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
   }
   
   .form-row {

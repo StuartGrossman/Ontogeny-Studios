@@ -74,7 +74,7 @@
 .create-project-modal-close-btn {
   background: none;
   border: none;
-  color: #64748b;
+  color: black;
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 8px;
@@ -83,7 +83,7 @@
 
 .create-project-modal-close-btn:hover {
   background: #f1f5f9;
-  color: #1e293b;
+  color: black;
 }
 
 .create-project-modal-close-btn:disabled {
@@ -627,6 +627,7 @@
   margin-top: 2rem;
   padding: 1.5rem 2rem 2rem 2rem;
   border-top: 1px solid #f1f5f9;
+  background: black;
 }
 
 .create-project-btn-primary,
@@ -742,6 +743,7 @@
   .create-project-modal-actions {
     flex-direction: column;
     padding: 1rem;
+    background: black;
   }
 
   .create-project-btn-primary,

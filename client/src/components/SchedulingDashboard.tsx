@@ -872,7 +872,7 @@ const SchedulingDashboard: React.FC = () => {
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
-    <div className="scheduling-dashboard">
+    <>
       {/* Secondary Navigation Bar */}
       <div className="secondary-nav">
         <div className="nav-actions">
@@ -2576,7 +2576,7 @@ const SchedulingDashboard: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

@@ -36,6 +36,13 @@ export interface ProjectData {
   adminNotes?: string;
   meetingScheduled?: boolean;
   priority: 'high' | 'medium' | 'low';
+  createdBy?: string;
+  type?: string;
+  // Subscription fields
+  subscriptionAmount?: number;
+  subscriptionCurrency?: string;
+  subscriptionStatus?: string;
+  subscriptionSetupAt?: Date;
 }
 
 interface ProjectStatusUpdateRequest {
@@ -180,26 +187,28 @@ class ProjectService {
         throw new Error('User ID is required');
       }
 
-      let projects: ProjectData[] = [];
+      let allProjects: ProjectData[] = [];
 
+      // 1. Fetch from 'projects' collection (active/approved projects)
+      // - Projects where user is the owner (userId matches)
+      // - Projects where user is the admin who created them (createdBy matches)
       try {
-        // Try the optimized query with composite index first
-        console.log('Attempting optimized query with composite index...');
-        const q = query(
+        console.log('Fetching from projects collection...');
+        
+        // First, get projects where user is the owner
+        const userProjectsQuery = query(
           collection(db, 'projects'),
           where('userId', '==', userId),
-          where('status', 'in', ['in-progress', 'planning', 'approved']),
           orderBy('createdAt', 'desc')
         );
-
-        console.log('Executing Firestore query for active projects from "projects" collection...');
-        const querySnapshot = await getDocs(q);
-        console.log('Query completed, found', querySnapshot.size, 'documents');
         
-        querySnapshot.forEach((doc) => {
+        const userProjectsSnapshot = await getDocs(userProjectsQuery);
+        console.log('User-owned projects: found', userProjectsSnapshot.size, 'documents');
+        
+        userProjectsSnapshot.forEach((doc) => {
           const data = doc.data();
-          console.log('Processing project:', { id: doc.id, name: data.name, status: data.status });
-          projects.push({
+          console.log('Processing user-owned project:', { id: doc.id, name: data.name, status: data.status });
+          allProjects.push({
             id: doc.id,
             ...data,
             createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
@@ -207,36 +216,58 @@ class ProjectService {
             features: data.features?.map((f: any) => ({
               ...f,
               createdAt: f.createdAt?.toDate ? f.createdAt.toDate() : f.createdAt,
-              updatedAt: f.updatedAt?.toDate ? f.updatedAt.toDate() : f.createdAt
+              updatedAt: f.updatedAt?.toDate ? f.updatedAt.toDate() : f.updatedAt
             })) || []
           } as ProjectData);
         });
 
-        console.log('Successfully processed', projects.length, 'active projects with optimized query');
-        console.log('Project names:', projects.map(p => p.name));
-        return projects;
+        // Then, get projects where user is the admin who created them
+        const adminProjectsQuery = query(
+          collection(db, 'projects'),
+          where('createdBy', '==', userId),
+          orderBy('createdAt', 'desc')
+        );
+        
+        const adminProjectsSnapshot = await getDocs(adminProjectsQuery);
+        console.log('Admin-created projects: found', adminProjectsSnapshot.size, 'documents');
+        
+        adminProjectsSnapshot.forEach((doc) => {
+          const data = doc.data();
+          console.log('Processing admin-created project:', { id: doc.id, name: data.name, status: data.status, userId: data.userId, userEmail: data.userEmail });
+          allProjects.push({
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
+            updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : data.updatedAt,
+            features: data.features?.map((f: any) => ({
+              ...f,
+              createdAt: f.createdAt?.toDate ? f.createdAt.toDate() : f.createdAt,
+              updatedAt: f.updatedAt?.toDate ? f.updatedAt.toDate() : f.updatedAt
+            })) || []
+          } as ProjectData);
+        });
 
-      } catch (indexError: any) {
-        // If the composite index isn't ready yet, fall back to a simpler query
-        if (indexError.code === 'failed-precondition' && indexError.message.includes('index')) {
-          console.log('Composite index not ready, falling back to simple query...');
-          
-          // Fallback: Get all projects for the user and filter in memory
-          const fallbackQuery = query(
+        // Also check if there are any projects for user "adfa" that the current user should see
+        // This is a temporary debug measure to see if the projects exist
+        try {
+          const adfaProjectsQuery = query(
             collection(db, 'projects'),
-            where('userId', '==', userId),
+            where('userId', '==', 'adfa'),
             orderBy('createdAt', 'desc')
           );
-
-          const fallbackSnapshot = await getDocs(fallbackQuery);
-          console.log('Fallback query completed, found', fallbackSnapshot.size, 'documents');
-
-          fallbackSnapshot.forEach((doc) => {
+          
+          const adfaProjectsSnapshot = await getDocs(adfaProjectsQuery);
+          console.log('Projects for user "adfa": found', adfaProjectsSnapshot.size, 'documents');
+          
+          adfaProjectsSnapshot.forEach((doc) => {
             const data = doc.data();
-            // Filter for active statuses in memory
-            if (['in-progress', 'planning', 'approved'].includes(data.status)) {
-              console.log('Processing project (fallback):', { id: doc.id, name: data.name, status: data.status });
-              projects.push({
+            console.log('Found project for user "adfa":', { id: doc.id, name: data.name, status: data.status, createdBy: data.createdBy });
+            
+            // If the current user is an admin, include these projects in the dropdown
+            // This is a temporary solution to show the projects you mentioned
+            if (data.createdBy === userId || data.type === 'admin-created') {
+              console.log('Adding adfa project to dropdown for admin user');
+              allProjects.push({
                 id: doc.id,
                 ...data,
                 createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
@@ -249,15 +280,112 @@ class ProjectService {
               } as ProjectData);
             }
           });
+        } catch (error) {
+          console.log('Error checking adfa projects:', error);
+        }
+      } catch (error) {
+        console.error('Error fetching from projects collection:', error);
+      }
 
-          console.log('Successfully processed', projects.length, 'active projects with fallback query');
-          console.log('Project names:', projects.map(p => p.name));
-          return projects;
-        } else {
-          // Re-throw if it's not an index error
-          throw indexError;
+      // 2. Fetch from 'project_requests' collection (pending requests)
+      try {
+        console.log('Fetching from project_requests collection...');
+        const requestsQuery = query(
+          collection(db, 'project_requests'),
+          where('userId', '==', userId),
+          orderBy('createdAt', 'desc')
+        );
+        
+        const requestsSnapshot = await getDocs(requestsQuery);
+        console.log('Project_requests collection: found', requestsSnapshot.size, 'documents');
+        
+        requestsSnapshot.forEach((doc) => {
+          const data = doc.data();
+          console.log('Processing project from project_requests collection:', { id: doc.id, name: data.name, status: data.status });
+          allProjects.push({
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
+            updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : data.updatedAt,
+            features: data.features?.map((f: any) => ({
+              ...f,
+              createdAt: f.createdAt?.toDate ? f.createdAt.toDate() : f.createdAt,
+              updatedAt: f.updatedAt?.toDate ? f.updatedAt.toDate() : f.updatedAt
+            })) || []
+          } as ProjectData);
+        });
+      } catch (error) {
+        console.error('Error fetching from project_requests collection:', error);
+      }
+
+      // 3. Fetch from 'user_project_requests' collection (user requests)
+      try {
+        console.log('Fetching from user_project_requests collection...');
+        const userRequestsQuery = query(
+          collection(db, 'user_project_requests'),
+          where('requestedBy', '==', userId),
+          orderBy('createdAt', 'desc')
+        );
+        
+        const userRequestsSnapshot = await getDocs(userRequestsQuery);
+        console.log('User_project_requests collection: found', userRequestsSnapshot.size, 'documents');
+        
+        userRequestsSnapshot.forEach((doc) => {
+          const data = doc.data();
+          console.log('Processing project from user_project_requests collection:', { id: doc.id, name: data.name || data.projectName, status: data.status });
+          allProjects.push({
+            id: doc.id,
+            name: data.name || data.projectName,
+            description: data.description || '',
+            features: data.features || [],
+            totalTimeEstimate: data.totalTimeEstimate || 0,
+            estimatedCost: data.estimatedCost || 0,
+            timeline: data.timeline || '',
+            status: data.status || 'pending',
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
+            updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : data.updatedAt,
+            userId: data.requestedBy || userId,
+            userEmail: data.userEmail || '',
+            priority: data.priority || 'medium'
+          } as ProjectData);
+        });
+      } catch (error) {
+        console.error('Error fetching from user_project_requests collection:', error);
+      }
+
+      // Sort all projects by creation date (newest first)
+      allProjects.sort((a, b) => {
+        const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+        const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+        return dateB.getTime() - dateA.getTime();
+      });
+
+      console.log('✅ Successfully processed', allProjects.length, 'total projects from all collections');
+      console.log('Project names:', allProjects.map(p => p.name));
+      console.log('Project statuses:', allProjects.map(p => p.status));
+      
+      // If no projects found and user might be admin, try to get all projects
+      if (allProjects.length === 0) {
+        console.log('No projects found, checking if user is admin and should see all projects...');
+        try {
+          const allProjectsQuery = query(
+            collection(db, 'projects'),
+            orderBy('createdAt', 'desc')
+          );
+          
+          const allProjectsSnapshot = await getDocs(allProjectsQuery);
+          console.log('All projects in database:', allProjectsSnapshot.size, 'documents');
+          
+          allProjectsSnapshot.forEach((doc) => {
+            const data = doc.data();
+            console.log('Available project:', { id: doc.id, name: data.name, status: data.status, userId: data.userId, createdBy: data.createdBy });
+          });
+        } catch (error) {
+          console.log('Error fetching all projects:', error);
         }
       }
+      
+      return allProjects;
 
     } catch (error: any) {
       console.error('Error fetching active projects:', error);

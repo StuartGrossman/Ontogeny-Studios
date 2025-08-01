@@ -45,7 +45,7 @@
 .modal-close {
   background: none;
   border: none;
-  color: var(--text-secondary);
+  color: black;
   font-size: 1.5rem;
   cursor: pointer;
   padding: var(--space-2);
@@ -54,7 +54,7 @@
 }
 
 .modal-close:hover {
-  color: var(--accent-color);
+  color: black;
 }
 
 .modal-content {
@@ -119,6 +119,7 @@
   display: flex;
   gap: var(--space-4);
   margin-top: var(--space-6);
+  background: black;
 }
 
 .modal-actions .button {
@@ -225,6 +226,7 @@
 
   .modal-actions {
     flex-direction: column;
+    background: black;
   }
 
   .user-list {
@@ -446,4 +448,10 @@
   color: #6b7280;
   text-align: right;
   margin-top: 4px;
+}
+
+.recaptcha-container {
+  margin: 20px 0;
+  display: flex;
+  justify-content: center;
 } 

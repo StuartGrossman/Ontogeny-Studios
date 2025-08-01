@@ -82,12 +82,20 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isActive, selectedVi
           <details className="details-section" open>
             <summary>Core Features</summary>
             <ul className="features-list">
-              {project.features.map((feature: string, i: number) => (
-                <li key={i} className="feature-item">
-                  <span className="feature-icon">•</span>
-                  {feature}
-                </li>
-              ))}
+              {Array.isArray(project.features) 
+                ? project.features.map((feature: string, i: number) => (
+                    <li key={i} className="feature-item">
+                      <span className="feature-icon">•</span>
+                      <span className="feature-text">{feature}</span>
+                    </li>
+                  ))
+                : project.features ? [project.features].map((feature: string, i: number) => (
+                    <li key={i} className="feature-item">
+                      <span className="feature-icon">•</span>
+                      <span className="feature-text">{feature}</span>
+                    </li>
+                  )) : []
+              }
             </ul>
           </details>
           

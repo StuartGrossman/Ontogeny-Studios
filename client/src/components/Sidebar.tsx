@@ -388,6 +388,20 @@ const Sidebar: React.FC<SidebarProps> = ({
                       <span className="status-dot-mini"></span>
                     </div>
                   )}
+                  {/* Payment Button for Projects with Subscriptions */}
+                  {item.isProject && item.project?.subscriptionAmount && item.project?.subscriptionAmount > 0 && (
+                    <button
+                      className="project-payment-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Navigate to payments section
+                        onSectionChange('payments');
+                      }}
+                      title={`Pay $${item.project.subscriptionAmount}/month`}
+                    >
+                      <CreditCard size={14} />
+                    </button>
+                  )}
                 </div>
               </>
             )}

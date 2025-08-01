@@ -2,72 +2,69 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+
     // Users can read and write their own user document
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
       allow read: if request.auth != null; // Allow reading other users for admin functionality
       // Allow admins to list all users
-      allow list: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow list: if isAdmin();
+      
+      // User subscriptions subcollection - users can read/write their own subscriptions
+      match /subscriptions/{subscriptionId} {
+        allow read, write, create, update: if request.auth != null && request.auth.uid == userId;
+        allow list: if request.auth != null && request.auth.uid == userId;
+      }
     }
     
     // Projects - users can read/write their own, admins can read/write all
     match /projects/{projectId} {
       allow read, write: if request.auth != null && 
-        (resource == null || resource.data.userId == request.auth.uid || 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+        (resource == null || resource.data.userId == request.auth.uid || isAdmin());
       allow create: if request.auth != null && 
-        (request.resource.data.userId == request.auth.uid || 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
-      // Allow admins to list all projects
-      allow list: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+        (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isAdmin();
     }
     
     // Project requests - users can read/write their own, admins can read/write all  
     match /project-requests/{requestId} {
       allow read, write: if request.auth != null && 
-        (resource.data.userId == request.auth.uid || 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
-      // Allow admins to list all project requests
-      allow list: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isAdmin();
     }
     
     // Project requests (with underscore) - users can read/write their own, admins can read/write all  
     match /project_requests/{requestId} {
       allow read, write: if request.auth != null && 
-        (resource.data.userId == request.auth.uid || 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
-      // Allow admins to list all project requests
-      allow list: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isAdmin();
     }
     
     // Project features - users can read features for their own projects, admins can read/write all
     match /project_features/{featureId} {
       allow read, write: if request.auth != null && 
         (get(/databases/$(database)/documents/project_requests/$(resource.data.projectId)).data.userId == request.auth.uid || 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+         isAdmin());
     }
     
     // User project requests - users can read/write their own, admins can read/write all
     match /user_project_requests/{requestId} {
       allow read, write: if request.auth != null && 
-        (resource == null || resource.data.requestedBy == request.auth.uid || 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+        (request.auth.uid == resource.data.requestedBy || isAdmin());
       allow create: if request.auth != null && 
-        (request.resource.data.requestedBy == request.auth.uid || 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
-      // Allow admins to list all user project requests
-      allow list: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+        (request.auth.uid == request.resource.data.requestedBy || isAdmin());
+      allow list, read: if isAdmin();
     }
     
     // Admin projects - admins can read/write all, assigned users can read
     match /admin_projects/{projectId} {
-      allow read, write: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow read, write: if isAdmin();
       allow read: if request.auth != null && 
         request.auth.uid in resource.data.assignedTo;
     }
@@ -75,15 +72,13 @@ service cloud.firestore {
     // Meetings - users can read/write their own, admins can read/write all
     match /meetings/{meetingId} {
       allow read, write: if request.auth != null && 
-        (resource.data.userId == request.auth.uid || 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+        (resource.data.userId == request.auth.uid || isAdmin());
     }
     
     // Feature assignments - users can read/write their own, admins can read/write all
     match /feature-assignments/{assignmentId} {
       allow read, write: if request.auth != null && 
-        (resource.data.userId == request.auth.uid || 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+        (resource.data.userId == request.auth.uid || isAdmin());
     }
     
     // Conversations - users can read/write conversations they participate in
@@ -125,10 +120,54 @@ service cloud.firestore {
       }
     }
     
+    // Feature requests - users can read/write their own, admins can read/write all
+    match /feature_requests/{requestId} {
+      allow read, write: if request.auth != null && 
+        (resource.data.requestedBy == request.auth.uid || isAdmin());
+      allow create: if request.auth != null && 
+        (request.resource.data.requestedBy == request.auth.uid || isAdmin());
+      allow list, read: if isAdmin();
+    }
+    
+    // Feature assignments - users can read/write their own, admins can read/write all
+    match /featureAssignments/{assignmentId} {
+      allow read, write: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if request.auth != null && 
+        (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow list, read: if isAdmin();
+    }
+    
+    // Conversation metadata - users can read/write their own, admins can read/write all
+    match /conversation_metadata/{metadataId} {
+      allow read, write: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if request.auth != null && 
+        (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow list, read: if isAdmin();
+    }
+    
+    // AI conversations - users can read/write their own, admins can read/write all
+    match /ai_conversations/{conversationId} {
+      allow read, write: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if request.auth != null && 
+        (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow list, read: if isAdmin();
+    }
+    
+    // UI design requests - users can read/write their own, admins can read/write all
+    match /ui_design_requests/{requestId} {
+      allow read, write: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if request.auth != null && 
+        (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow list, read: if isAdmin();
+    }
+    
     // Admin audit logs - admins can read/write, users cannot access
     match /admin_audit_logs/{logId} {
-      allow read, write: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow read, write: if isAdmin();
     }
   }
 } 

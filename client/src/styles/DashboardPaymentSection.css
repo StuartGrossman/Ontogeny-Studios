@@ -1,0 +1,270 @@
+.dashboard-payment-section {
+  background: #000000;
+  border-radius: 12px;
+  padding: 24px;
+  margin: 20px 0;
+  box-shadow: 0 4px 6px -1px rgba(255, 255, 255, 0.1);
+  border: 1px solid #333333;
+  transition: all 0.2s ease;
+  color: #ffffff;
+}
+
+.dashboard-payment-section:hover {
+  box-shadow: 0 10px 15px -3px rgba(255, 255, 255, 0.1);
+}
+
+.dashboard-payment-section.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.payment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #333333;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-content svg {
+  color: #6366f1;
+}
+
+.header-content h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.header-content p {
+  margin: 4px 0 0 0;
+  font-size: 0.875rem;
+  color: #cccccc;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.status-badge.pending {
+  background-color: #1f2937;
+  color: #fbbf24;
+  border: 1px solid #374151;
+}
+
+.status-badge.active {
+  background-color: #064e3b;
+  color: #10b981;
+  border: 1px solid #065f46;
+}
+
+.status-badge.inactive {
+  background-color: #450a0a;
+  color: #f87171;
+  border: 1px solid #7f1d1d;
+}
+
+.status-icon.pending {
+  color: #f59e0b;
+}
+
+.status-icon.active {
+  color: #10b981;
+}
+
+.status-icon.inactive {
+  color: #ef4444;
+}
+
+.payment-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.subscription-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.info-item .label {
+  font-weight: 500;
+  color: #cccccc;
+}
+
+.info-item .value {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.info-item .value svg {
+  color: #10b981;
+}
+
+.payment-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  border: 1px solid #333333;
+}
+
+.action-info h4 {
+  margin: 0 0 8px 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.action-info p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #cccccc;
+}
+
+.connect-card-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background-color: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+}
+
+.connect-card-btn:hover:not(:disabled) {
+  background-color: #4f46e5;
+  transform: translateY(-1px);
+}
+
+.connect-card-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.success-message,
+.active-subscription {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background-color: #064e3b;
+  border-radius: 8px;
+  border: 1px solid #10b981;
+}
+
+.success-message svg,
+.active-subscription svg {
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+.success-message h4,
+.active-subscription h4 {
+  margin: 0 0 4px 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #10b981;
+}
+
+.success-message p,
+.active-subscription p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #a7f3d0;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #333333;
+  border-top: 2px solid #6366f1;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-spinner.small {
+  width: 16px;
+  height: 16px;
+  border-width: 1.5px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .dashboard-payment-section {
+    margin: 16px 0;
+    padding: 16px;
+  }
+  
+  .payment-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .status-badge {
+    align-self: flex-start;
+  }
+  
+  .info-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .connect-card-btn {
+    width: 100%;
+  }
+  
+  .success-message,
+  .active-subscription {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+  }
+}

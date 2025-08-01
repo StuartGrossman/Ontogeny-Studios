@@ -1,0 +1,482 @@
+/* ========================================
+   DASHBOARD RESPONSIVE DESIGN
+   Mobile-first responsive layouts
+   ======================================== */
+
+/* ===== BREAKPOINT VARIABLES ===== */
+:root {
+  --dash-breakpoint-sm: 640px;
+  --dash-breakpoint-md: 768px;
+  --dash-breakpoint-lg: 1024px;
+  --dash-breakpoint-xl: 1280px;
+  --dash-breakpoint-2xl: 1536px;
+}
+
+/* ===== BASE MOBILE STYLES (0-640px) ===== */
+@media (max-width: 640px) {
+  /* Dashboard Layout */
+  .user-dashboard {
+    padding: var(--dash-spacing-lg);
+  }
+  
+  .dashboard-content {
+    padding: var(--dash-spacing-lg);
+  }
+  
+  /* Navigation */
+  .dashboard-nav {
+    flex-direction: column;
+    gap: var(--dash-spacing-lg);
+    padding: var(--dash-spacing-lg);
+  }
+  
+  .nav-items {
+    justify-content: center;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  
+  .nav-item {
+    font-size: var(--dash-font-size-xs);
+    padding: var(--dash-spacing-sm) var(--dash-spacing-md);
+  }
+  
+  .nav-item span {
+    display: none;
+  }
+  
+  .nav-item {
+    min-width: 44px;
+    justify-content: center;
+  }
+  
+  .new-project-btn span {
+    display: none;
+  }
+  
+  .new-project-btn {
+    min-width: 44px;
+    padding: var(--dash-spacing-md);
+  }
+  
+  /* Grid Systems */
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: var(--dash-spacing-md);
+  }
+  
+  .dash-grid-responsive {
+    grid-template-columns: repeat(var(--dash-grid-cols-mobile), 1fr);
+  }
+  
+  /* Cards */
+  .stat-card {
+    padding: var(--dash-spacing-lg);
+    flex-direction: column;
+    text-align: center;
+    gap: var(--dash-spacing-md);
+  }
+  
+  .project-card {
+    padding: var(--dash-spacing-lg);
+  }
+  
+  .project-card-footer {
+    flex-direction: column;
+    gap: var(--dash-spacing-md);
+    align-items: stretch;
+  }
+  
+  .project-progress {
+    margin-right: 0;
+    margin-bottom: var(--dash-spacing-md);
+  }
+  
+  /* Buttons */
+  .dash-btn {
+    padding: var(--dash-spacing-md) var(--dash-spacing-lg);
+    font-size: var(--dash-font-size-sm);
+  }
+  
+  .dash-btn.wide {
+    width: 100%;
+  }
+  
+  /* Modals */
+  .dash-modal {
+    width: 95vw;
+    max-width: none;
+    margin: var(--dash-spacing-lg);
+  }
+  
+  .dash-modal-header {
+    padding: var(--dash-spacing-lg);
+    flex-direction: column;
+    gap: var(--dash-spacing-md);
+    align-items: stretch;
+  }
+  
+  .dash-modal-title {
+    text-align: center;
+    flex-direction: column;
+  }
+  
+  .dash-modal-body {
+    padding: var(--dash-spacing-lg);
+  }
+  
+  .dash-modal-footer {
+    padding: var(--dash-spacing-lg);
+    flex-direction: column-reverse;
+    gap: var(--dash-spacing-md);
+  }
+  
+  .dash-modal-footer .dash-btn {
+    width: 100%;
+  }
+  
+  .dash-modal-tabs {
+    padding: 0 var(--dash-spacing-lg);
+    overflow-x: auto;
+  }
+  
+  .dash-modal-tab {
+    padding: var(--dash-spacing-md) var(--dash-spacing-lg);
+    white-space: nowrap;
+  }
+  
+  /* Layout Systems */
+  .dash-split-layout,
+  .dash-split-layout.narrow-wide,
+  .dash-split-layout.wide-narrow,
+  .dash-split-layout.thirds {
+    grid-template-columns: 1fr;
+    gap: var(--dash-spacing-lg);
+  }
+  
+  .dash-sidebar-layout,
+  .dash-sidebar-layout.collapsed {
+    grid-template-columns: 1fr;
+    gap: var(--dash-spacing-lg);
+  }
+  
+  .dash-sidebar {
+    position: static;
+    order: 2;
+  }
+  
+  .dash-main-content {
+    order: 1;
+  }
+  
+  /* Typography */
+  .dash-section-title {
+    font-size: var(--dash-font-size-xl);
+  }
+  
+  .dash-section-subtitle {
+    font-size: var(--dash-font-size-md);
+  }
+  
+  /* Mobile Navigation */
+  .dash-mobile-nav-toggle {
+    display: block;
+  }
+  
+  /* Floating Action Button */
+  .dash-fab {
+    bottom: var(--dash-spacing-xl);
+    right: var(--dash-spacing-xl);
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* ===== TABLET STYLES (641px - 768px) ===== */
+@media (min-width: 641px) and (max-width: 768px) {
+  .dash-grid-responsive {
+    grid-template-columns: repeat(var(--dash-grid-cols-tablet), 1fr);
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .nav-item span {
+    display: inline;
+  }
+  
+  .new-project-btn span {
+    display: inline;
+  }
+  
+  .stat-card {
+    flex-direction: row;
+    text-align: left;
+  }
+  
+  .dash-modal {
+    width: 90vw;
+    max-width: 600px;
+  }
+  
+  .dash-modal-header {
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  .dash-modal-title {
+    flex-direction: row;
+    text-align: left;
+  }
+  
+  .dash-modal-footer {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+  
+  .dash-modal-footer .dash-btn {
+    width: auto;
+  }
+}
+
+/* ===== DESKTOP STYLES (769px - 1024px) ===== */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .dash-grid-responsive {
+    grid-template-columns: repeat(var(--dash-grid-cols-desktop), 1fr);
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .dashboard-nav {
+    flex-direction: row;
+  }
+  
+  .nav-items {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+  }
+  
+  .dash-split-layout.narrow-wide {
+    grid-template-columns: 1fr 2fr;
+  }
+  
+  .dash-split-layout.wide-narrow {
+    grid-template-columns: 2fr 1fr;
+  }
+  
+  .dash-split-layout.thirds {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  
+  .dash-sidebar-layout {
+    grid-template-columns: 250px 1fr;
+  }
+  
+  .dash-sidebar-layout.collapsed {
+    grid-template-columns: 80px 1fr;
+  }
+}
+
+/* ===== LARGE DESKTOP STYLES (1025px - 1280px) ===== */
+@media (min-width: 1025px) and (max-width: 1280px) {
+  .dash-grid-responsive {
+    grid-template-columns: repeat(var(--dash-grid-cols-wide), 1fr);
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .dash-container {
+    max-width: 1200px;
+  }
+  
+  .dash-sidebar-layout {
+    grid-template-columns: var(--dash-sidebar-width) 1fr;
+  }
+  
+  .dash-sidebar-layout.collapsed {
+    grid-template-columns: var(--dash-sidebar-collapsed-width) 1fr;
+  }
+}
+
+/* ===== EXTRA LARGE DESKTOP STYLES (1281px+) ===== */
+@media (min-width: 1281px) {
+  .dash-container {
+    max-width: var(--dash-container-max-width);
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .project-card {
+    padding: var(--dash-spacing-2xl);
+  }
+  
+  .stat-card {
+    padding: var(--dash-spacing-2xl);
+  }
+  
+  .dash-modal.xl {
+    max-width: 1400px;
+  }
+}
+
+/* ===== TOUCH DEVICE OPTIMIZATIONS ===== */
+@media (hover: none) and (pointer: coarse) {
+  .dash-btn,
+  .nav-item,
+  .stat-card,
+  .project-card {
+    min-height: 44px;
+  }
+  
+  .dash-btn {
+    padding: var(--dash-spacing-lg) var(--dash-spacing-xl);
+  }
+  
+  .nav-item {
+    padding: var(--dash-spacing-lg);
+  }
+  
+  .dash-modal-close {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  /* Remove hover effects on touch devices */
+  .dash-btn:hover,
+  .nav-item:hover,
+  .stat-card:hover,
+  .project-card:hover,
+  .dash-card:hover {
+    transform: none;
+    box-shadow: initial;
+  }
+}
+
+/* ===== HIGH DPI DISPLAYS ===== */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .dash-border-thin {
+    border-width: 0.5px;
+  }
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  .dashboard {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .dash-modal-overlay,
+  .dash-fab,
+  .nav-badge,
+  .dash-btn {
+    display: none !important;
+  }
+  
+  .dash-card,
+  .stat-card,
+  .project-card {
+    break-inside: avoid;
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+  }
+  
+  .dash-section {
+    page-break-inside: avoid;
+  }
+}
+
+/* ===== REDUCED MOTION ===== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .loading-spinner,
+  .dash-loading-spinner {
+    animation: none;
+  }
+}
+
+/* ===== HIGH CONTRAST MODE ===== */
+@media (prefers-contrast: high) {
+  :root {
+    --dash-bg-primary: #000000;
+    --dash-bg-secondary: #ffffff;
+    --dash-text-primary: #ffffff;
+    --dash-text-secondary: #000000;
+    --dash-border-primary: #ffffff;
+    --dash-border-secondary: #000000;
+  }
+  
+  .dash-btn {
+    border: 2px solid currentColor;
+  }
+  
+  .dash-card,
+  .stat-card,
+  .project-card {
+    border: 2px solid currentColor;
+  }
+}
+
+/* ===== DARK MODE SUPPORT ===== */
+@media (prefers-color-scheme: light) {
+  /* Override dark theme for users who prefer light mode */
+  .dashboard[data-theme="auto"] {
+    --dash-bg-primary: #ffffff;
+    --dash-bg-secondary: #f8fafc;
+    --dash-text-primary: #1f2937;
+    --dash-text-secondary: #6b7280;
+    --dash-border-primary: #e5e7eb;
+    --dash-border-secondary: #f3f4f6;
+  }
+}
+
+/* ===== FOCUS MANAGEMENT ===== */
+@media (prefers-reduced-motion: no-preference) {
+  .dash-btn:focus-visible,
+  .nav-item:focus-visible,
+  .dash-form-input:focus-visible,
+  .dash-form-textarea:focus-visible,
+  .dash-form-select:focus-visible {
+    outline: 2px solid var(--dash-text-accent);
+    outline-offset: 2px;
+  }
+}
+
+/* ===== LANDSCAPE MOBILE OPTIMIZATIONS ===== */
+@media (max-height: 500px) and (orientation: landscape) {
+  .dash-modal {
+    max-height: 95vh;
+    margin: var(--dash-spacing-sm);
+  }
+  
+  .dash-modal-header {
+    padding: var(--dash-spacing-md);
+  }
+  
+  .dash-modal-body {
+    padding: var(--dash-spacing-md);
+  }
+  
+  .dash-modal-footer {
+    padding: var(--dash-spacing-md);
+  }
+  
+  .dashboard-nav {
+    padding: var(--dash-spacing-md);
+  }
+} 

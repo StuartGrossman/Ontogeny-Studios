@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Users, RefreshCw, ArrowUp, ArrowDown, FolderPlus, CheckCircle, Edit3, MessageCircle, Folder, GitPullRequest, Star, Trash2, RotateCcw, Key } from 'lucide-react';
+import { Users, RefreshCw, ArrowUp, ArrowDown, FolderPlus, CheckCircle, Edit3, MessageCircle, Folder, GitPullRequest, Star, Trash2, RotateCcw, Key, UserPlus } from 'lucide-react';
 import { UserAvatar } from '../utils/avatarGenerator';
 import APIKeysManagement from './APIKeysManagement';
 import SecureDeleteProjectModal from './modals/SecureDeleteProjectModal';
+import ProjectTeamModal from './modals/ProjectTeamModal';
 import '../styles/Dashboard.css';
 
 interface User {
@@ -51,6 +52,7 @@ interface AdminDashboardProps {
   onDeleteProject?: (projectId: string) => void;
   onRestoreProject?: (projectId: string) => void;
   onNavigateToMessages: (userId: string) => void; // Add navigation handler
+  onManageTeam: (project: Project) => void; // Add team management handler
   currentUser?: any; // Add currentUser prop
 }
 
@@ -71,6 +73,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onDeleteProject,
   onRestoreProject,
   onNavigateToMessages,
+  onManageTeam,
   currentUser,
 }) => {
   const [activeTab, setActiveTab] = useState<'active' | 'requested' | 'features' | 'api-keys'>('active');
@@ -335,6 +338,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             )}
                           </div>
                           <div className="project-actions">
+                            {!project.deleted && (
+                              <button
+                                className="manage-team-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onManageTeam(project);
+                                }}
+                                title="Manage team members"
+                              >
+                                <UserPlus size={14} />
+                              </button>
+                            )}
                             {project.deleted ? (
                               <button
                                 className="restore-btn"

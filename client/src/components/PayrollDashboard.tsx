@@ -880,7 +880,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
   };
 
   return (
-    <div className={`payroll-dashboard ${view}`}>
+    <>
       {/* Secondary Navigation Bar */}
       <div className="payroll-secondary-navbar">
         <div className="payroll-secondary-nav-content">
@@ -929,11 +929,9 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
         </div>
       </div>
       
-      <div className="payroll-dashboard-content">
-        {selectedView === 'payroll' && <PayrollView />}
-        {selectedView === 'statistics' && <StatisticsView />}
-        {selectedView === 'graphs' && <GraphsView />}
-      </div>
+      {selectedView === 'payroll' && <PayrollView />}
+      {selectedView === 'statistics' && <StatisticsView />}
+      {selectedView === 'graphs' && <GraphsView />}
 
       {/* Modals */}
       {showAddEmployee && (
@@ -1193,7 +1191,7 @@ const PayrollDashboard: React.FC<PayrollDashboardProps> = ({ view = 'desktop' })
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

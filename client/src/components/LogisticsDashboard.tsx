@@ -562,7 +562,7 @@ const LogisticsDashboard: React.FC = () => {
   };
 
   return (
-    <div className="logistics-dashboard">
+    <>
       <div className="secondary-nav">
         <button 
           className="nav-action-button"
@@ -1732,7 +1732,7 @@ const LogisticsDashboard: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

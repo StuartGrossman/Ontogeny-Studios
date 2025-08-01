@@ -31,7 +31,7 @@
   align-items: center;
   padding: 2rem 2rem 1rem 2rem;
   border-bottom: 1px solid #e2e8f0;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: black;
 }
 
 .modal-header h2 {

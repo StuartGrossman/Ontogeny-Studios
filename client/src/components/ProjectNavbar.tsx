@@ -1,7 +1,9 @@
-import React from 'react';
-import { Activity, CheckCircle, BarChart3, Settings, Target, GitBranch, FileText, Plus, Key, Palette, Globe } from 'lucide-react';
+import React, { useState } from 'react';
+import { Activity, CheckCircle, BarChart3, Settings, Target, GitBranch, GitPullRequest, Plus, Key, Palette, Globe, CreditCard } from 'lucide-react';
 import '../styles/ProjectNavbar.css';
 import '../styles/SecondaryActionNavbar.css';
+import { modalEvents } from '../utils/modalEvents';
+import SetupSubscriptionModal from './modals/SetupSubscriptionModal';
 
 interface Project {
   id: string;
@@ -55,6 +57,7 @@ const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
   dnsRequestCount = 0,
   featureRequestCount = 0
 }) => {
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
   const activeProjects = projects?.filter(p => p.status === 'in-progress' || p.status === 'planning') || [];
   const completedProjects = projects?.filter(p => p.status === 'completed') || [];
 
@@ -64,7 +67,7 @@ const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
     if (name.includes('mobile') || name.includes('app')) return <Settings size={20} />;
     if (name.includes('dashboard') || name.includes('admin')) return <Target size={20} />;
     if (name.includes('api') || name.includes('backend')) return <GitBranch size={20} />;
-    return <FileText size={20} />;
+    return <GitPullRequest size={20} />;
   };
 
   // Project Actions Mode
@@ -92,10 +95,9 @@ const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
             <div className="secondary-action-buttons-group">
               {project.status !== 'completed' && (
                 <button 
-                  className="secondary-action-btn primary"
+                  className="secondary-action-btn secondary"
                   onClick={onAddFeature}
                 >
-                  <Plus size={14} />
                   Add Feature
                 </button>
               )}
@@ -104,7 +106,7 @@ const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
                 className="secondary-action-btn secondary"
                 onClick={onViewRequests}
               >
-                <FileText size={14} />
+                <GitPullRequest size={14} />
                 View Requests
               </button>
               
@@ -117,22 +119,7 @@ const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
                   API Keys
                 </button>
                 {apiKeyRequestCount > 0 && (
-                  <span className="notification-badge" style={{ 
-                    position: 'absolute', 
-                    top: '-5px', 
-                    right: '-5px',
-                    background: '#ffffff',
-                    color: '#000000',
-                    borderRadius: '50%',
-                    width: '16px',
-                    height: '16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '9px',
-                    fontWeight: 'bold',
-                    border: '2px solid #000000'
-                  }}>
+                  <span className="nav-alert-badge">
                     {apiKeyRequestCount}
                   </span>
                 )}
@@ -140,7 +127,7 @@ const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
               
               <button 
                 className="secondary-action-btn secondary"
-                onClick={onAddUIDesign}
+                onClick={() => modalEvents.openModal('uiDesign')}
               >
                 <Palette size={14} />
                 UI Design
@@ -155,26 +142,21 @@ const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
                   DNS Records
                 </button>
                 {dnsRequestCount > 0 && (
-                  <span className="notification-badge" style={{ 
-                    position: 'absolute', 
-                    top: '-5px', 
-                    right: '-5px',
-                    background: '#ffffff',
-                    color: '#000000',
-                    borderRadius: '50%',
-                    width: '16px',
-                    height: '16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '9px',
-                    fontWeight: 'bold',
-                    border: '2px solid #000000'
-                  }}>
+                  <span className="nav-alert-badge">
                     {dnsRequestCount}
                   </span>
                 )}
               </div>
+
+              {project.status === 'completed' && (
+                <button 
+                  className="secondary-action-btn primary"
+                  onClick={() => setIsSubscriptionModalOpen(true)}
+                >
+                  <CreditCard size={14} />
+                  Set Up Subscription
+                </button>
+              )}
             </div>
           </div>
           
@@ -184,14 +166,22 @@ const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
                 href={project.liveLink || project.link || project.websiteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="secondary-action-btn secondary small"
+                className="secondary-action-btn secondary"
               >
-                <BarChart3 size={12} />
+                <BarChart3 size={14} />
                 Live
               </a>
             )}
           </div>
         </div>
+
+        {/* Subscription Modal */}
+        <SetupSubscriptionModal
+          isOpen={isSubscriptionModalOpen}
+          onClose={() => setIsSubscriptionModalOpen(false)}
+          projectId={project.id}
+          projectName={project.name || ''}
+        />
       </div>
     );
   }

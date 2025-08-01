@@ -1,0 +1,26 @@
+
+> server@1.0.0 start
+> node index.js
+
+✅ Firebase Admin initialized with service account file
+Stripe Key available: true
+Client URL: http://localhost:5199
+Server is running on port 3002
+Health check: http://localhost:3002/api/health
+Received checkout session request body: {
+  amount: 60,
+  currency: 'USD',
+  projectId: 'PlzL74jFka2gWiSTjGBB',
+  projectName: 'adfa',
+  userId: 'wKqrdfM7LjY6zlSoxzf3bRobWfk1',
+  userEmail: 'grossman.stuart1@gmail.com'
+}
+Creating checkout session with data: {
+  amount: 60,
+  currency: 'USD',
+  projectId: 'PlzL74jFka2gWiSTjGBB',
+  projectName: 'adfa',
+  userId: 'wKqrdfM7LjY6zlSoxzf3bRobWfk1',
+  userEmail: 'grossman.stuart1@gmail.com'
+}
+Checkout session created successfully: cs_test_a1fXO3QCRx4vBj6ACU28W0M6Ztw6Ys3F6PUv7k6s2ipiagPdUkZJayOQh9

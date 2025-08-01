@@ -23,13 +23,14 @@
 }
 
 .portal-header-actions {
-  max-width: 1400px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0 2rem;
   gap: 2rem;
+  width: 100%;
 }
 
 .portal-title-section h2 {
@@ -286,9 +287,10 @@
 
 /* ===== DASHBOARD SECTION ===== */
 .dashboard-section {
-  max-width: 1400px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   padding: 3rem 2rem;
+  width: 100%;
 }
 
 .welcome-banner {
@@ -1458,7 +1460,7 @@
 }
 
 .modal-header {
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: black;
   padding: 1.5rem 2rem;
   border-bottom: 1px solid #e2e8f0;
   display: flex;
@@ -1478,7 +1480,7 @@
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
   font-size: 1.5rem;
-  color: #64748b;
+  color: black;
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 8px;
@@ -1494,7 +1496,7 @@
 
 .modal-close:hover {
   background: #e2e8f0;
-  color: #1a365d;
+  color: black;
   border-color: #cbd5e1;
   transform: scale(1.05);
 }
@@ -1623,7 +1625,7 @@
   display: flex;
   gap: 1rem;
   justify-content: flex-end;
-  background: #f9fafb;
+  background: black;
   border-radius: 0 0 16px 16px;
 }
 

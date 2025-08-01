@@ -16,4 +16,5 @@ export { default as SendMessageModal } from './SendMessageModal';
 export { default as SignupModal } from './SignupModal';
 export { default as UserManagementModal } from './UserManagementModal';
 export { default as UserRequestedProjectModal } from './UserRequestedProjectModal';
-export { default as SecureDeleteProjectModal } from './SecureDeleteProjectModal'; 
+export { default as SecureDeleteProjectModal } from './SecureDeleteProjectModal';
+export { default as SetupSubscriptionModal } from './SetupSubscriptionModal'; 

@@ -1,0 +1,479 @@
+/* ========================================
+   REQUESTS MODAL - DARK THEME
+   ======================================== */
+
+/* ========================================
+   MODAL OVERLAY & CONTAINER
+   ======================================== */
+.requests-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: requestsModalFadeIn 0.3s ease-out;
+}
+
+.requests-modal {
+  background: #000000;
+  border: 1px solid #333333;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+  width: 90vw;
+  max-width: 1000px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: requestsModalSlideIn 0.3s ease-out;
+}
+
+/* ========================================
+   MODAL HEADER
+   ======================================== */
+.requests-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2rem;
+  border-bottom: 1px solid #333333;
+  background: #111111;
+}
+
+.requests-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.requests-modal-title svg {
+  color: #3b82f6;
+  flex-shrink: 0;
+}
+
+.requests-modal-title h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 0.25rem 0;
+}
+
+.requests-modal-title p {
+  font-size: 0.875rem;
+  color: #cccccc;
+  margin: 0;
+}
+
+.requests-modal-close-btn {
+  background: none;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 8px;
+  color: #999999;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.requests-modal-close-btn:hover {
+  background: #333333;
+  color: #ffffff;
+}
+
+/* ========================================
+   MODAL TABS
+   ======================================== */
+.requests-modal-tabs {
+  display: flex;
+  background: #111111;
+  border-bottom: 1px solid #333333;
+  padding: 0 2rem;
+}
+
+.requests-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  background: none;
+  border: none;
+  color: #999999;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 3px solid transparent;
+  position: relative;
+}
+
+.requests-tab-btn:hover {
+  color: #ffffff;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.requests-tab-btn.active {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.requests-tab-btn svg {
+  flex-shrink: 0;
+}
+
+/* ========================================
+   MODAL CONTENT
+   ======================================== */
+.requests-modal-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem;
+  width: 100%;
+  box-sizing: border-box;
+  background: #000000;
+}
+
+.requests-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: #ffffff;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #333333;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.requests-tab-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.requests-tab-header h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 0.5rem 0;
+}
+
+.requests-tab-header p {
+  color: #cccccc;
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* ========================================
+   REQUESTS GRID
+   ======================================== */
+.requests-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.request-card {
+  background: #111111;
+  border: 1px solid #333333;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  position: relative;
+  color: #ffffff;
+}
+
+.request-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 12px 12px 0 0;
+}
+
+.request-card.pending::before {
+  background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+}
+
+.request-card.approved::before {
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+}
+
+.request-card.rejected::before {
+  background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+}
+
+.request-card.under-review::before {
+  background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.request-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  border-color: #444444;
+  background: #1a1a1a;
+}
+
+.request-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.request-info h4 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 0.5rem 0;
+}
+
+.request-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: #999999;
+}
+
+.requested-by {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #3b82f6;
+}
+
+.request-date {
+  color: #666666;
+}
+
+.request-status {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.status-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.status-icon.pending {
+  background: #f59e0b;
+  color: #ffffff;
+}
+
+.status-icon.approved {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.status-icon.rejected {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.status-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-text.pending {
+  color: #f59e0b;
+}
+
+.status-text.approved {
+  color: #10b981;
+}
+
+.status-text.rejected {
+  color: #ef4444;
+}
+
+.status-text.under-review {
+  color: #3b82f6;
+}
+
+.request-description {
+  color: #cccccc;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0 0 1rem 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.request-meta-footer {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.priority-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  text-transform: capitalize;
+}
+
+.priority-high {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.priority-medium {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fcd34d;
+}
+
+.priority-low {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+}
+
+/* ========================================
+   EMPTY STATE
+   ======================================== */
+.requests-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: #666666;
+}
+
+.requests-empty svg {
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.requests-empty h4 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #999999;
+  margin: 0 0 0.5rem 0;
+}
+
+.requests-empty p {
+  font-size: 0.875rem;
+  color: #666666;
+  margin: 0;
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+@keyframes requestsModalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes requestsModalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+@media (max-width: 768px) {
+  .requests-modal {
+    width: 95vw;
+    max-height: 95vh;
+    margin: 1rem;
+  }
+
+  .requests-modal-header {
+    padding: 1.5rem;
+  }
+
+  .requests-modal-tabs {
+    padding: 0 1rem;
+    overflow-x: auto;
+  }
+
+  .requests-tab-btn {
+    padding: 0.75rem 1rem;
+    white-space: nowrap;
+  }
+
+  .requests-modal-content {
+    padding: 1.5rem;
+  }
+
+  .requests-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .request-header {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+
+  .request-status {
+    align-self: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .requests-modal {
+    width: 98vw;
+    margin: 0.5rem;
+  }
+
+  .requests-modal-header {
+    padding: 1rem;
+  }
+
+  .requests-modal-content {
+    padding: 1rem;
+  }
+
+  .request-card {
+    padding: 1rem;
+  }
+} 

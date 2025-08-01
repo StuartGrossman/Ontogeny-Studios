@@ -13,12 +13,17 @@ import UserDashboard from '../components/UserDashboard';
 import AIChatModal from '../components/AIChatModal';
 import { ProjectDetailsModal, MeetingSchedulerModal, FeatureRequestModal, FeatureAssignmentModal } from '../components/modals';
 import SimpleFeatureRequestModal from '../components/modals/SimpleFeatureRequestModal';
+import TestPaymentHelper from '../components/TestPaymentHelper';
 
-// Debug utility
-import '../utils/addTestProject.js';
+import RequestsModal from '../components/RequestsModal';
+import RequestedProjectsModal from '../components/RequestedProjectsModal';
+import UIDesignModal from '../components/UIDesignModal';
+import { modalEvents } from '../utils/modalEvents';
+
+
 
 // Styles
-import '../styles/Dashboard.css';
+import '../styles/dashboard/index.css';
 
 const Dashboard: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -29,6 +34,9 @@ const Dashboard: React.FC = () => {
   const modals = useProjectModals();
 
   const [isMobile, setIsMobile] = useState(false);
+  const [showRequestsModal, setShowRequestsModal] = useState(false);
+  const [showRequestedProjectsModal, setShowRequestedProjectsModal] = useState(false);
+  const [showUIDesignModal, setShowUIDesignModal] = useState(false);
 
   // Check authentication and mobile state
   useEffect(() => {
@@ -36,6 +44,31 @@ const Dashboard: React.FC = () => {
       navigate('/');
     }
   }, [currentUser, navigate]);
+
+  // Handle payment success/cancel from Stripe Checkout
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    const sessionId = urlParams.get('session_id');
+
+    if (paymentStatus === 'success' && sessionId) {
+      // Payment was successful, update subscription status
+      console.log('Payment successful, session ID:', sessionId);
+      
+      // You can add logic here to update the subscription status
+      // For now, we'll just show a success message
+      alert('Payment successful! Your subscription has been activated.');
+      
+      // Clean up the URL
+      window.history.replaceState({}, document.title, '/dashboard');
+    } else if (paymentStatus === 'cancelled') {
+      console.log('Payment was cancelled');
+      alert('Payment was cancelled. You can try again anytime.');
+      
+      // Clean up the URL
+      window.history.replaceState({}, document.title, '/dashboard');
+    }
+  }, []);
 
   // Check mobile state
   useEffect(() => {
@@ -46,6 +79,27 @@ const Dashboard: React.FC = () => {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Subscribe to modal events
+  useEffect(() => {
+    const unsubscribeRequests = modalEvents.subscribe('requests', () => {
+      setShowRequestsModal(true);
+    });
+    
+    const unsubscribeRequestedProjects = modalEvents.subscribe('requestedProjects', () => {
+      setShowRequestedProjectsModal(true);
+    });
+
+    const unsubscribeUIDesign = modalEvents.subscribe('uiDesign', () => {
+      setShowUIDesignModal(true);
+    });
+
+    return () => {
+      unsubscribeRequests();
+      unsubscribeRequestedProjects();
+      unsubscribeUIDesign();
+    };
   }, []);
 
   // Handle logout
@@ -131,18 +185,23 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="dashboard">
-      <div className="dashboard-container">
-        <UserDashboard
-          customerProjects={dashboardData.customerProjects}
-          requestedProjects={dashboardData.requestedProjects}
-          customerProjectsLoading={dashboardData.customerProjectsLoading}
-          requestedProjectsLoading={dashboardData.requestedProjectsLoading}
-          onOpenAIChat={modals.openAIChat}
-          onOpenCustomerProject={handleOpenCustomerProject}
-          onFeatureRequest={handleFeatureRequest}
-        />
-      </div>
+    <>
+      <UserDashboard
+        customerProjects={dashboardData.customerProjects}
+        requestedProjects={dashboardData.requestedProjects}
+        customerProjectsLoading={dashboardData.customerProjectsLoading}
+        requestedProjectsLoading={dashboardData.requestedProjectsLoading}
+        onOpenAIChat={modals.openAIChat}
+        onOpenCustomerProject={handleOpenCustomerProject}
+        onFeatureRequest={handleFeatureRequest}
+        onOpenRequestsModal={() => setShowRequestsModal(true)}
+        onOpenRequestedProjectsModal={() => setShowRequestedProjectsModal(true)}
+      />
+
+      {/* Test Payment Helper - Only show in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <TestPaymentHelper />
+      )}
 
       {/* Modals */}
       <AIChatModal
@@ -196,7 +255,28 @@ const Dashboard: React.FC = () => {
         onComplete={handleMeetingSchedulerComplete}
         projectDetails={modals.projectDetails}
       />
-    </div>
+
+      <RequestsModal
+        isOpen={showRequestsModal}
+        onClose={() => setShowRequestsModal(false)}
+        currentUser={currentUser}
+      />
+
+      <RequestedProjectsModal
+        isOpen={showRequestedProjectsModal}
+        onClose={() => setShowRequestedProjectsModal(false)}
+        requestedProjects={dashboardData.requestedProjects}
+        requestedProjectsLoading={dashboardData.requestedProjectsLoading}
+      />
+
+      <UIDesignModal
+        isOpen={showUIDesignModal}
+        onClose={() => setShowUIDesignModal(false)}
+        currentUser={currentUser}
+      />
+
+
+    </>
   );
 };
 

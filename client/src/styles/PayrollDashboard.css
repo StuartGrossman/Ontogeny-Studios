@@ -16,20 +16,21 @@
   left: 0;
   right: 0;
   background: linear-gradient(135deg, #059669 0%, #047857 100%);
-  padding: 1rem 0;
+  padding: 1.5rem 0; /* Increased from 1rem to 1.5rem */
   z-index: 100;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
 }
 
 .payroll-secondary-nav-content {
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   display: flex;
   justify-content: center;
   gap: 1rem;
   padding: 0 2rem;
   flex-wrap: wrap;
+  width: 100%;
 }
 
 .payroll-secondary-nav-btn {
@@ -69,9 +70,10 @@
 
 /* ===== PAYROLL SECTION ===== */
 .payroll-main-section {
-  max-width: 1400px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   padding: 3rem 2rem;
+  width: 100%;
 }
 
 .payroll-main-header {
@@ -1034,7 +1036,7 @@
 .payroll-modal-close {
   background: none;
   border: none;
-  color: #64748b;
+  color: black;
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 8px;
@@ -1043,7 +1045,7 @@
 
 .payroll-modal-close:hover {
   background: #f1f5f9;
-  color: #1e293b;
+  color: black;
 }
 
 /* ===== FORMS ===== */
@@ -1089,6 +1091,7 @@
   gap: 1rem;
   padding: 1rem 2rem 2rem 2rem;
   border-top: 1px solid #f1f5f9;
+  background: black;
 }
 
 .payroll-modal-actions button {
@@ -1224,6 +1227,7 @@
   .payroll-modal-actions {
     flex-direction: column;
     padding: 1rem;
+    background: black;
   }
 }
 

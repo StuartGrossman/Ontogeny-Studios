@@ -16,20 +16,21 @@
   left: 0;
   right: 0;
   background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  padding: 1rem 0;
+  padding: 1.5rem 0; /* Increased from 1rem to 1.5rem */
   z-index: 100;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
 }
 
 .api-secondary-nav-content {
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   display: flex;
   justify-content: center;
   gap: 1rem;
   padding: 0 2rem;
   flex-wrap: wrap;
+  width: 100%;
 }
 
 .api-secondary-nav-btn {
@@ -69,9 +70,10 @@
 
 /* ===== MAIN SECTION ===== */
 .api-main-section {
-  max-width: 1400px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   padding: 3rem 2rem;
+  width: 100%;
 }
 
 .api-main-header {
@@ -912,7 +914,7 @@
   padding: 0.5rem;
   background: none;
   border: none;
-  color: #64748b;
+  color: black;
   cursor: pointer;
   border-radius: 8px;
   transition: all 0.2s ease;
@@ -920,7 +922,7 @@
 
 .api-modal-close:hover {
   background: #e2e8f0;
-  color: #1e293b;
+  color: black;
 }
 
 .api-modal-body {
@@ -935,7 +937,7 @@
   gap: 1rem;
   padding: 2rem;
   border-top: 1px solid #e2e8f0;
-  background: #f8fafc;
+  background: black;
 }
 
 .api-modal-actions button {
@@ -1295,6 +1297,7 @@
   
   .api-modal-actions {
     flex-direction: column;
+    background: black;
   }
   
   .api-log-entry {

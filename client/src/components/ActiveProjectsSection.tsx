@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Activity, RefreshCw, TrendingUp, Clock, AlertCircle, Zap, Target, MessageSquare, Play, Calendar, Users, CheckCircle, Settings, BarChart3, FileText, GitBranch, Plus, X, Key, Palette, Globe, Copy, Trash2, Eye, Shield, Edit, Send, Lightbulb, ArrowRight, Check, EyeOff, Upload, Download, Star, Heart, Layers, Sparkles, Image, Monitor, Smartphone, Tablet, ExternalLink, Server, Loader } from 'lucide-react';
+import { Activity, RefreshCw, TrendingUp, Clock, AlertCircle, Zap, Target, MessageSquare, Play, Calendar, Users, CheckCircle, Settings, BarChart3, FileText, GitBranch, Plus, X, Key, Palette, Globe, Copy, Trash2, Eye, Shield, Edit, Send, Lightbulb, ArrowRight, Check, EyeOff, Upload, Download, Star, Heart, Layers, Sparkles, Image, Monitor, Smartphone, Tablet, ExternalLink, Server, Loader, CreditCard } from 'lucide-react';
 import ProjectFeaturesModal from './ProjectFeaturesModal';
 import ProjectNavbar from './ProjectNavbar';
+import DashboardPaymentSection from './DashboardPaymentSection';
 // Modal imports removed - now using inline sections
 import '../styles/ActiveProjectsSection.css';
 import '../styles/ProjectFeaturesModal.css';
@@ -21,6 +22,7 @@ interface ProjectFeature {
 interface Project {
   id: string;
   name?: string;
+  projectName?: string;
   description?: string;
   status: string;
   progress?: number;
@@ -29,6 +31,11 @@ interface Project {
   createdAt?: any;
   websiteUrl?: string;
   liveLink?: string;
+  createdBy?: {
+    userId: string;
+    userName: string;
+    userEmail: string;
+  };
   assignments?: Array<{
     userId: string;
     userName: string;
@@ -57,7 +64,7 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
   onProjectSelect,
   sidebarCollapsed = false,
 }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, loading: authLoading } = useAuth();
   const [internalSelectedProject, setInternalSelectedProject] = useState<Project | null>(null);
   const [projectDetailsLoading, setProjectDetailsLoading] = useState(false);
   const [metricsLoading, setMetricsLoading] = useState(false);
@@ -73,16 +80,17 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
   const [userApiKeys, setUserApiKeys] = useState<any[]>([]);
   const [requiredApiKeysCount, setRequiredApiKeysCount] = useState(0);
   const [requiredDNSRecordsCount, setRequiredDNSRecordsCount] = useState(0);
+  const [projectFeatures, setProjectFeatures] = useState<ProjectFeature[]>([]);
+  const [featuresLoading, setFeaturesLoading] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [subscription, setSubscription] = useState<any>(null);
 
   // Use external selected project if provided, otherwise use internal state
   const selectedProject = externalSelectedProject !== undefined ? externalSelectedProject : internalSelectedProject;
   const setSelectedProject = onProjectSelect || setInternalSelectedProject;
 
-  // TEMPORARY: Override project ID to use the one that has API keys for testing
-  const effectiveSelectedProject = selectedProject ? {
-    ...selectedProject,
-    id: 'vqp9BOfURI0eEElJEeSn' // Force the project ID that has API keys
-  } : null;
+  // Use the actual selected project
+  const effectiveSelectedProject = selectedProject;
 
   console.log('🔍 PROJECT SELECTION DEBUG:');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -116,33 +124,8 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
   });
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-  // Add mock project for testing if no active projects exist
-  const mockActiveProjects = activeProjects.length === 0 ? [
-    {
-      id: 'vqp9BOfURI0eEElJEeSn', // Real project ID that has API keys
-      name: 'E-commerce Platform',
-      description: 'A modern e-commerce platform with advanced features including payment processing, inventory management, and user analytics.',
-      status: 'in-progress',
-      progress: 65,
-      deadline: '2024-03-15',
-      liveLink: 'https://shopify.com',
-      websiteUrl: 'https://shopify.com', // Fallback for compatibility
-      createdAt: { seconds: Date.now() / 1000 - (30 * 24 * 60 * 60) }, // 30 days ago
-      tasks: []
-    },
-    {
-      id: 'mock-2',
-      name: 'Task Management App',
-      description: 'A collaborative task management application with real-time updates and team collaboration features.',
-      status: 'in-progress',
-      progress: 40,
-      deadline: '2024-04-01',
-      liveLink: 'https://asana.com',
-      websiteUrl: 'https://asana.com', // Fallback for compatibility
-      createdAt: { seconds: Date.now() / 1000 - (15 * 24 * 60 * 60) }, // 15 days ago
-      tasks: []
-    }
-  ] : activeProjects;
+  // Use actual active projects
+  const mockActiveProjects = activeProjects;
 
   console.log('🚀 FINAL PROJECT ARRAYS:');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -240,17 +223,43 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
 
   // Generate project metrics
   const generateProjectMetrics = (project: Project) => {
+    // Calculate days remaining
+    const deadline = project.deadline ? new Date(project.deadline) : null;
+    const daysRemaining = deadline ? 
+      Math.max(0, Math.ceil((deadline.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))) : 
+      0;
+
+    // Calculate tasks metrics
+    const tasks = project.tasks || [];
+    const tasksCompleted = tasks.filter(task => task.completed).length;
+    const totalTasks = tasks.length;
+    
+    // Calculate risk level based on progress and days remaining
+    let riskLevel: 'low' | 'medium' | 'high' = 'low';
+    if (deadline) {
+      const totalDays = Math.ceil((deadline.getTime() - (project.createdAt?.seconds ? new Date(project.createdAt.seconds * 1000) : new Date()).getTime()) / (1000 * 60 * 60 * 24));
+      const daysElapsed = totalDays - daysRemaining;
+      const expectedProgress = (daysElapsed / totalDays) * 100;
+      const actualProgress = project.progress || 0;
+      
+      if (actualProgress < expectedProgress - 20) {
+        riskLevel = 'high';
+      } else if (actualProgress < expectedProgress - 10) {
+        riskLevel = 'medium';
+      }
+    }
+
     const baseMetrics = {
-      tasksCompleted: Math.floor(Math.random() * 20) + 5,
-      totalTasks: Math.floor(Math.random() * 30) + 15,
-      daysRemaining: Math.floor(Math.random() * 45) + 1,
+      tasksCompleted,
+      totalTasks,
+      daysRemaining,
       teamMembers: project.assignments?.length || 0,
-      riskLevel: ['low', 'medium', 'high'][Math.floor(Math.random() * 3)] as 'low' | 'medium' | 'high'
+      riskLevel
     };
     
     return {
       ...baseMetrics,
-      completionRate: Math.round((baseMetrics.tasksCompleted / baseMetrics.totalTasks) * 100)
+      completionRate: totalTasks > 0 ? Math.round((tasksCompleted / totalTasks) * 100) : project.progress || 0
     };
   };
 
@@ -2457,146 +2466,231 @@ The more details you provide, the better I can help you plan it out!`
     );
   };
 
-  // Mock project features - replace with actual data from your backend
-  const mockProjectFeatures: ProjectFeature[] = [
-    {
-      id: '1',
-      name: 'User Authentication',
-      description: 'Complete user registration, login, and password reset functionality',
-      status: 'completed',
-      priority: 'high',
-      category: 'Authentication'
-    },
-    {
-      id: '2',
-      name: 'Dashboard Interface',
-      description: 'Main user dashboard with project overview and quick actions',
-      status: 'completed',
-      priority: 'high',
-      category: 'UI/UX'
-    },
-    {
-      id: '3',
-      name: 'Payment Integration',
-      description: 'Stripe payment processing for subscriptions and one-time payments',
-      status: 'in-progress',
-      priority: 'high',
-      category: 'Payment'
-    },
-    {
-      id: '4',
-      name: 'Email Notifications',
-      description: 'Automated email system for user notifications and updates',
-      status: 'in-progress',
-      priority: 'medium',
-      category: 'Communication'
-    },
-    {
-      id: '5',
-      name: 'Mobile Responsive Design',
-      description: 'Optimize interface for mobile and tablet devices',
-      status: 'pending',
-      priority: 'medium',
-      category: 'UI/UX'
-    },
-    {
-      id: '6',
-      name: 'Advanced Analytics',
-      description: 'Detailed analytics dashboard with custom reporting',
-      status: 'pending',
-      priority: 'low',
-      category: 'Analytics'
-    }
-  ];
-
-  // Fetch user's added API keys when project changes
+  // Fetch project features when project changes
   useEffect(() => {
-    const fetchUserApiKeys = async () => {
+    const fetchProjectFeatures = async () => {
       if (!effectiveSelectedProject?.id) {
-        console.log('❌ No effective selected project ID, skipping API keys fetch');
+        setProjectFeatures([]);
         return;
       }
+
+      setFeaturesLoading(true);
       try {
-        console.log('🔍 Fetching API keys for project:', effectiveSelectedProject.id);
-        const url = `http://localhost:3002/api/projects/project/${effectiveSelectedProject.id}/api-keys`;
-        console.log('🌐 API URL:', url);
-        const response = await fetch(url);
-        console.log('📡 Response status:', response.status);
+        const response = await fetch(`http://localhost:3002/api/projects/project/${effectiveSelectedProject.id}/features`);
         const result = await response.json();
-        console.log('📦 API keys response:', result);
-        if (result.success && Array.isArray(result.apiKeys)) {
-          console.log('✅ Setting API keys:', result.apiKeys);
-          setUserApiKeys(result.apiKeys);
+        if (result.success && Array.isArray(result.features)) {
+          setProjectFeatures(result.features.map((feature: any) => ({
+            id: feature.id,
+            name: feature.title,
+            description: feature.description,
+            status: feature.status === 'approved' ? 'pending' : feature.status,
+            priority: feature.priority.toLowerCase(),
+            category: feature.category
+          })));
         } else {
-          console.log('❌ No API keys found or invalid response');
-          setUserApiKeys([]);
+          setProjectFeatures([]);
         }
-      } catch (e) {
-        console.error('❌ Error fetching API keys:', e);
-        setUserApiKeys([]);
+      } catch (error) {
+        console.error('Error fetching project features:', error);
+        setProjectFeatures([]);
+      } finally {
+        setFeaturesLoading(false);
       }
     };
 
-    const fetchRequiredApiKeysCount = async () => {
-      if (!effectiveSelectedProject?.id) {
-        console.log('❌ No effective selected project ID, skipping required API keys fetch');
-        return;
-      }
-      try {
-        console.log('🔍 Fetching required API keys count for project:', effectiveSelectedProject.id);
-        const url = `http://localhost:3002/api/projects/project/${effectiveSelectedProject.id}/required-api-keys`;
-        console.log('🌐 Required API URL:', url);
-        const response = await fetch(url);
-        console.log('📡 Required API Response status:', response.status);
-        const result = await response.json();
-        console.log('📦 Required API keys response:', result);
-        if (result.success && Array.isArray(result.requiredApiKeys)) {
-          const pendingCount = result.requiredApiKeys.filter((key: any) => key.status === 'pending').length;
-          console.log('✅ Setting required API keys count:', pendingCount);
-          setRequiredApiKeysCount(pendingCount);
-        } else {
-          console.log('❌ No required API keys found or invalid response');
-          setRequiredApiKeysCount(0);
-        }
-      } catch (e) {
-        console.error('❌ Error fetching required API keys:', e);
-        setRequiredApiKeysCount(0);
-      }
-    };
-
-    const fetchRequiredDNSRecordsCount = async () => {
-      if (!effectiveSelectedProject?.id) {
-        console.log('❌ No effective selected project ID, skipping required DNS records fetch');
-        return;
-      }
-      try {
-        console.log('🔍 Fetching required DNS records count for project:', effectiveSelectedProject.id);
-        const url = `http://localhost:3002/api/projects/project/${effectiveSelectedProject.id}/required-dns-records`;
-        console.log('🌐 Required DNS URL:', url);
-        const response = await fetch(url);
-        console.log('📡 Required DNS Response status:', response.status);
-        const result = await response.json();
-        console.log('📦 Required DNS records response:', result);
-        if (result.success && Array.isArray(result.requiredDNSRecords)) {
-          const pendingCount = result.requiredDNSRecords.filter((record: any) => record.status === 'pending').length;
-          console.log('✅ Setting required DNS records count:', pendingCount);
-          setRequiredDNSRecordsCount(pendingCount);
-        } else {
-          console.log('❌ No required DNS records found or invalid response');
-          setRequiredDNSRecordsCount(0);
-        }
-      } catch (e) {
-        console.error('❌ Error fetching required DNS records:', e);
-        setRequiredDNSRecordsCount(0);
-      }
-    };
-
-    console.log('🔄 useEffect triggered for selectedProject?.id:', selectedProject?.id);
-    console.log('🔄 Using effective project ID:', effectiveSelectedProject?.id);
-    fetchUserApiKeys();
-    fetchRequiredApiKeysCount();
-    fetchRequiredDNSRecordsCount();
+    fetchProjectFeatures();
   }, [effectiveSelectedProject?.id]);
+
+  // Payment Card Content Component
+  const PaymentCardContent = ({ project }: { project: Project }) => {
+    const [loading, setLoading] = useState(false);
+    const [subscriptionData, setSubscriptionData] = useState<any>(null);
+
+    useEffect(() => {
+      console.log('PaymentCardContent - currentUser:', currentUser);
+      console.log('PaymentCardContent - project:', project);
+      
+      if (project?.id) {
+        loadSubscription();
+      }
+    }, [project?.id]);
+
+    const loadSubscription = async () => {
+      if (!currentUser?.uid || !project?.id) return;
+      
+      setLoading(true);
+      try {
+        // Mock subscription data - in real app, this would come from your API
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const mockSubscription = {
+          id: 'sub_123',
+          amount: 60,
+          currency: 'USD',
+          projectId: project.id,
+          projectName: project.name || project.projectName || 'Unknown Project',
+          status: 'setup_pending',
+          createdAt: new Date()
+        };
+        
+        setSubscriptionData(mockSubscription);
+      } catch (error) {
+        console.error('Error loading subscription:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const handleConnectCard = async () => {
+      if (!subscriptionData || !currentUser?.uid) {
+        console.error('Missing data:', { subscriptionData, currentUser });
+        return;
+      }
+
+      try {
+        setLoading(true);
+        
+        const requestData = {
+          amount: subscriptionData.amount,
+          currency: subscriptionData.currency,
+          projectId: subscriptionData.projectId,
+          projectName: subscriptionData.projectName || project.name || project.projectName || 'Unknown Project',
+          userId: currentUser.uid,
+          userEmail: currentUser.email,
+        };
+        
+        console.log('Sending payment request:', requestData);
+        
+        // Create checkout session on the server
+        const response = await fetch('http://localhost:3002/api/payments/create-checkout-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData),
+        });
+
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Server error response:', errorText);
+          throw new Error(`Failed to create checkout session: ${response.status} ${response.statusText}`);
+        }
+
+        const responseData = await response.json();
+        console.log('Response data:', responseData);
+
+        if (!responseData.url) {
+          throw new Error('No checkout URL received');
+        }
+
+        // Redirect to Stripe Checkout
+        window.location.href = responseData.url;
+      } catch (error) {
+        console.error('Error connecting card:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const formatCurrency = (amount: number, currency: string) => {
+      const currencySymbols: { [key: string]: string } = {
+        'USD': '$',
+        'EUR': '€',
+        'GBP': '£'
+      };
+      
+      const symbol = currencySymbols[currency] || '$';
+      return `${symbol}${amount.toFixed(2)}`;
+    };
+
+    if (authLoading) {
+      return (
+        <div className="payment-loading">
+          <RefreshCw className="spinning" size={16} />
+          <span>Loading authentication...</span>
+        </div>
+      );
+    }
+
+    if (loading) {
+      return (
+        <div className="payment-loading">
+          <RefreshCw className="spinning" size={16} />
+          <span>Loading payment info...</span>
+        </div>
+      );
+    }
+
+    if (!currentUser) {
+      return (
+        <div className="payment-no-subscription">
+          <span>Please log in to manage payments</span>
+        </div>
+      );
+    }
+
+    if (!currentUser.uid || !currentUser.email) {
+      return (
+        <div className="payment-no-subscription">
+          <span>User profile incomplete</span>
+        </div>
+      );
+    }
+
+    if (!subscriptionData) {
+      return (
+        <div className="payment-no-subscription">
+          <span>No subscription found</span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="payment-card-content">
+        <div className="payment-amount">
+          <span className="amount-value">
+            {formatCurrency(subscriptionData.amount, subscriptionData.currency)}
+          </span>
+          <span className="amount-period">/month</span>
+        </div>
+        
+        <div className="payment-status">
+          <span className={`status-badge ${subscriptionData.status}`}>
+            {subscriptionData.status === 'active' ? 'Active' : 'Setup Required'}
+          </span>
+        </div>
+        
+        {subscriptionData.status === 'setup_pending' && (
+          <button 
+            className="connect-card-btn"
+            onClick={handleConnectCard}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <RefreshCw className="spinning" size={14} />
+                Processing...
+              </>
+            ) : (
+              <>
+                <CreditCard size={14} />
+                Connect Card
+              </>
+            )}
+          </button>
+        )}
+        
+        {subscriptionData.status === 'active' && (
+          <div className="payment-success">
+            <CheckCircle size={16} />
+            <span>Payment Active</span>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   if (customerProjectsLoading) {
     return (
@@ -2778,9 +2872,33 @@ The more details you provide, the better I can help you plan it out!`
                               <span className="team-count">{generateProjectMetrics(selectedProject).teamMembers}</span>
                               <span className="team-label">team members</span>
                             </div>
+                            <div className="team-admin">
+                              <span className="admin-label">Project Admin:</span>
+                              <a 
+                                href={`/messages?user=${selectedProject?.createdBy?.userId}`}
+                                className="admin-name"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Navigate to messages with this admin
+                                  window.location.href = `/messages?user=${selectedProject?.createdBy?.userId}`;
+                                }}
+                              >
+                                {selectedProject?.createdBy?.userName || 'Admin'}
+                              </a>
+                            </div>
                             <div className="team-activity">
                               <span>Click to view team details</span>
                             </div>
+                          </div>
+                        </div>
+
+                        <div className="overview-card payment">
+                          <div className="card-header">
+                            <CreditCard size={20} />
+                            <span>Payment</span>
+                          </div>
+                          <div className="card-content">
+                            <PaymentCardContent project={selectedProject} />
                           </div>
                         </div>
                       </>
@@ -2813,39 +2931,45 @@ The more details you provide, the better I can help you plan it out!`
 
               {/* Project Features - Most Important Section */}
               <div className="project-features-section">
-                <div className="features-header">
-                  <div className="features-title-section">
-                    <h3>
-                      <Settings size={20} />
-                      Project Features
-                    </h3>
-                    <span className="features-subtitle">Track development progress and feature status</span>
-                  </div>
-                </div>
-                
+                <h3 className="section-title">Project Features</h3>
                 <div className="features-grid-main">
-                  {mockProjectFeatures.map((feature) => (
-                    <div key={feature.id} className={`feature-card-main ${feature.status}`}>
-                      <div className="feature-status-indicator">
-                        {getFeatureStatusIcon(feature.status)}
+                  {featuresLoading ? (
+                    <div className="loading-state">
+                      <div className="spinning">
+                        <Loader size={24} />
                       </div>
-                      <div className="feature-content">
-                        <div className="feature-header-main">
-                          <h4>{feature.name}</h4>
-                          <span className={`feature-priority ${feature.priority}`}>
-                            {feature.priority}
-                          </span>
-                        </div>
-                        <p className="feature-description-main">{feature.description}</p>
-                        <div className="feature-meta-main">
-                          <span className="feature-category-main">{feature.category}</span>
-                          <span className={`feature-status-text ${feature.status}`}>
-                            {feature.status.replace('-', ' ')}
-                          </span>
-                        </div>
-                      </div>
+                      <p>Loading project features...</p>
                     </div>
-                  ))}
+                  ) : projectFeatures.length > 0 ? (
+                    projectFeatures.map((feature: ProjectFeature) => (
+                      <div key={feature.id} className={`feature-card-main ${feature.status}`}>
+                        <div className="feature-status-indicator">
+                          {getFeatureStatusIcon(feature.status)}
+                        </div>
+                        <div className="feature-content">
+                          <div className="feature-header-main">
+                            <h4>{feature.name}</h4>
+                            <span className={`feature-priority ${feature.priority}`}>
+                              {feature.priority}
+                            </span>
+                          </div>
+                          <p className="feature-description-main">{feature.description}</p>
+                          <div className="feature-meta-main">
+                            <span className="feature-category-main">{feature.category}</span>
+                            <span className={`feature-status-text ${feature.status}`}>
+                              {feature.status.replace('-', ' ')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="empty-state">
+                      <Settings size={48} />
+                      <h4>No Features Added</h4>
+                      <p>This project doesn't have any features yet. Add features from project management.</p>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="features-actions">
@@ -2887,7 +3011,7 @@ The more details you provide, the better I can help you plan it out!`
               </div>
 
               {/* Project Timeline */}
-              {selectedProject.status !== 'completed' && (
+              {selectedProject.status !== 'completed' && selectedProject.createdAt && (
                 <div className="project-timeline-section">
                   <h3>Development Timeline</h3>
                   <div className="timeline-horizontal">
@@ -2896,10 +3020,7 @@ The more details you provide, the better I can help you plan it out!`
                       <div className="timeline-step-content">
                         <span className="timeline-step-title">Project Started</span>
                         <span className="timeline-step-date">
-                          {selectedProject.createdAt ? 
-                            new Date(selectedProject.createdAt.seconds * 1000).toLocaleDateString() : 
-                            'Recently'
-                          }
+                          {new Date(selectedProject.createdAt.seconds * 1000).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
@@ -2909,32 +3030,23 @@ The more details you provide, the better I can help you plan it out!`
                     <div className="timeline-step current">
                       <div className="timeline-step-marker"></div>
                       <div className="timeline-step-content">
-                        <span className="timeline-step-title">Development</span>
-                        <span className="timeline-step-date">In Progress</span>
+                        <span className="timeline-step-title">Current Phase</span>
+                        <span className="timeline-step-date">{selectedProject.status}</span>
                       </div>
                     </div>
                     
-                    <div className="timeline-connector"></div>
-                    
-                    <div className="timeline-step">
-                      <div className="timeline-step-marker"></div>
-                      <div className="timeline-step-content">
-                        <span className="timeline-step-title">Testing</span>
-                        <span className="timeline-step-date">Upcoming</span>
-                      </div>
-                    </div>
-                    
-                    <div className="timeline-connector"></div>
-                    
-                    <div className="timeline-step">
-                      <div className="timeline-step-marker"></div>
-                      <div className="timeline-step-content">
-                        <span className="timeline-step-title">Deployment</span>
-                        <span className="timeline-step-date">
-                          {selectedProject.deadline || 'TBD'}
-                        </span>
-                      </div>
-                    </div>
+                    {selectedProject.deadline && (
+                      <>
+                        <div className="timeline-connector"></div>
+                        <div className="timeline-step">
+                          <div className="timeline-step-marker"></div>
+                          <div className="timeline-step-content">
+                            <span className="timeline-step-title">Target Completion</span>
+                            <span className="timeline-step-date">{selectedProject.deadline}</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               )}

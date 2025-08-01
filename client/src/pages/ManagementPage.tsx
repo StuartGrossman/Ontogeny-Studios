@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Settings, LogOut, MessageCircle, GitPullRequest, Star } from 'lucide-react';
+import { Settings, LogOut, MessageCircle, GitPullRequest, Star, FileText, RefreshCw } from 'lucide-react';
 import ontogenyIcon from '../assets/otogeny-icon.png';
 import { doc, setDoc, addDoc, collection, updateDoc, query, where, getDocs, getDoc, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -20,6 +20,7 @@ import AIChatModal from '../components/AIChatModal';
 import CreateProjectModal, { ProjectFormData } from '../components/modals/CreateProjectModal';
 import EditProjectModal from '../components/modals/EditProjectModal';
 import UserRequestedProjectModal from '../components/modals/UserRequestedProjectModal';
+import ProjectTeamModal from '../components/modals/ProjectTeamModal';
 import { ProjectDetailsModal, MeetingSchedulerModal, FeatureRequestModal, FeatureAssignmentModal } from '../components/modals';
 
 // Styles
@@ -42,6 +43,8 @@ const ManagementPage: React.FC = () => {
   const [unaddressedProjects, setUnaddressedProjects] = useState<any[]>([]);
   const [unaddressedFeatures, setUnaddressedFeatures] = useState<any[]>([]);
   const [alertCounts, setAlertCounts] = useState({ projects: 0, features: 0 });
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [selectedProjectForTeam, setSelectedProjectForTeam] = useState<any>(null);
 
   // Custom hooks
   const dashboardData = useDashboardData(currentUser);
@@ -54,17 +57,43 @@ const ManagementPage: React.FC = () => {
       return;
     }
     
-    // Force admin mode for management page
-    if (!dashboardData.loading && !dashboardData.isAdmin) {
-      dashboardData.toggleAdminStatus();
-    }
+    const checkAndSetAdminStatus = async () => {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        const isAdmin = userDoc.exists() && userDoc.data().isAdmin === true;
+        
+        // If not admin in Firestore, update it
+        if (!isAdmin) {
+          await updateDoc(doc(db, 'users', currentUser.uid), {
+            isAdmin: true,
+            role: 'admin',
+            updatedAt: new Date()
+          });
+          console.log('Updated admin status in Firestore');
+        }
+
+        // Force admin mode for management page
+        if (!dashboardData.loading && !dashboardData.isAdmin) {
+          dashboardData.toggleAdminStatus();
+        }
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        navigate('/');
+      }
+    };
+
+    checkAndSetAdminStatus();
   }, [currentUser, navigate, dashboardData.loading, dashboardData.isAdmin]);
 
   // Fetch unaddressed requests
   const fetchUnaddressedRequests = async () => {
     try {
+      if (!currentUser?.uid) {
+        console.warn('No current user. Skipping unaddressed requests fetch.');
+        return;
+      }
+
       // Fetch unaddressed project requests from the correct collection
-      // Remove orderBy to avoid index requirement for now
       const projectsQuery = query(
         collection(db, 'user_project_requests'),
         where('status', 'in', ['pending', 'under-review'])
@@ -77,10 +106,39 @@ const ManagementPage: React.FC = () => {
           ...doc.data(),
           // Convert Firestore timestamps to Date objects for display
           createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : doc.data().createdAt,
-          features: doc.data().features?.map((f: any) => ({
-            ...f,
-            createdAt: f.createdAt?.toDate ? f.createdAt.toDate() : f.createdAt
-          })) || []
+          // Handle features that might be a string, array, or undefined
+          features: (() => {
+            const features = doc.data().features;
+            console.log('Processing features for project', doc.id, {
+              featuresType: typeof features,
+              isArray: Array.isArray(features),
+              rawFeatures: features
+            });
+            if (!features || features === '') return [];
+            if (Array.isArray(features)) {
+              return features.map((f: any) => ({
+                ...f,
+                id: f.id || `feature_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                createdAt: f.createdAt?.toDate ? f.createdAt.toDate() : f.createdAt || new Date()
+              }));
+            }
+            if (typeof features === 'string') {
+              // If features is a string, split by newlines and create feature objects
+              const featureArray = features.split('\n')
+                .filter(line => line.trim())
+                .map(line => ({
+                  text: line.trim(),
+                  id: `feature_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                  createdAt: new Date(),
+                  completed: line.startsWith('✓') || line.startsWith('[x]'),
+                  estimatedHours: 0
+                }));
+              console.log('Converted string features to array:', featureArray);
+              return featureArray;
+            }
+            console.warn('Unexpected features format:', features);
+            return [];
+          })()
         }))
         .sort((a, b) => {
           // Sort by createdAt in descending order
@@ -117,8 +175,29 @@ const ManagementPage: React.FC = () => {
         features: featureRequests.length
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error fetching unaddressed requests:', error);
+      // If it's a permission error, try to refresh admin status
+      if (error instanceof Error && 'code' in error && error.code === 'permission-denied') {
+        console.log('Permission denied. Checking admin status...');
+        if (!currentUser?.uid) {
+          console.warn('No current user. Skipping admin status check.');
+          return;
+        }
+        try {
+          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          if (userDoc.exists() && userDoc.data().isAdmin) {
+            console.log('User is admin. Retrying in 5 seconds...');
+            setTimeout(fetchUnaddressedRequests, 5000);
+          } else {
+            console.warn('User is not an admin. Skipping unaddressed requests fetch.');
+          }
+        } catch (adminCheckError) {
+          console.error('Error checking admin status:', adminCheckError);
+          // Still retry after a delay in case it's a temporary issue
+          setTimeout(fetchUnaddressedRequests, 5000);
+        }
+      }
     }
   };
 
@@ -328,10 +407,16 @@ const ManagementPage: React.FC = () => {
     }
   };
 
+  // Handle team management
+  const handleManageTeam = (project: any) => {
+    setSelectedProjectForTeam(project);
+    setShowTeamModal(true);
+  };
+
   // Show loading state
   if (dashboardData.loading) {
     return (
-      <div className="management-loading">
+      <div className="mgmt-loading">
         <div className="loading-spinner"></div>
         <p>Loading management dashboard...</p>
       </div>
@@ -341,7 +426,7 @@ const ManagementPage: React.FC = () => {
   // Redirect non-admin users
   if (!dashboardData.isAdmin) {
     return (
-      <div className="management-unauthorized">
+      <div className="mgmt-unauthorized">
         <h2>Access Denied</h2>
         <p>You don't have permission to access the management dashboard.</p>
         <button onClick={() => navigate('/dashboard')}>Go to Dashboard</button>
@@ -351,23 +436,23 @@ const ManagementPage: React.FC = () => {
 
   return (
     <>
-      <div className="management-page">
+      <div className="mgmt-page">
         {/* Top Navigation Bar */}
-        <nav className="management-navbar">
-          <div className="nav-left">
-            <div className="nav-brand">
-              <img src={ontogenyIcon} alt="Ontogeny" className="brand-icon" />
-              <div className="brand-text">
-                <span className="gradient-text">Ontogeny Studios</span>
-                <span className="management-subtitle">Management</span>
+        <nav className="mgmt-navbar">
+          <div className="mgmt-nav-left">
+            <div className="mgmt-nav-brand">
+              <img src={ontogenyIcon} alt="Ontogeny" className="mgmt-brand-icon" />
+              <div className="mgmt-brand-text">
+                <span className="mgmt-gradient-text">Ontogeny Studios</span>
+                <span className="mgmt-subtitle">Management</span>
               </div>
             </div>
           </div>
           
-          <div className="nav-center">
-            <div className="nav-tabs-section">
+          <div className="mgmt-nav-center">
+            <div className="mgmt-nav-tabs">
               <button 
-                className={`nav-request-tab ${currentView === 'requested-projects' ? 'active' : ''}`}
+                className={`mgmt-request-tab ${currentView === 'requested-projects' ? 'active' : ''}`}
                 onClick={() => {
                   setCurrentView('requested-projects');
                   setShowChat(false);
@@ -375,16 +460,15 @@ const ManagementPage: React.FC = () => {
                   // Refresh data when switching to this view
                   fetchUnaddressedRequests();
                 }}
-                title="View Requested Projects"
               >
-                <GitPullRequest size={18} />
-                <span>Requested Projects</span>
+                <FileText size={16} />
+                <span>Project Requests</span>
                 {alertCounts.projects > 0 && (
-                  <span className="nav-alert-badge">{alertCounts.projects}</span>
+                  <span className="mgmt-alert-badge">{alertCounts.projects}</span>
                 )}
               </button>
               <button 
-                className={`nav-request-tab ${currentView === 'requested-features' ? 'active' : ''}`}
+                className={`mgmt-request-tab ${currentView === 'requested-features' ? 'active' : ''}`}
                 onClick={() => {
                   setCurrentView('requested-features');
                   setShowChat(false);
@@ -392,44 +476,31 @@ const ManagementPage: React.FC = () => {
                   // Refresh data when switching to this view
                   fetchUnaddressedRequests();
                 }}
-                title="View Requested Features"
               >
-                <Star size={18} />
-                <span>Requested Features</span>
+                <Star size={16} />
+                <span>Feature Requests</span>
                 {alertCounts.features > 0 && (
-                  <span className="nav-alert-badge">{alertCounts.features}</span>
+                  <span className="mgmt-alert-badge">{alertCounts.features}</span>
                 )}
-              </button>
-              <button 
-                className={`nav-request-tab ${currentView === 'dashboard' ? 'active' : ''}`}
-                onClick={() => {
-                  setCurrentView('dashboard');
-                  setShowChat(false);
-                  setSelectedChatUserId(undefined);
-                }}
-                title="Back to Dashboard"
-              >
-                <MessageCircle size={18} />
-                <span>User Management</span>
               </button>
             </div>
           </div>
           
-          <div className="nav-right">
-            <div className="user-profile-section">
+          <div className="mgmt-nav-right">
+            <div className="mgmt-user-profile">
               <UserAvatar
                 photoURL={currentUser?.photoURL}
-                displayName={currentUser?.displayName || 'Admin'}
+                displayName={currentUser?.displayName || 'User'}
                 size={32}
               />
-              <span className="user-name">{currentUser?.displayName || 'Admin'}</span>
+              <span className="mgmt-user-name">{currentUser?.displayName || 'User'}</span>
             </div>
             <button 
-              className="nav-link-button"
+              className="nav-tab"
               onClick={() => navigate('/dashboard')}
               title="Switch to User Dashboard"
             >
-              User Dashboard
+              <GitPullRequest size={20} />
             </button>
             <button 
               className={`nav-tab ${showChat ? 'active' : ''}`} 
@@ -478,15 +549,16 @@ const ManagementPage: React.FC = () => {
             preselectedUserId={selectedChatUserId}
           />
         ) : currentView === 'requested-projects' ? (
-          <div className="requested-projects-view">
-            <div className="requests-header">
+          <div className="mgmt-requests-view">
+            <div className="mgmt-requests-header">
               <h2>Unaddressed Project Requests</h2>
               <p>Review and respond to user project requests that need your attention.</p>
               <button 
-                className="refresh-btn"
+                className="mgmt-refresh-btn"
                 onClick={fetchUnaddressedRequests}
                 title="Refresh requests"
               >
+                <RefreshCw size={16} />
                 Refresh
               </button>
             </div>
@@ -533,15 +605,16 @@ const ManagementPage: React.FC = () => {
             </div>
           </div>
         ) : currentView === 'requested-features' ? (
-          <div className="requested-features-view">
-            <div className="requests-header">
+          <div className="mgmt-requests-view">
+            <div className="mgmt-requests-header">
               <h2>Unaddressed Feature Requests</h2>
               <p>Review and respond to user feature requests that need your attention.</p>
               <button 
-                className="refresh-btn"
+                className="mgmt-refresh-btn"
                 onClick={fetchUnaddressedRequests}
                 title="Refresh requests"
               >
+                <RefreshCw size={16} />
                 Refresh
               </button>
             </div>
@@ -607,6 +680,7 @@ const ManagementPage: React.FC = () => {
             onDeleteProject={handleDeleteProject}
             onRestoreProject={handleRestoreProject}
             onNavigateToMessages={handleNavigateToMessages}
+            onManageTeam={handleManageTeam}
             currentUser={currentUser}
           />
         )}
@@ -626,6 +700,7 @@ const ManagementPage: React.FC = () => {
           project={modals.selectedProjectForEdit}
           onClose={modals.closeEditProjectModal}
           onUpdate={handleProjectUpdate}
+          onNavigateToMessages={handleNavigateToMessages}
         />
       )}
 
@@ -693,6 +768,22 @@ const ManagementPage: React.FC = () => {
         onNextStep={modals.selectedProjectForFeature ? modals.handleFeatureConsultationNextStep : modals.handleAIConsultationNextStep}
         mode={modals.selectedProjectForFeature ? 'feature-request' : 'project-request'}
         project={modals.selectedProjectForFeature}
+      />
+
+      {/* Project Team Modal */}
+      <ProjectTeamModal
+        isOpen={showTeamModal}
+        onClose={() => {
+          setShowTeamModal(false);
+          setSelectedProjectForTeam(null);
+        }}
+        project={selectedProjectForTeam}
+        onUpdate={async () => {
+          // Refresh data in background
+          if (dashboardData.selectedUser) {
+            await dashboardData.handleUserSelect(dashboardData.selectedUser);
+          }
+        }}
       />
     </>
   );

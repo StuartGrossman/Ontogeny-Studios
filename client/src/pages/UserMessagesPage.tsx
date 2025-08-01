@@ -22,33 +22,9 @@ const UserMessagesPage: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [customerProjects, setCustomerProjects] = useState<any[]>([]);
-  const [selectedProject, setSelectedProject] = useState<any>(null);
 
-  // Load customer projects
-  const loadCustomerProjects = async () => {
-    if (!currentUser?.uid) return;
 
-    try {
-      const projectsQuery = query(
-        collection(db, 'projects'),
-        where('userId', '==', currentUser.uid),
-        orderBy('createdAt', 'desc')
-      );
-      
-      const unsubscribe = onSnapshot(projectsQuery, (snapshot) => {
-        const projects = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setCustomerProjects(projects);
-      });
 
-      return unsubscribe;
-    } catch (error) {
-      console.error('Error loading customer projects:', error);
-    }
-  };
 
   // Check if user is admin (proper Firestore check)
   const checkAdminStatus = async () => {
@@ -75,7 +51,6 @@ const UserMessagesPage: React.FC = () => {
   useEffect(() => {
     if (currentUser) {
       checkAdminStatus();
-      loadCustomerProjects();
     }
   }, [currentUser]);
 
@@ -115,10 +90,7 @@ const UserMessagesPage: React.FC = () => {
     navigate('/dashboard');
   };
 
-  const handleProjectSelect = (project: any) => {
-    setSelectedProject(project);
-    console.log('Project selected:', project);
-  };
+
 
   return (
     <div className="user-messages-page">
@@ -136,31 +108,7 @@ const UserMessagesPage: React.FC = () => {
             </div>
           </div>
           
-          <div className="messages-header-center">
-            <div className="project-selector">
-              {customerProjects.length > 0 ? (
-                customerProjects.map((project) => (
-                  <button 
-                    key={project.id}
-                    className={`project-selector-item ${selectedProject?.id === project.id ? 'active' : ''}`}
-                    onClick={() => handleProjectSelect(project)}
-                  >
-                    {project.status === 'completed' ? (
-                      <CheckCircle size={16} />
-                    ) : (
-                      <FileText size={16} />
-                    )}
-                    <span>{project.name || project.projectName || 'Unnamed Project'}</span>
-                  </button>
-                ))
-              ) : (
-                <div className="project-selector-empty">
-                  <Activity size={16} />
-                  <span>No projects available</span>
-                </div>
-              )}
-            </div>
-          </div>
+
           
           <div className="messages-header-right">
             {isAdmin && (

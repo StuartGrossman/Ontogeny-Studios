@@ -22,9 +22,13 @@ import {
   PauseCircle,
   ExternalLink,
   UserPlus,
-  Settings
+  Settings,
+  MessageCircle,
+  CreditCard
 } from 'lucide-react';
 import ProjectAttributesView from '../ProjectAttributesView';
+import PaymentModal from '../PaymentModal';
+import SetupSubscriptionModal from './SetupSubscriptionModal';
 import '../../styles/ProjectAttributesView.css';
 
 interface Task {
@@ -54,12 +58,19 @@ interface ProjectData {
   updatedAt: any;
   notes?: string;
   assignments?: ProjectAssignment[];
+  subscriptionStatus?: string;
+  subscriptionSetupAt?: any;
+  subscriptionAmount?: number;
+  firstPaymentCompleted?: boolean;
+  firstPaymentDate?: any;
+  lastPaymentDate?: any;
 }
 
 interface EditProjectModalProps {
   project: ProjectData;
   onClose: () => void;
   onUpdate: () => void;
+  onNavigateToMessages?: (userId: string) => void;
 }
 
 interface AdminUser {
@@ -67,6 +78,7 @@ interface AdminUser {
   displayName: string;
   email: string;
   role: string;
+  isAdmin?: boolean;
 }
 
 interface ProjectAssignment {
@@ -99,20 +111,73 @@ const AddAdminModal: React.FC<AddAdminModalProps> = ({ isOpen, onClose, onAddAdm
   const fetchAvailableAdmins = async () => {
     setLoading(true);
     try {
-      const usersQuery = query(
-        collection(db, 'users'),
-        where('role', '==', 'admin')
-      );
-      const usersSnapshot = await getDocs(usersQuery);
+      // Try multiple queries to find admins
+      let admins: AdminUser[] = [];
       
-      const admins = usersSnapshot.docs.map(doc => ({
-        uid: doc.id,
-        ...doc.data()
-      } as AdminUser));
+      // First try: users with isAdmin = true
+      try {
+        const usersQuery = query(
+          collection(db, 'users'),
+          where('isAdmin', '==', true)
+        );
+        const usersSnapshot = await getDocs(usersQuery);
+        console.log('Found users with isAdmin=true:', usersSnapshot.docs.length);
+        
+        admins = usersSnapshot.docs.map(doc => ({
+          uid: doc.id,
+          ...doc.data()
+        } as AdminUser));
+      } catch (error) {
+        console.log('Query with isAdmin failed, trying role query:', error);
+      }
+      
+      // Second try: users with role = 'admin' (fallback)
+      if (admins.length === 0) {
+        try {
+          const usersQuery = query(
+            collection(db, 'users'),
+            where('role', '==', 'admin')
+          );
+          const usersSnapshot = await getDocs(usersQuery);
+          console.log('Found users with role=admin:', usersSnapshot.docs.length);
+          
+          admins = usersSnapshot.docs.map(doc => ({
+            uid: doc.id,
+            ...doc.data()
+          } as AdminUser));
+        } catch (error) {
+          console.log('Query with role also failed:', error);
+        }
+      }
+      
+      // Third try: get all users and filter client-side (if no query worked)
+      if (admins.length === 0) {
+        try {
+          const usersSnapshot = await getDocs(collection(db, 'users'));
+          console.log('Found all users:', usersSnapshot.docs.length);
+          
+          admins = usersSnapshot.docs
+            .map(doc => ({
+              uid: doc.id,
+              ...doc.data()
+            } as AdminUser))
+            .filter(user => user.isAdmin === true || user.role === 'admin');
+          
+          console.log('Filtered admins from all users:', admins.length);
+        } catch (error) {
+          console.log('Getting all users also failed:', error);
+        }
+      }
+
+      console.log('Final admins found:', admins.map(a => ({ uid: a.uid, displayName: a.displayName, email: a.email })));
 
       // Filter out already assigned admins
       const assignedUserIds = currentAssignments.map(a => a.userId);
+      console.log('Already assigned user IDs:', assignedUserIds);
+      
       const available = admins.filter(admin => !assignedUserIds.includes(admin.uid));
+      
+      console.log('Available admins after filtering:', available.map(a => ({ uid: a.uid, displayName: a.displayName })));
       
       setAvailableAdmins(available);
     } catch (error) {
@@ -241,7 +306,7 @@ const DescriptionModal: React.FC<{
   );
 };
 
-const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, onUpdate }) => {
+const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, onUpdate, onNavigateToMessages }) => {
   const [formData, setFormData] = useState({
     name: project.name || '',
     description: project.description || '',
@@ -251,13 +316,13 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
     progress: project.progress || 0,
     deadline: project.deadline || '',
     notes: project.notes || '',
-    assignments: project.assignments || [{
+    assignments: project.assignments || (project.assignedTo ? [{
       userId: project.assignedTo,
-      userName: project.assignedUserName,
-      userEmail: project.assignedUserEmail,
+      userName: project.assignedUserName || 'Unknown User',
+      userEmail: project.assignedUserEmail || '',
       title: 'Project Owner',
       assignedAt: new Date()
-    }]
+    }] : [])
   });
 
   const [tasks, setTasks] = useState<Task[]>(project.tasks || []);
@@ -272,11 +337,68 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
   const [tempFeatureTime, setTempFeatureTime] = useState<number>(0);
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'project' | 'client-attributes'>('project');
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'project' | 'client-attributes' | 'payment'>('project');
+
+  // Feature addition state
+  const [newFeatureText, setNewFeatureText] = useState('');
+  const [newFeatureComplexity, setNewFeatureComplexity] = useState<'simple' | 'moderate' | 'complex'>('moderate');
+  const [addingFeature, setAddingFeature] = useState(false);
 
   // Generate task ID
   const generateTaskId = () => {
     return `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  };
+
+  // Get estimated hours based on complexity
+  const getEstimatedHours = (complexity: 'simple' | 'moderate' | 'complex'): number => {
+    switch (complexity) {
+      case 'simple': return 2;
+      case 'moderate': return 8;
+      case 'complex': return 24;
+      default: return 8;
+    }
+  };
+
+  // Add new feature
+  const addFeature = async () => {
+    if (!newFeatureText.trim()) return;
+    
+    setAddingFeature(true);
+    setError('');
+
+    try {
+      const newFeature = {
+        id: generateTaskId(),
+        text: newFeatureText.trim(),
+        complexity: newFeatureComplexity,
+        estimatedHours: getEstimatedHours(newFeatureComplexity),
+        completed: false,
+        createdAt: new Date()
+      };
+
+      const updatedFeatures = [...(Array.isArray(formData.features) ? formData.features : []), newFeature];
+
+      await updateDoc(doc(db, 'projects', project.id), {
+        features: updatedFeatures,
+        updatedAt: new Date()
+      });
+
+      setFormData(prev => ({
+        ...prev,
+        features: updatedFeatures
+      }));
+
+      setNewFeatureText('');
+      setNewFeatureComplexity('moderate');
+      onUpdate();
+    } catch (error) {
+      console.error('Error adding feature:', error);
+      setError('Failed to add feature. Please try again.');
+    } finally {
+      setAddingFeature(false);
+    }
   };
 
   // Handle individual field editing
@@ -610,23 +732,49 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
   };
 
   const handleAddAdmin = async (admin: AdminUser, title: string) => {
+    console.log('Adding admin:', { admin, title });
+    
+    // Validate admin data
+    if (!admin.uid || !admin.email) {
+      console.error('Invalid admin data:', admin);
+      setError('Invalid admin data');
+      return;
+    }
+
     const newAssignment: ProjectAssignment = {
       userId: admin.uid,
-      userName: admin.displayName || admin.email,
+      userName: admin.displayName || admin.email || 'Unknown User',
       userEmail: admin.email,
-      title: title,
+      title: title || 'Team Member',
       assignedAt: new Date()
     };
 
+    console.log('New assignment:', newAssignment);
+
     const updatedAssignments = [...(formData.assignments || []), newAssignment];
+    
+    console.log('Updated assignments:', updatedAssignments);
     
     setFormData(prev => ({ ...prev, assignments: updatedAssignments }));
 
     try {
-      await updateDoc(doc(db, 'projects', project.id), {
-        assignments: updatedAssignments,
+      // Clean the data to remove any undefined values
+      const cleanAssignments = updatedAssignments.map(assignment => ({
+        userId: assignment.userId || '',
+        userName: assignment.userName || 'Unknown User',
+        userEmail: assignment.userEmail || '',
+        title: assignment.title || 'Team Member',
+        assignedAt: assignment.assignedAt || new Date()
+      }));
+
+      const updateData = {
+        assignments: cleanAssignments,
         updatedAt: new Date()
-      });
+      };
+      
+      console.log('Updating project with cleaned data:', updateData);
+      
+      await updateDoc(doc(db, 'projects', project.id), updateData);
       onUpdate();
     } catch (error) {
       console.error('Error adding admin:', error);
@@ -719,6 +867,13 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
               <Settings size={16} />
               Client Attributes
             </button>
+            <button
+              className={`project-tab ${activeTab === 'payment' ? 'active' : ''}`}
+              onClick={() => setActiveTab('payment')}
+            >
+              <CreditCard size={16} />
+              Payment
+            </button>
           </div>
 
           {/* Content Area */}
@@ -774,8 +929,8 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
                 <h3 className="section-title">Team</h3>
                 <div className="project-assignments-sidebar">
                   <div className="assignments-list">
-                    {formData.assignments?.map((assignment, index) => (
-                      <div key={assignment.userId} className="assignment-item-sidebar">
+                    {(formData.assignments || []).map((assignment, index) => (
+                      <div key={assignment.userId || `assignment-${index}`} className="assignment-item-sidebar">
                         <div className="assignment-avatar">
                           {assignment.userName?.charAt(0) || 'U'}
                         </div>
@@ -783,15 +938,29 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
                           <span className="assignment-name">{assignment.userName}</span>
                           <span className="assignment-title">{assignment.title}</span>
                         </div>
-                        {formData.assignments && formData.assignments.length > 1 && (
-                          <button
-                            onClick={() => removeAssignment(assignment.userId)}
-                            className="remove-assignment"
-                            title="Remove from project"
-                          >
-                            <X size={12} />
-                          </button>
-                        )}
+                        <div className="assignment-actions">
+                          {onNavigateToMessages && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onNavigateToMessages(assignment.userId);
+                              }}
+                              className="message-assignment"
+                              title="Message team member"
+                            >
+                              <MessageCircle size={12} />
+                            </button>
+                          )}
+                          {formData.assignments && formData.assignments.length > 1 && (
+                            <button
+                              onClick={() => removeAssignment(assignment.userId)}
+                              className="remove-assignment"
+                              title="Remove from project"
+                            >
+                              <X size={12} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -869,11 +1038,51 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
                   </div>
                 </div>
 
+                {/* Add Feature Form */}
+                <div className="add-feature-form">
+                  <div className="feature-input-row">
+                    <div className="feature-input-group">
+                      <label className="feature-input-label">Feature Description</label>
+                      <input
+                        type="text"
+                        value={newFeatureText}
+                        onChange={(e) => setNewFeatureText(e.target.value)}
+                        placeholder="Enter feature description..."
+                        className="feature-input"
+                        disabled={addingFeature}
+                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addFeature())}
+                      />
+                    </div>
+                    <div className="feature-input-group">
+                      <label className="feature-input-label">Time Complexity</label>
+                      <select
+                        value={newFeatureComplexity}
+                        onChange={(e) => setNewFeatureComplexity(e.target.value as 'simple' | 'moderate' | 'complex')}
+                        className="complexity-select"
+                        disabled={addingFeature}
+                      >
+                        <option value="simple">Simple (2h)</option>
+                        <option value="moderate">Moderate (8h)</option>
+                        <option value="complex">Complex (24h)</option>
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addFeature}
+                      disabled={!newFeatureText.trim() || addingFeature}
+                      className="add-feature-btn"
+                    >
+                      <Plus size={16} />
+                      Add
+                    </button>
+                  </div>
+                </div>
+
                 <div className="features-list-main">
                   {Array.isArray(formData.features) && formData.features.length > 0 ? (
                     formData.features.map((feature: any, index: number) => (
                       <div 
-                        key={feature.id || index} 
+                        key={feature.id || `feature_${index}_${Date.now()}`} 
                         className={`feature-card ${feature.completed ? 'completed' : ''}`}
                       >
                         {/* Feature Completion Checkbox */}
@@ -973,10 +1182,120 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
               </div>
             </div>
           </div>
+        ) : activeTab === 'payment' ? (
+          /* Payment View */
+          <div className="payment-container">
+            <div className="payment-section">
+              <div className="payment-header">
+                <h3>Project Payment & Subscription</h3>
+                <p>Set up monthly membership payments for this project</p>
+              </div>
+              
+              <div className="payment-content">
+                <div className="payment-status">
+                  <h4>Current Payment Status</h4>
+                  <div className="status-card">
+                    <div className="status-info">
+                      <span className="status-label">Subscription Status:</span>
+                      <span className={`status-value ${project.subscriptionStatus === 'active' ? 'active' : 'inactive'}`}>
+                        {project.subscriptionStatus || 'Not Set'}
+                      </span>
+                    </div>
+                    <div className="status-info">
+                      <span className="status-label">First Payment:</span>
+                      <span className="status-value">
+                        {project.firstPaymentCompleted ? 
+                          (project.firstPaymentDate ? 
+                            (() => {
+                              try {
+                                const date = project.firstPaymentDate.toDate ? 
+                                  project.firstPaymentDate.toDate() : 
+                                  new Date(project.firstPaymentDate);
+                                return date.toLocaleDateString('en-US', { 
+                                  year: 'numeric', 
+                                  month: 'long', 
+                                  day: 'numeric' 
+                                });
+                              } catch (error) {
+                                return 'Completed';
+                              }
+                            })() : 
+                            'Completed'
+                          ) : 
+                          'Pending'
+                        }
+                      </span>
+                    </div>
+                    <div className="status-info">
+                      <span className="status-label">Last Payment:</span>
+                      <span className="status-value">
+                        {project.lastPaymentDate ? 
+                          (() => {
+                            try {
+                              const date = project.lastPaymentDate.toDate ? 
+                                project.lastPaymentDate.toDate() : 
+                                new Date(project.lastPaymentDate);
+                              return date.toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                              });
+                            } catch (error) {
+                              return 'Not Available';
+                            }
+                          })() : 
+                          'Not Available'
+                        }
+                      </span>
+                    </div>
+                    <div className="status-info">
+                      <span className="status-label">Amount:</span>
+                      <span className="status-value">
+                        {project.subscriptionAmount ? 
+                          `$${project.subscriptionAmount}/month` : 
+                          'Not Set'
+                        }
+                      </span>
+                    </div>
+                    {project.firstPaymentCompleted && (
+                      <div className="payment-success-badge">
+                        <CheckCircle size={16} />
+                        <span>First Payment Completed</span>
+                      </div>
+                    )}
+                  </div>
+                  {/* Debug info */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <div style={{ fontSize: '12px', color: '#666', marginTop: '10px' }}>
+                      Debug: subscriptionAmount={project.subscriptionAmount}, 
+                      subscriptionStatus={project.subscriptionStatus}, 
+                      subscriptionSetupAt={project.subscriptionSetupAt ? 'Set' : 'Not Set'}
+                    </div>
+                  )}
+                </div>
+
+                <div className="payment-actions">
+                  <h4>Payment Actions</h4>
+                  <div className="action-buttons">
+                    <button 
+                      className="btn-primary"
+                      onClick={() => setShowSubscriptionModal(true)}
+                    >
+                      <CreditCard size={16} />
+                      Set Up Subscription
+                    </button>
+                  </div>
+                </div>
+
+
+              </div>
+            </div>
+          </div>
         ) : (
           /* Client Attributes View */
           <div className="client-attributes-container">
             <ProjectAttributesView 
+              key={`project-attributes-${project.id}`}
               projectId={project.id}
               projectName={formData.name}
               currentUser={(window as any).currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}')}
@@ -991,6 +1310,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
       </div>
 
       <AddAdminModal
+        key={`add-admin-modal-${project.id}`}
         isOpen={showAddAdminModal}
         onClose={() => setShowAddAdminModal(false)}
         onAddAdmin={handleAddAdmin}
@@ -998,10 +1318,31 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
       />
 
       <DescriptionModal
+        key={`description-modal-${project.id}`}
         isOpen={showDescriptionModal}
         onClose={() => setShowDescriptionModal(false)}
         description={formData.description}
         projectName={formData.name}
+      />
+
+      {/* Payment Modals */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        projectId={project.id}
+        projectName={formData.name}
+        amount={99}
+      />
+
+      <SetupSubscriptionModal
+        isOpen={showSubscriptionModal}
+        onClose={() => setShowSubscriptionModal(false)}
+        projectId={project.id}
+        projectName={formData.name}
+        onSuccess={() => {
+          // Refresh project data to show updated subscription amount
+          onUpdate();
+        }}
       />
     </>
   );

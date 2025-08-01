@@ -55,7 +55,7 @@
   justify-content: space-between;
   padding: 2rem 2.5rem;
   border-bottom: 1px solid #e5e7eb;
-  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+  background: black;
   color: white;
   flex-shrink: 0;
 }

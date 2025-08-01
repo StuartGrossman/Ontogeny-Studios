@@ -1113,19 +1113,17 @@ const APIIntegrationHub: React.FC = () => {
   );
 
   return (
-    <div className="api-integration-hub">
+    <>
       {renderSecondaryNavbar()}
       
-      <div className="api-dashboard-content">
-        {currentView === 'main' && renderMainDashboard()}
-        {currentView === 'statistics' && renderStatistics()}
-        {currentView === 'graphs' && renderGraphs()}
-      </div>
+      {currentView === 'main' && renderMainDashboard()}
+      {currentView === 'statistics' && renderStatistics()}
+      {currentView === 'graphs' && renderGraphs()}
 
       {showServiceModal && renderServiceModal()}
       {showIntegrationModal && renderIntegrationModal()}
       {showLogModal && renderLogModal()}
-    </div>
+    </>
   );
 };
 

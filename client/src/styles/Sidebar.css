@@ -681,6 +681,32 @@
   background: #10b981;
 }
 
+/* Project Payment Button */
+.project-payment-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  opacity: 0.8;
+}
+
+.project-payment-btn:hover {
+  background: #2563eb;
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.project-payment-btn:active {
+  transform: scale(0.95);
+}
+
 /* Empty State */
 .sidebar-empty-state {
   padding: 1rem;

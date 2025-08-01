@@ -589,14 +589,12 @@ const InventoryDashboard: React.FC = () => {
     );
 
   return (
-    <div className="inventory-dashboard">
+    <>
       {renderSecondaryNavbar()}
-      <div className="inventory-dashboard-content">
-        {currentView === 'main' && renderMainDashboard()}
-        {currentView === 'analytics' && renderAnalytics()}
-        {currentView === 'reports' && renderReports()}
-      </div>
-    </div>
+      {currentView === 'main' && renderMainDashboard()}
+      {currentView === 'analytics' && renderAnalytics()}
+      {currentView === 'reports' && renderReports()}
+    </>
   );
 };
 

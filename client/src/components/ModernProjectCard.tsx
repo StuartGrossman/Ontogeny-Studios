@@ -10,6 +10,13 @@ interface Project {
   progress: number;
   deadline?: string;
   teamSize?: number;
+  assignments?: Array<{
+    userId: string;
+    userName: string;
+    userEmail: string;
+    title: string;
+    assignedAt: Date;
+  }>;
   createdAt?: string;
   category?: string;
 }
@@ -121,11 +128,11 @@ const ModernProjectCard: React.FC<ModernProjectCardProps> = ({
               {formatDate(project.deadline)}
             </span>
           </div>
-          {project.teamSize && (
+          {(project.teamSize || project.assignments?.length) && (
             <div className="flex items-center gap-2">
               <Users size={14} className="modern-text-tertiary" />
               <span className="modern-text-xs modern-text-secondary">
-                {project.teamSize} members
+                {project.assignments?.length || project.teamSize || 0} members
               </span>
             </div>
           )}

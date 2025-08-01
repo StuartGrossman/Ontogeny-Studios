@@ -39,7 +39,7 @@ const App: React.FC = () => {
 
 const Main: React.FC = () => {
   const location = useLocation();
-  const { currentUser, signInWithGoogle, showMFAPrompt, setShowMFAPrompt } = useAuth();
+  const { currentUser, signInWithGoogle, showMFAPrompt, setShowMFAPrompt, mfaResolver } = useAuth();
 
   const codeContentRef = useRef<HTMLDivElement>(null);
   const [codeBoxOpacity, setCodeBoxOpacity] = useState(1);
@@ -319,7 +319,7 @@ const Main: React.FC = () => {
         <Route path="/scheduling" element={<SchedulingPage />} />
         <Route path="/logistics" element={<LogisticsPage />} />
       </Routes>
-      {showMFAPrompt && <MFAModal onClose={() => setShowMFAPrompt(false)} />}
+      {showMFAPrompt && <MFAModal onClose={() => setShowMFAPrompt(false)} resolver={mfaResolver} />}
     </>
   );
 };

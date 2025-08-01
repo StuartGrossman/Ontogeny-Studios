@@ -6,13 +6,7 @@ const SchedulingPage: React.FC = () => {
   return (
     <>
       <ExampleNavbar />
-      <div className="example-page-content" style={{ 
-        minHeight: '100vh', 
-        backgroundColor: '#f8fafc',
-        padding: '20px'
-      }}>
-        <SchedulingDashboard />
-      </div>
+      <SchedulingDashboard />
     </>
   );
 };

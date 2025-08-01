@@ -10,6 +10,13 @@ interface Project {
   progress: number;
   deadline?: string;
   teamSize?: number;
+  assignments?: Array<{
+    userId: string;
+    userName: string;
+    userEmail: string;
+    title: string;
+    assignedAt: Date;
+  }>;
   createdAt?: string;
   category?: string;
 }

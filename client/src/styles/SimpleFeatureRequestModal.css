@@ -18,7 +18,7 @@
   align-items: center;
   padding: 1.75rem 2rem;
   border-bottom: 1px solid #f3f4f6;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: black;
   border-radius: 16px 16px 0 0;
 }
 
@@ -44,7 +44,7 @@
 .modal-close-btn {
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
-  color: #64748b;
+  color: black;
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 8px;
@@ -59,7 +59,7 @@
 
 .modal-close-btn:hover {
   background: #e2e8f0;
-  color: #475569;
+  color: black;
   transform: scale(1.05);
 }
 

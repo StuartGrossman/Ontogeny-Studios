@@ -1,24 +1,49 @@
-/* ProjectFeaturesModal - Modern Professional Styles */
+/* ========================================
+   PROJECT FEATURES MODAL - DARK THEME
+   ======================================== */
+
+/* ========================================
+   MODAL OVERLAY & CONTAINER
+   ======================================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: modalFadeIn 0.3s ease-out;
+}
 
 .project-features-modal {
-  background: white;
+  background: #000000;
+  border: 1px solid #333333;
   border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
   width: 90vw;
   max-width: 1200px;
   max-height: 90vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  animation: modalSlideIn 0.3s ease-out;
 }
 
+/* ========================================
+   MODAL HEADER
+   ======================================== */
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 2rem;
-  border-bottom: 1px solid #e2e8f0;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #333333;
+  background: #111111;
 }
 
 .modal-title {
@@ -28,43 +53,48 @@
 }
 
 .modal-title svg {
-  color: #667eea;
+  color: #3b82f6;
   flex-shrink: 0;
 }
 
 .modal-title h2 {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #1e293b;
+  color: #ffffff;
   margin: 0 0 0.25rem 0;
 }
 
 .modal-title p {
   font-size: 0.875rem;
-  color: #64748b;
+  color: #cccccc;
   margin: 0;
 }
 
 .modal-close-btn {
   background: none;
   border: none;
-  padding: 0.5rem;
+  padding: 0.75rem;
   border-radius: 8px;
-  color: #64748b;
+  color: black;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .modal-close-btn:hover {
-  background: #f1f5f9;
-  color: #1e293b;
+  background: #333333;
+  color: black;
 }
 
-/* Tabs */
+/* ========================================
+   MODAL TABS
+   ======================================== */
 .modal-tabs {
   display: flex;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
+  background: #111111;
+  border-bottom: 1px solid #333333;
   padding: 0 2rem;
 }
 
@@ -75,7 +105,7 @@
   padding: 1rem 1.5rem;
   background: none;
   border: none;
-  color: #64748b;
+  color: #999999;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -85,27 +115,30 @@
 }
 
 .tab-btn:hover {
-  color: #1e293b;
-  background: rgba(102, 126, 234, 0.05);
+  color: #ffffff;
+  background: rgba(59, 130, 246, 0.1);
 }
 
 .tab-btn.active {
-  color: #667eea;
-  border-bottom-color: #667eea;
-  background: rgba(102, 126, 234, 0.1);
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.15);
 }
 
 .tab-btn svg {
   flex-shrink: 0;
 }
 
-/* Modal Content */
+/* ========================================
+   MODAL CONTENT
+   ======================================== */
 .modal-content {
   flex: 1;
   overflow-y: auto;
   padding: 2rem;
   width: 100%;
   box-sizing: border-box;
+  background: #000000;
 }
 
 .tab-header {
@@ -116,17 +149,19 @@
 .tab-header h3 {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1e293b;
+  color: #ffffff;
   margin: 0 0 0.5rem 0;
 }
 
 .tab-header p {
-  color: #64748b;
+  color: #cccccc;
   font-size: 1rem;
   margin: 0;
 }
 
-/* Features Tab */
+/* ========================================
+   FEATURES TAB
+   ======================================== */
 .features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -135,12 +170,13 @@
 }
 
 .feature-card {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: #111111;
+  border: 1px solid #333333;
   border-radius: 12px;
   padding: 1.5rem;
   transition: all 0.3s ease;
   position: relative;
+  color: #ffffff;
 }
 
 .feature-card::before {
@@ -167,8 +203,9 @@
 
 .feature-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-  border-color: #cbd5e1;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  border-color: #444444;
+  background: #1a1a1a;
 }
 
 .feature-header {
@@ -181,14 +218,14 @@
 .feature-info h4 {
   font-size: 1.125rem;
   font-weight: 700;
-  color: #1e293b;
+  color: #ffffff;
   margin: 0 0 0.25rem 0;
 }
 
 .feature-category {
   font-size: 0.75rem;
-  color: #667eea;
-  background: rgba(102, 126, 234, 0.1);
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.2);
   padding: 0.25rem 0.5rem;
   border-radius: 12px;
   font-weight: 600;
@@ -198,19 +235,31 @@
   display: flex;
   align-items: center;
   gap: 0.375rem;
+}
+
+.status-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 
 .status-icon.success {
-  color: #10b981;
+  background: #10b981;
+  color: #ffffff;
 }
 
 .status-icon.warning {
-  color: #f59e0b;
+  background: #f59e0b;
+  color: #ffffff;
 }
 
 .status-icon.error {
-  color: #ef4444;
+  background: #ef4444;
+  color: #ffffff;
 }
 
 .status-text {
@@ -232,14 +281,15 @@
 }
 
 .feature-description {
-  color: #64748b;
-  line-height: 1.6;
-  margin-bottom: 1rem;
+  color: #cccccc;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0 0 1rem 0;
 }
 
 .feature-meta {
   display: flex;
-  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .priority-badge {
@@ -251,21 +301,23 @@
 }
 
 .priority-high {
-  background: #fee2e2;
-  color: #dc2626;
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
 }
 
 .priority-medium {
-  background: #fef3c7;
-  color: #d97706;
+  background: rgba(245, 158, 11, 0.2);
+  color: #fcd34d;
 }
 
 .priority-low {
-  background: #d1fae5;
-  color: #059669;
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
 }
 
-/* APIs Tab */
+/* ========================================
+   API CONNECTIONS TAB
+   ======================================== */
 .apis-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -274,12 +326,13 @@
 }
 
 .api-card {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: #111111;
+  border: 1px solid #333333;
   border-radius: 12px;
   padding: 1.5rem;
   transition: all 0.3s ease;
   position: relative;
+  color: #ffffff;
 }
 
 .api-card::before {
@@ -306,8 +359,9 @@
 
 .api-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-  border-color: #cbd5e1;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  border-color: #444444;
+  background: #1a1a1a;
 }
 
 .api-header {
@@ -320,14 +374,14 @@
 .api-info h4 {
   font-size: 1.125rem;
   font-weight: 700;
-  color: #1e293b;
+  color: #ffffff;
   margin: 0 0 0.25rem 0;
 }
 
 .api-type {
   font-size: 0.75rem;
-  color: #667eea;
-  background: rgba(102, 126, 234, 0.1);
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.2);
   padding: 0.25rem 0.5rem;
   border-radius: 12px;
   font-weight: 600;
@@ -337,7 +391,6 @@
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  flex-shrink: 0;
 }
 
 .status-text.connected {
@@ -349,23 +402,28 @@
 }
 
 .api-description {
-  color: #64748b;
-  line-height: 1.6;
-  margin-bottom: 1rem;
+  color: #cccccc;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0 0 1rem 0;
 }
 
 .api-meta {
   display: flex;
-  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .last-sync {
   font-size: 0.75rem;
-  color: #6b7280;
-  font-style: italic;
+  color: #999999;
+  background: rgba(156, 163, 175, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
 }
 
-/* Requests Tab */
+/* ========================================
+   FEATURE REQUESTS TAB
+   ======================================== */
 .requests-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -374,12 +432,13 @@
 }
 
 .request-card {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: #111111;
+  border: 1px solid #333333;
   border-radius: 12px;
   padding: 1.5rem;
   transition: all 0.3s ease;
   position: relative;
+  color: #ffffff;
 }
 
 .request-card::before {
@@ -410,8 +469,9 @@
 
 .request-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-  border-color: #cbd5e1;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  border-color: #444444;
+  background: #1a1a1a;
 }
 
 .request-header {
@@ -424,26 +484,25 @@
 .request-info h4 {
   font-size: 1.125rem;
   font-weight: 700;
-  color: #1e293b;
-  margin: 0 0 0.5rem 0;
+  color: #ffffff;
+  margin: 0 0 0.25rem 0;
 }
 
 .request-meta-header {
   display: flex;
   gap: 1rem;
   font-size: 0.75rem;
-  color: #6b7280;
+  color: #999999;
 }
 
 .requested-by {
-  font-weight: 600;
+  color: #3b82f6;
 }
 
 .request-status {
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  flex-shrink: 0;
 }
 
 .status-text.approved {
@@ -455,60 +514,112 @@
 }
 
 .request-description {
-  color: #64748b;
-  line-height: 1.6;
-  margin-bottom: 1rem;
+  color: #cccccc;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0 0 1rem 0;
 }
 
 .request-meta {
   display: flex;
-  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
-/* Responsive Design */
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
 @media (max-width: 768px) {
   .project-features-modal {
     width: 95vw;
     max-height: 95vh;
+    margin: 1rem;
   }
-  
+
   .modal-header {
     padding: 1.5rem;
   }
-  
+
   .modal-tabs {
-    padding: 0 1.5rem;
+    padding: 0 1rem;
     overflow-x: auto;
-    flex-wrap: nowrap;
   }
-  
+
   .tab-btn {
     padding: 0.75rem 1rem;
     white-space: nowrap;
   }
-  
+
   .modal-content {
     padding: 1.5rem;
   }
-  
+
   .features-grid,
   .apis-grid,
   .requests-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
-  
+
   .feature-header,
   .api-header,
   .request-header {
     flex-direction: column;
-    align-items: flex-start;
     gap: 0.75rem;
+    align-items: flex-start;
   }
-  
+
   .feature-status,
   .api-status,
   .request-status {
     align-self: flex-end;
+  }
+
+  .request-meta-header {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .project-features-modal {
+    width: 98vw;
+    margin: 0.5rem;
+  }
+
+  .modal-header {
+    padding: 1rem;
+  }
+
+  .modal-content {
+    padding: 1rem;
+  }
+
+  .feature-card,
+  .api-card,
+  .request-card {
+    padding: 1rem;
   }
 } 

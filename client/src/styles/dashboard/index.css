@@ -1,0 +1,14 @@
+/* ========================================
+   DASHBOARD CSS - MODULAR INDEX
+   Main entry point for all dashboard styles
+   ======================================== */
+
+/* Import all dashboard modules */
+@import './variables.css';
+@import './base.css';
+@import './layout.css';
+@import './navigation.css';
+@import './cards.css';
+@import './buttons.css';
+@import './modals.css';
+@import './responsive.css'; 

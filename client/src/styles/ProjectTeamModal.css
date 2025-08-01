@@ -1,0 +1,341 @@
+.project-team-modal {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 800px;
+  width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2rem 2rem 1.5rem 2rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-title-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.modal-title-section h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.modal-title-section p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: black;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background: #f1f5f9;
+  color: black;
+}
+
+.modal-content {
+  padding: 1.5rem 2rem 2rem 2rem;
+}
+
+/* Team Section */
+.team-section {
+  margin-bottom: 2rem;
+}
+
+.team-section h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.team-members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.team-member-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.member-avatar {
+  flex-shrink: 0;
+}
+
+.member-info {
+  flex: 1;
+}
+
+.member-info h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.member-role {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.875rem;
+  color: #3b82f6;
+  font-weight: 500;
+}
+
+.member-email {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.member-actions {
+  flex-shrink: 0;
+}
+
+.remove-member-btn {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.remove-member-btn:hover {
+  background: #fecaca;
+  border-color: #f87171;
+}
+
+.empty-team-state {
+  text-align: center;
+  padding: 2rem;
+  color: #64748b;
+}
+
+.empty-team-state h4 {
+  margin: 1rem 0 0.5rem 0;
+  color: #374151;
+}
+
+.empty-team-state p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* Add Member Section */
+.add-member-section {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 1.5rem;
+}
+
+.add-member-section h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.loading-state {
+  text-align: center;
+  padding: 2rem;
+  color: #64748b;
+}
+
+.no-admins {
+  text-align: center;
+  padding: 2rem;
+  color: #64748b;
+}
+
+.no-admins h4 {
+  margin: 1rem 0 0.5rem 0;
+  color: #374151;
+}
+
+.no-admins p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* Admin Selection */
+.admin-selection {
+  margin-bottom: 1.5rem;
+}
+
+.admin-label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.admin-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.admin-item:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.admin-item.selected {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.admin-avatar {
+  flex-shrink: 0;
+}
+
+.admin-info {
+  flex: 1;
+}
+
+.admin-name {
+  font-weight: 600;
+  color: #1a202c;
+  margin-bottom: 0.25rem;
+}
+
+.admin-email {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.admin-check {
+  position: absolute;
+  right: 1rem;
+  color: #3b82f6;
+}
+
+/* Role Input */
+.role-input {
+  margin-bottom: 1.5rem;
+}
+
+.role-label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.role-input-field {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease;
+}
+
+.role-input-field:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.role-input-field::placeholder {
+  color: #9ca3af;
+}
+
+/* Add Admin Button */
+.add-admin-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-admin-btn:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.add-admin-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .project-team-modal {
+    width: 95vw;
+    max-height: 95vh;
+  }
+
+  .modal-header {
+    padding: 1.5rem 1.5rem 1rem 1.5rem;
+  }
+
+  .modal-content {
+    padding: 1rem 1.5rem 1.5rem 1.5rem;
+  }
+
+  .team-member-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .member-actions {
+    align-self: flex-end;
+  }
+
+  .admin-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .admin-check {
+    position: static;
+    align-self: flex-end;
+  }
+} 

@@ -1,0 +1,361 @@
+/* ========================================
+   DASHBOARD BUTTON COMPONENTS
+   Reusable button styles and variants
+   ======================================== */
+
+/* ===== BASE BUTTON ===== */
+.dash-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dash-spacing-sm);
+  padding: var(--dash-spacing-md) var(--dash-spacing-xl);
+  border: 1px solid transparent;
+  border-radius: var(--dash-radius-md);
+  font-family: var(--dash-font-family);
+  font-size: var(--dash-font-size-sm);
+  font-weight: var(--dash-font-weight-semibold);
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--dash-transition-spring);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.dash-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* ===== BUTTON SIZES ===== */
+.dash-btn.sm {
+  padding: var(--dash-spacing-sm) var(--dash-spacing-md);
+  font-size: var(--dash-font-size-xs);
+  gap: var(--dash-spacing-xs);
+}
+
+.dash-btn.lg {
+  padding: var(--dash-spacing-lg) var(--dash-spacing-2xl);
+  font-size: var(--dash-font-size-md);
+  gap: var(--dash-spacing-md);
+}
+
+.dash-btn.xl {
+  padding: var(--dash-spacing-xl) var(--dash-spacing-3xl);
+  font-size: var(--dash-font-size-lg);
+  gap: var(--dash-spacing-md);
+}
+
+/* ===== PRIMARY BUTTON ===== */
+.dash-btn.primary {
+  background: linear-gradient(135deg, var(--dash-text-accent) 0%, #7c3aed 100%);
+  color: var(--dash-text-primary);
+  box-shadow: var(--dash-shadow-accent);
+}
+
+.dash-btn.primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+}
+
+.dash-btn.primary:active:not(:disabled) {
+  transform: translateY(0);
+  transition: var(--dash-transition-fast);
+}
+
+/* ===== SECONDARY BUTTON ===== */
+.dash-btn.secondary {
+  background: var(--dash-bg-card);
+  color: var(--dash-text-primary);
+  border-color: var(--dash-border-secondary);
+  backdrop-filter: blur(20px);
+}
+
+.dash-btn.secondary:hover:not(:disabled) {
+  background: var(--dash-bg-card-hover);
+  border-color: var(--dash-border-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--dash-shadow-md);
+}
+
+/* ===== OUTLINE BUTTON ===== */
+.dash-btn.outline {
+  background: transparent;
+  color: var(--dash-text-accent);
+  border-color: var(--dash-text-accent);
+}
+
+.dash-btn.outline:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.1);
+  transform: translateY(-1px);
+  box-shadow: var(--dash-shadow-accent);
+}
+
+/* ===== GHOST BUTTON ===== */
+.dash-btn.ghost {
+  background: transparent;
+  color: var(--dash-text-secondary);
+  border-color: transparent;
+}
+
+.dash-btn.ghost:hover:not(:disabled) {
+  background: var(--dash-bg-card);
+  color: var(--dash-text-primary);
+  transform: translateY(-1px);
+}
+
+/* ===== DANGER BUTTON ===== */
+.dash-btn.danger {
+  background: linear-gradient(135deg, var(--dash-status-error) 0%, #dc2626 100%);
+  color: var(--dash-text-primary);
+  box-shadow: var(--dash-shadow-error);
+}
+
+.dash-btn.danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+}
+
+/* ===== SUCCESS BUTTON ===== */
+.dash-btn.success {
+  background: linear-gradient(135deg, var(--dash-status-success) 0%, #059669 100%);
+  color: var(--dash-text-primary);
+  box-shadow: var(--dash-shadow-success);
+}
+
+.dash-btn.success:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+}
+
+/* ===== WARNING BUTTON ===== */
+.dash-btn.warning {
+  background: linear-gradient(135deg, var(--dash-status-warning) 0%, #d97706 100%);
+  color: var(--dash-text-primary);
+  box-shadow: var(--dash-shadow-warning);
+}
+
+.dash-btn.warning:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+}
+
+/* ===== ICON BUTTON ===== */
+.dash-btn.icon-only {
+  padding: var(--dash-spacing-md);
+  min-width: auto;
+  aspect-ratio: 1;
+}
+
+.dash-btn.icon-only.sm {
+  padding: var(--dash-spacing-sm);
+}
+
+.dash-btn.icon-only.lg {
+  padding: var(--dash-spacing-lg);
+}
+
+.dash-btn.icon-only.xl {
+  padding: var(--dash-spacing-xl);
+}
+
+/* ===== ROUNDED BUTTON ===== */
+.dash-btn.rounded {
+  border-radius: var(--dash-radius-full);
+}
+
+/* ===== WIDE BUTTON ===== */
+.dash-btn.wide {
+  width: 100%;
+  justify-content: center;
+}
+
+/* ===== LOADING BUTTON ===== */
+.dash-btn.loading {
+  position: relative;
+  color: transparent;
+  pointer-events: none;
+}
+
+.dash-btn.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: var(--dash-radius-full);
+  animation: dashSpinner var(--dash-duration-slower) linear infinite;
+}
+
+.dash-btn.loading.sm::after {
+  width: 12px;
+  height: 12px;
+}
+
+.dash-btn.loading.lg::after {
+  width: 20px;
+  height: 20px;
+}
+
+.dash-btn.loading.xl::after {
+  width: 24px;
+  height: 24px;
+}
+
+/* ===== BUTTON GROUPS ===== */
+.dash-btn-group {
+  display: inline-flex;
+  background: var(--dash-bg-card);
+  border: 1px solid var(--dash-border-secondary);
+  border-radius: var(--dash-radius-md);
+  overflow: hidden;
+}
+
+.dash-btn-group .dash-btn {
+  border: none;
+  border-radius: 0;
+  border-right: 1px solid var(--dash-border-secondary);
+  margin: 0;
+}
+
+.dash-btn-group .dash-btn:last-child {
+  border-right: none;
+}
+
+.dash-btn-group .dash-btn:hover {
+  transform: none;
+  box-shadow: none;
+  z-index: 1;
+  position: relative;
+}
+
+/* ===== BUTTON WITH BADGE ===== */
+.dash-btn-with-badge {
+  position: relative;
+}
+
+.dash-btn-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--dash-status-error);
+  color: var(--dash-text-primary);
+  font-size: var(--dash-font-size-xs);
+  font-weight: var(--dash-font-weight-bold);
+  padding: var(--dash-spacing-xs);
+  border-radius: var(--dash-radius-full);
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  border: 2px solid var(--dash-bg-primary);
+}
+
+/* ===== FLOATING ACTION BUTTON ===== */
+.dash-fab {
+  position: fixed;
+  bottom: var(--dash-spacing-2xl);
+  right: var(--dash-spacing-2xl);
+  width: 56px;
+  height: 56px;
+  border-radius: var(--dash-radius-full);
+  background: linear-gradient(135deg, var(--dash-text-accent) 0%, #7c3aed 100%);
+  color: var(--dash-text-primary);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--dash-shadow-xl);
+  transition: var(--dash-transition-spring);
+  z-index: var(--dash-z-fixed);
+}
+
+.dash-fab:hover {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(139, 92, 246, 0.4);
+}
+
+.dash-fab:active {
+  transform: scale(0.95);
+}
+
+/* ===== BUTTON ANIMATIONS ===== */
+@keyframes dashButtonPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.dash-btn.pulse:hover {
+  animation: dashButtonPulse 0.6s ease-in-out;
+}
+
+/* ===== TOGGLE BUTTON ===== */
+.dash-toggle-btn {
+  position: relative;
+  background: var(--dash-bg-tertiary);
+  color: var(--dash-text-secondary);
+}
+
+.dash-toggle-btn.active {
+  background: linear-gradient(135deg, var(--dash-text-accent) 0%, #7c3aed 100%);
+  color: var(--dash-text-primary);
+  box-shadow: var(--dash-shadow-accent);
+}
+
+.dash-toggle-btn:hover:not(.active) {
+  background: var(--dash-bg-card);
+  color: var(--dash-text-primary);
+}
+
+/* ===== SOCIAL BUTTONS ===== */
+.dash-btn.social {
+  gap: var(--dash-spacing-md);
+  padding-left: var(--dash-spacing-lg);
+  padding-right: var(--dash-spacing-xl);
+}
+
+.dash-btn.github {
+  background: #181717;
+  color: white;
+}
+
+.dash-btn.github:hover {
+  background: #333;
+}
+
+.dash-btn.google {
+  background: white;
+  color: #1f2937;
+  border-color: var(--dash-border-primary);
+}
+
+.dash-btn.google:hover {
+  background: #f9fafb;
+}
+
+.dash-btn.twitter {
+  background: #1da1f2;
+  color: white;
+}
+
+.dash-btn.twitter:hover {
+  background: #0d8bd9;
+} 

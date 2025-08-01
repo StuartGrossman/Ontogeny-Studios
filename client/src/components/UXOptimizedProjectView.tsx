@@ -239,40 +239,74 @@ const UXOptimizedProjectView: React.FC<UXOptimizedProjectViewProps> = ({
         
         <div className={`expandable-content-ux ${expandedSections.has('features') ? 'expanded' : ''}`}>
           <div style={{ display: 'grid', gap: '1rem' }}>
-            {project.features.map((feature) => (
-              <div 
-                key={feature.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.75rem',
-                  background: feature.completed ? '#f0fdf4' : '#fefefe',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px'
-                }}
-              >
-                <CheckCircle 
-                  size={16} 
-                  color={feature.completed ? '#10b981' : '#9ca3af'} 
-                />
-                <span style={{ flex: 1 }}>{feature.text}</span>
-                <span 
-                  style={{
-                    padding: '0.25rem 0.5rem',
-                    borderRadius: '4px',
-                    fontSize: '0.75rem',
-                    fontWeight: '600',
-                    background: feature.priority === 'high' ? '#fef2f2' : 
-                               feature.priority === 'medium' ? '#fffbeb' : '#f0fdf4',
-                    color: feature.priority === 'high' ? '#dc2626' : 
-                           feature.priority === 'medium' ? '#d97706' : '#059669'
-                  }}
-                >
-                  {feature.priority}
-                </span>
-              </div>
-            ))}
+            {Array.isArray(project.features) 
+              ? project.features.map((feature) => (
+                  <div 
+                    key={feature.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.75rem',
+                      background: feature.completed ? '#f0fdf4' : '#fefefe',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px'
+                    }}
+                  >
+                    <CheckCircle 
+                      size={16} 
+                      color={feature.completed ? '#10b981' : '#9ca3af'} 
+                    />
+                    <span style={{ flex: 1 }}>{feature.text}</span>
+                    <span 
+                      style={{
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        fontWeight: '600',
+                        background: feature.priority === 'high' ? '#fef2f2' : 
+                                   feature.priority === 'medium' ? '#fffbeb' : '#f0fdf4',
+                        color: feature.priority === 'high' ? '#dc2626' : 
+                               feature.priority === 'medium' ? '#d97706' : '#059669'
+                      }}
+                    >
+                      {feature.priority}
+                    </span>
+                  </div>
+                ))
+              : project.features ? (
+                  <div 
+                    key={0}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.75rem',
+                      background: '#fefefe',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px'
+                    }}
+                  >
+                    <CheckCircle 
+                      size={16} 
+                      color="#9ca3af"
+                    />
+                    <span style={{ flex: 1 }}>{project.features}</span>
+                    <span 
+                      style={{
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        fontWeight: '600',
+                        background: '#fffbeb',
+                        color: '#d97706'
+                      }}
+                    >
+                      medium
+                    </span>
+                  </div>
+                ) : []
+            }
           </div>
         </div>
       </div>

@@ -192,7 +192,7 @@
   display: block;
   font-size: 2rem;
   font-weight: 700;
-  color: #667eea;
+  color: #ffffff;
   margin-bottom: 0.25rem;
 }
 
@@ -327,6 +327,7 @@
   display: block;
   font-size: 2rem;
   font-weight: 700;
+  color: #ffffff;
   margin-bottom: 0.25rem;
 }
 
@@ -744,23 +745,23 @@
 }
 
 .overview-card.progress {
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #ffffff;
 }
 
 .overview-card.timeline {
-  border-left: 4px solid #f59e0b;
+  border-left: 4px solid #ffffff;
 }
 
 .overview-card.team {
-  border-left: 4px solid #10b981;
+  border-left: 4px solid #ffffff;
 }
 
 .overview-card.risk {
-  border-left: 4px solid #ef4444;
+  border-left: 4px solid #ffffff;
 }
 
 .overview-card.completed-summary {
-  border-left: 4px solid #10b981;
+  border-left: 4px solid #ffffff;
 }
 
 .progress-circle {
@@ -771,7 +772,7 @@
 .progress-value {
   font-size: 2rem;
   font-weight: 700;
-  color: #667eea;
+  color: #ffffff;
 }
 
 .progress-details {
@@ -787,7 +788,7 @@
   display: block;
   font-size: 2rem;
   font-weight: 700;
-  color: #f59e0b;
+  color: #ffffff;
   margin-bottom: 0.25rem;
 }
 
@@ -810,7 +811,7 @@
   display: block;
   font-size: 2rem;
   font-weight: 700;
-  color: #10b981;
+  color: #ffffff;
   margin-bottom: 0.25rem;
 }
 
@@ -838,15 +839,15 @@
 }
 
 .risk-indicator.low .risk-level {
-  color: #10b981;
+  color: #ffffff;
 }
 
 .risk-indicator.medium .risk-level {
-  color: #f59e0b;
+  color: #ffffff;
 }
 
 .risk-indicator.high .risk-level {
-  color: #ef4444;
+  color: #ffffff;
 }
 
 .risk-description {
@@ -862,7 +863,7 @@
   display: block;
   font-size: 1.125rem;
   font-weight: 600;
-  color: #10b981;
+  color: #ffffff;
   margin-bottom: 0.5rem;
 }
 
@@ -893,7 +894,7 @@
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid #333333;
-  background: #000000;
+  background: white;
   padding: 1rem;
   border-radius: 4px;
 }
@@ -924,7 +925,7 @@
 }
 
 .features-subtitle {
-  color: #cccccc;
+  color: #ffffff;
   font-size: 0.875rem;
   font-weight: 500;
   background: #000000;
@@ -934,10 +935,10 @@
 
 .features-grid-main {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  width: 100%;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 1.5rem;
+  width: calc(100% - 3rem);
   max-width: 100%;
   background: #000000;
 }
@@ -947,19 +948,13 @@
   border-radius: 8px;
   border: 1px solid #333333;
   padding: 1rem;
-  transition: all 0.2s ease;
   position: relative;
   color: #ffffff;
   display: flex;
   gap: 1rem;
 }
 
-.feature-card-main:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  border-color: #444444;
-  background: #2a2a2a;
-}
+/* Removed hover effects to make feature cards non-clickable */
 
 .feature-card-main.completed {
   border-left: 4px solid #10b981;
@@ -5502,4 +5497,170 @@
 @keyframes loading {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
+}
+
+.project-features-section .section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #ffffff !important;
+  margin: 0 0 1.5rem 0;
+}
+
+.team-admin {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-label {
+  font-size: 0.75rem;
+  color: #cccccc;
+}
+
+.admin-name {
+  font-size: 0.875rem;
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.admin-name:hover {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+
+/* Payment Card Content Styles */
+.payment-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.payment-amount {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.amount-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.amount-period {
+  font-size: 14px;
+  color: #888888;
+  font-weight: 400;
+}
+
+.payment-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.setup_pending {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.status-badge.active {
+  background: rgba(40, 167, 69, 0.2);
+  color: #28a745;
+  border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.connect-card-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  justify-content: center;
+}
+
+.connect-card-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.connect-card-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.payment-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(40, 167, 69, 0.1);
+  border: 1px solid rgba(40, 167, 69, 0.2);
+  border-radius: 6px;
+  color: #28a745;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.payment-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #888888;
+  font-size: 14px;
+}
+
+.payment-no-subscription {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888888;
+  font-size: 14px;
+  font-style: italic;
+  padding: 16px 0;
+}
+
+/* Responsive adjustments for payment card */
+@media (max-width: 768px) {
+  .payment-card-content {
+    gap: 8px;
+  }
+  
+  .amount-value {
+    font-size: 20px;
+  }
+  
+  .amount-period {
+    font-size: 12px;
+  }
+  
+  .connect-card-btn {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
 }
