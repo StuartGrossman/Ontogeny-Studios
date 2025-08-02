@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Activity, RefreshCw, TrendingUp, Clock, AlertCircle, Zap, Target, MessageSquare, Play, Calendar, Users, CheckCircle, Settings, BarChart3, FileText, GitBranch, Plus, X, Key, Palette, Globe, Copy, Trash2, Eye, Shield, Edit, Send, Lightbulb, ArrowRight, Check, EyeOff, Upload, Download, Star, Heart, Layers, Sparkles, Image, Monitor, Smartphone, Tablet, ExternalLink, Server, Loader, CreditCard } from 'lucide-react';
-import ProjectFeaturesModal from './ProjectFeaturesModal';
 import ProjectNavbar from './ProjectNavbar';
 import DashboardPaymentSection from './DashboardPaymentSection';
 // Modal imports removed - now using inline sections
 import '../styles/ActiveProjectsSection.css';
-import '../styles/ProjectFeaturesModal.css';
 import { useAuth } from '../contexts/AuthContext';
-import { storage } from '../firebase';
+import { storage, db } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
 
 interface ProjectFeature {
   id: string;
@@ -68,9 +67,10 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
   const [internalSelectedProject, setInternalSelectedProject] = useState<Project | null>(null);
   const [projectDetailsLoading, setProjectDetailsLoading] = useState(false);
   const [metricsLoading, setMetricsLoading] = useState(false);
-  const [showProjectFeaturesModal, setShowProjectFeaturesModal] = useState(false);
+
   const [activeSection, setActiveSection] = useState<string | null>(null); // 'feature', 'api', 'design', 'dns'
   const [showTeamModal, setShowTeamModal] = useState(false);
+  const [showTimelineModal, setShowTimelineModal] = useState(false);
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
   const [pendingModalAction, setPendingModalAction] = useState<string | null>(null);
   const [passwordInput, setPasswordInput] = useState('');
@@ -404,7 +404,14 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
             {selectedProject ? (
               getTeamMembers(selectedProject).length > 0 ? (
                 getTeamMembers(selectedProject).map((member: any) => (
-                  <div key={member.id} className="team-member">
+                  <div 
+                    key={member.id} 
+                    className="team-member clickable"
+                    onClick={() => {
+                      // Navigate to messages page with this team member
+                      window.location.href = `/messages?user=${member.id}`;
+                    }}
+                  >
                     <div className="member-avatar">
                       {member.avatar}
                     </div>
@@ -2506,24 +2513,78 @@ The more details you provide, the better I can help you plan it out!`
     const [loading, setLoading] = useState(false);
     const [subscriptionData, setSubscriptionData] = useState<any>(null);
 
-    useEffect(() => {
-      console.log('PaymentCardContent - currentUser:', currentUser);
-      console.log('PaymentCardContent - project:', project);
-      
-      if (project?.id) {
-        loadSubscription();
-      }
-    }, [project?.id]);
-
-    const loadSubscription = async () => {
+    const loadSubscription = useCallback(async () => {
       if (!currentUser?.uid || !project?.id) return;
+      
+      console.log('=== LOADING SUBSCRIPTION ===');
+      console.log('User ID:', currentUser.uid);
+      console.log('Project ID:', project.id);
+      console.log('Project name:', project.name || project.projectName);
       
       setLoading(true);
       try {
-        // Mock subscription data - in real app, this would come from your API
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Check for existing subscription in Firestore
+        const subscriptionQuery = query(
+          collection(db, 'subscriptions'),
+          where('projectId', '==', project.id),
+          where('userId', '==', currentUser.uid),
+          where('status', '==', 'active')
+        );
         
-        const mockSubscription = {
+        console.log('Querying Firestore with:', {
+          projectId: project.id,
+          userId: currentUser.uid,
+          status: 'active'
+        });
+        
+        const subscriptionSnapshot = await getDocs(subscriptionQuery);
+        console.log('Query result - documents found:', subscriptionSnapshot.size);
+        
+        if (!subscriptionSnapshot.empty) {
+          // Active subscription found
+          const subscriptionDoc = subscriptionSnapshot.docs[0];
+          const subscriptionData = subscriptionDoc.data();
+          
+          console.log('✅ Found active subscription:', {
+            id: subscriptionDoc.id,
+            data: subscriptionData
+          });
+          
+          setSubscriptionData({
+            id: subscriptionDoc.id,
+            amount: subscriptionData.amount || 60,
+            currency: subscriptionData.currency || 'USD',
+            projectId: project.id,
+            projectName: project.name || project.projectName || 'Unknown Project',
+            status: 'active',
+            createdAt: subscriptionData.createdAt || new Date(),
+            sessionId: subscriptionData.sessionId
+          });
+        } else {
+          // No active subscription, show setup pending
+          console.log('❌ No active subscription found, showing setup pending');
+          setSubscriptionData({
+            id: 'pending',
+            amount: 60,
+            currency: 'USD',
+            projectId: project.id,
+            projectName: project.name || project.projectName || 'Unknown Project',
+            status: 'setup_pending',
+            createdAt: new Date()
+          });
+        }
+      } catch (error) {
+        console.error('❌ Error loading subscription:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        
+        // Check if it's a permissions error and provide a fallback
+        if (error.code === 'permission-denied') {
+          console.log('Permissions error - using fallback subscription data');
+        }
+        
+        // Fallback to mock data for development/testing
+        setSubscriptionData({
           id: 'sub_123',
           amount: 60,
           currency: 'USD',
@@ -2531,21 +2592,70 @@ The more details you provide, the better I can help you plan it out!`
           projectName: project.name || project.projectName || 'Unknown Project',
           status: 'setup_pending',
           createdAt: new Date()
-        };
-        
-        setSubscriptionData(mockSubscription);
-      } catch (error) {
-        console.error('Error loading subscription:', error);
+        });
       } finally {
         setLoading(false);
+        console.log('=== SUBSCRIPTION LOADING COMPLETE ===');
       }
-    };
+    }, [currentUser?.uid, project?.id]);
+
+    // Single useEffect to handle subscription loading
+    useEffect(() => {
+      if (project?.id && currentUser?.uid) {
+        console.log('=== INITIAL SUBSCRIPTION LOAD ===');
+        loadSubscription();
+      }
+    }, [project?.id, currentUser?.uid]); // Removed loadSubscription from dependencies
+
+    // Handle page focus events (for payment flow returns)
+    useEffect(() => {
+      const handlePageFocus = () => {
+        console.log('=== PAGE FOCUS DETECTED ===');
+        if (project?.id && currentUser?.uid) {
+          console.log('Refreshing subscription after page focus...');
+          setTimeout(() => {
+            loadSubscription();
+          }, 500);
+        }
+      };
+
+      window.addEventListener('focus', handlePageFocus);
+      
+      return () => {
+        window.removeEventListener('focus', handlePageFocus);
+      };
+    }, [project?.id, currentUser?.uid]); // Removed loadSubscription from dependencies
+
+    // Listen for subscription update events
+    useEffect(() => {
+      const handleSubscriptionUpdate = (event: CustomEvent) => {
+        console.log('=== SUBSCRIPTION UPDATE EVENT RECEIVED ===');
+        console.log('Event detail:', event.detail);
+        // Reload subscription data when we receive an update event
+        if (project?.id && currentUser?.uid) {
+          console.log('Reloading subscription after update event...');
+          setTimeout(() => {
+            loadSubscription();
+          }, 1000);
+        }
+      };
+
+      window.addEventListener('subscriptionUpdated', handleSubscriptionUpdate as EventListener);
+      
+      return () => {
+        window.removeEventListener('subscriptionUpdated', handleSubscriptionUpdate as EventListener);
+      };
+    }, [project?.id, currentUser?.uid]); // Removed loadSubscription from dependencies
 
     const handleConnectCard = async () => {
       if (!subscriptionData || !currentUser?.uid) {
         console.error('Missing data:', { subscriptionData, currentUser });
         return;
       }
+
+      console.log('=== CONNECTING CARD ===');
+      console.log('Current subscription data:', subscriptionData);
+      console.log('Current user:', currentUser);
 
       try {
         setLoading(true);
@@ -2585,10 +2695,95 @@ The more details you provide, the better I can help you plan it out!`
           throw new Error('No checkout URL received');
         }
 
+        console.log('Redirecting to Stripe Checkout:', responseData.url);
         // Redirect to Stripe Checkout
         window.location.href = responseData.url;
       } catch (error) {
         console.error('Error connecting card:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const handleManualSubscription = async () => {
+      if (!currentUser?.uid || !project?.id) {
+        console.error('Missing data:', { currentUser, project });
+        return;
+      }
+
+      console.log('=== MANUAL SUBSCRIPTION CREATION ===');
+      console.log('User ID:', currentUser.uid);
+      console.log('Project ID:', project.id);
+
+      try {
+        setLoading(true);
+        
+        const requestData = {
+          projectId: project.id,
+          userId: currentUser.uid,
+          projectName: project.name || project.projectName || 'Unknown Project',
+          userEmail: currentUser.email || 'test@example.com',
+          sessionId: 'manual-session-' + Date.now()
+        };
+        
+        console.log('Sending manual subscription request:', requestData);
+        
+        const response = await fetch('http://localhost:3002/api/payments/create-subscription-manual', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData),
+        });
+
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Server error response:', errorText);
+          throw new Error(`Failed to create manual subscription: ${response.status} ${response.statusText}`);
+        }
+
+        const responseData = await response.json();
+        console.log('Manual subscription response:', responseData);
+
+        if (responseData.success) {
+          console.log('✅ Manual subscription created successfully');
+          // Reload subscription data
+          await loadSubscription();
+        } else {
+          throw new Error('Manual subscription creation failed');
+        }
+      } catch (error) {
+        console.error('Error creating manual subscription:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const handleCancelSubscription = async () => {
+      if (!subscriptionData || !currentUser?.uid) {
+        console.error('Missing data:', { subscriptionData, currentUser });
+        return;
+      }
+
+      try {
+        setLoading(true);
+        
+        // Update subscription status to cancelled in Firestore
+        const subscriptionRef = doc(db, 'subscriptions', subscriptionData.id);
+        await updateDoc(subscriptionRef, {
+          status: 'cancelled',
+          cancelledAt: new Date(),
+          updatedAt: new Date()
+        });
+
+        console.log('Subscription cancelled successfully');
+        
+        // Reload subscription data
+        await loadSubscription();
+      } catch (error) {
+        console.error('Error cancelling subscription:', error);
       } finally {
         setLoading(false);
       }
@@ -2647,6 +2842,11 @@ The more details you provide, the better I can help you plan it out!`
       );
     }
 
+    console.log('=== RENDERING PAYMENT CARD ===');
+    console.log('Current subscription data:', subscriptionData);
+    console.log('Loading state:', loading);
+    console.log('Current user:', currentUser);
+
     return (
       <div className="payment-card-content">
         <div className="payment-amount">
@@ -2660,33 +2860,91 @@ The more details you provide, the better I can help you plan it out!`
           <span className={`status-badge ${subscriptionData.status}`}>
             {subscriptionData.status === 'active' ? 'Active' : 'Setup Required'}
           </span>
+          <button 
+            className="refresh-subscription-btn"
+            onClick={loadSubscription}
+            disabled={loading}
+            title="Refresh subscription status"
+          >
+            <RefreshCw size={12} />
+          </button>
         </div>
         
+        {/* Debug info */}
+        <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>
+          Status: {subscriptionData.status} | ID: {subscriptionData.id}
+        </div>
+        
+
+        
         {subscriptionData.status === 'setup_pending' && (
+          <>
+            <button 
+              className="connect-card-btn"
+              onClick={handleConnectCard}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="spinning" size={14} />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CreditCard size={14} />
+                  Connect Card
+                </>
+              )}
+            </button>
+            
+            {/* Temporary manual subscription button for testing */}
+            <button 
+              className="manual-subscription-btn"
+              onClick={handleManualSubscription}
+              disabled={loading}
+              style={{
+                marginTop: '8px',
+                backgroundColor: '#333',
+                color: '#fff',
+                border: '1px solid #555',
+                padding: '8px 12px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                cursor: 'pointer'
+              }}
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="spinning" size={12} />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  🔧 Manual Create Subscription
+                </>
+              )}
+            </button>
+          </>
+        )}
+        
+        {subscriptionData.status === 'active' && (
           <button 
-            className="connect-card-btn"
-            onClick={handleConnectCard}
+            className="cancel-subscription-btn"
+            onClick={handleCancelSubscription}
             disabled={loading}
           >
             {loading ? (
               <>
                 <RefreshCw className="spinning" size={14} />
-                Processing...
+                Cancelling...
               </>
             ) : (
               <>
-                <CreditCard size={14} />
-                Connect Card
+                <X size={14} />
+                Cancel Subscription
               </>
             )}
           </button>
-        )}
-        
-        {subscriptionData.status === 'active' && (
-          <div className="payment-success">
-            <CheckCircle size={16} />
-            <span>Payment Active</span>
-          </div>
         )}
       </div>
     );
@@ -2843,7 +3101,10 @@ The more details you provide, the better I can help you plan it out!`
                           </div>
                         </div>
 
-                        <div className="overview-card timeline">
+                        <div 
+                          className="overview-card timeline clickable"
+                          onClick={() => setShowTimelineModal(true)}
+                        >
                           <div className="card-header">
                             <Clock size={20} />
                             <span>Timeline</span>
@@ -2855,6 +3116,9 @@ The more details you provide, the better I can help you plan it out!`
                             </div>
                             <div className="deadline-info">
                               <span>Deadline: {selectedProject.deadline || 'Not set'}</span>
+                            </div>
+                            <div className="timeline-hint">
+                              <span>Click to view detailed timeline</span>
                             </div>
                           </div>
                         </div>
@@ -2871,23 +3135,6 @@ The more details you provide, the better I can help you plan it out!`
                             <div className="team-size">
                               <span className="team-count">{generateProjectMetrics(selectedProject).teamMembers}</span>
                               <span className="team-label">team members</span>
-                            </div>
-                            <div className="team-admin">
-                              <span className="admin-label">Project Admin:</span>
-                              <a 
-                                href={`/messages?user=${selectedProject?.createdBy?.userId}`}
-                                className="admin-name"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  // Navigate to messages with this admin
-                                  window.location.href = `/messages?user=${selectedProject?.createdBy?.userId}`;
-                                }}
-                              >
-                                {selectedProject?.createdBy?.userName || 'Admin'}
-                              </a>
-                            </div>
-                            <div className="team-activity">
-                              <span>Click to view team details</span>
                             </div>
                           </div>
                         </div>
@@ -2972,84 +3219,12 @@ The more details you provide, the better I can help you plan it out!`
                   )}
                 </div>
                 
-                <div className="features-actions">
-                  <button 
-                    className="features-view-all-btn small"
-                    onClick={() => setShowProjectFeaturesModal(true)}
-                  >
-                    <Settings size={14} />
-                    View All Features & APIs
-                  </button>
-                </div>
+
               </div>
 
-              {/* Project Description */}
-              <div className="project-description-section">
-                <h3>Project Overview</h3>
-                <div className="description-content">
-                  <div className="description-card">
-                    <div className="description-text">
-                      <p>{selectedProject.description || 'No description available for this project.'}</p>
-                    </div>
-                    <div className="description-meta">
-                      <div className="meta-item">
-                        <Calendar size={16} />
-                        <span>Started: {selectedProject.createdAt ? 
-                          new Date(selectedProject.createdAt.seconds * 1000).toLocaleDateString() : 
-                          'Recently'
-                        }</span>
-                      </div>
-                      {selectedProject.deadline && (
-                        <div className="meta-item">
-                          <Clock size={16} />
-                          <span>Deadline: {selectedProject.deadline}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              {/* Project Timeline */}
-              {selectedProject.status !== 'completed' && selectedProject.createdAt && (
-                <div className="project-timeline-section">
-                  <h3>Development Timeline</h3>
-                  <div className="timeline-horizontal">
-                    <div className="timeline-step completed">
-                      <div className="timeline-step-marker"></div>
-                      <div className="timeline-step-content">
-                        <span className="timeline-step-title">Project Started</span>
-                        <span className="timeline-step-date">
-                          {new Date(selectedProject.createdAt.seconds * 1000).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="timeline-connector completed"></div>
-                    
-                    <div className="timeline-step current">
-                      <div className="timeline-step-marker"></div>
-                      <div className="timeline-step-content">
-                        <span className="timeline-step-title">Current Phase</span>
-                        <span className="timeline-step-date">{selectedProject.status}</span>
-                      </div>
-                    </div>
-                    
-                    {selectedProject.deadline && (
-                      <>
-                        <div className="timeline-connector"></div>
-                        <div className="timeline-step">
-                          <div className="timeline-step-marker"></div>
-                          <div className="timeline-step-content">
-                            <span className="timeline-step-title">Target Completion</span>
-                            <span className="timeline-step-date">{selectedProject.deadline}</span>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
+
+
             </>
           )}
 
@@ -3065,17 +3240,123 @@ The more details you provide, the better I can help you plan it out!`
         </div>
       )}
 
-      {/* Project Features Modal */}
-      {showProjectFeaturesModal && selectedProject && (
-        <ProjectFeaturesModal
-          isOpen={showProjectFeaturesModal}
-          onClose={() => setShowProjectFeaturesModal(false)}
-          project={selectedProject}
-        />
-      )}
+
 
       {/* Team Modal */}
       {showTeamModal && <TeamModal />}
+
+      {/* Timeline Modal */}
+      {showTimelineModal && selectedProject && (
+        <div className="modal-overlay timeline-modal-overlay" onClick={() => setShowTimelineModal(false)}>
+          <div className="modal-content timeline-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title-section">
+                <Clock size={24} />
+                <div>
+                  <h2>Project Timeline</h2>
+                  <p>Detailed timeline for {selectedProject.name || selectedProject.projectName}</p>
+                </div>
+              </div>
+              <button className="modal-close-btn" onClick={() => setShowTimelineModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="timeline-modal-content">
+              <div className="timeline-overview">
+                <div className="timeline-summary">
+                  <div className="timeline-summary-item">
+                    <span className="summary-label">Project Status</span>
+                    <span className={`summary-value status-${selectedProject.status}`}>
+                      {selectedProject.status.replace('-', ' ')}
+                    </span>
+                  </div>
+                  <div className="timeline-summary-item">
+                    <span className="summary-label">Progress</span>
+                    <span className="summary-value">{selectedProject.progress || 0}%</span>
+                  </div>
+                  <div className="timeline-summary-item">
+                    <span className="summary-label">Days Remaining</span>
+                    <span className="summary-value">{generateProjectMetrics(selectedProject).daysRemaining}</span>
+                  </div>
+                  <div className="timeline-summary-item">
+                    <span className="summary-label">Deadline</span>
+                    <span className="summary-value">{selectedProject.deadline || 'Not set'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="timeline-detailed">
+                <h3>Development Timeline</h3>
+                <div className="timeline-horizontal">
+                  <div className="timeline-step completed">
+                    <div className="timeline-step-marker"></div>
+                    <div className="timeline-step-content">
+                      <span className="timeline-step-title">Project Started</span>
+                      <span className="timeline-step-date">
+                        {selectedProject.createdAt ? 
+                          new Date(selectedProject.createdAt.seconds * 1000).toLocaleDateString() : 
+                          'Recently'
+                        }
+                      </span>
+                      <span className="timeline-step-description">Project initialization and setup</span>
+                    </div>
+                  </div>
+                  
+                  <div className="timeline-connector completed"></div>
+                  
+                  <div className={`timeline-step ${selectedProject.status === 'in-progress' ? 'current' : selectedProject.status === 'completed' ? 'completed' : ''}`}>
+                    <div className="timeline-step-marker"></div>
+                    <div className="timeline-step-content">
+                      <span className="timeline-step-title">Development Phase</span>
+                      <span className="timeline-step-date">{selectedProject.status}</span>
+                      <span className="timeline-step-description">Active development and feature implementation</span>
+                    </div>
+                  </div>
+                  
+                  {selectedProject.deadline && (
+                    <>
+                      <div className="timeline-connector"></div>
+                      <div className="timeline-step">
+                        <div className="timeline-step-marker"></div>
+                        <div className="timeline-step-content">
+                          <span className="timeline-step-title">Target Completion</span>
+                          <span className="timeline-step-date">{selectedProject.deadline}</span>
+                          <span className="timeline-step-description">Project delivery and deployment</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="timeline-features">
+                <h3>Feature Progress</h3>
+                <div className="features-timeline">
+                  {projectFeatures.length > 0 ? (
+                    projectFeatures.map((feature) => (
+                      <div key={feature.id} className={`feature-timeline-item ${feature.status}`}>
+                        <div className="feature-timeline-icon">
+                          {getFeatureStatusIcon(feature.status)}
+                        </div>
+                        <div className="feature-timeline-content">
+                          <span className="feature-timeline-title">{feature.name}</span>
+                          <span className="feature-timeline-status">{feature.status}</span>
+                          <span className="feature-timeline-description">{feature.description}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="no-features">
+                      <span>No features tracked yet</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Password Prompt Modal */}
       {showPasswordPrompt && (

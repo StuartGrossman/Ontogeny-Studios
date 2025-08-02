@@ -13,11 +13,12 @@ import UserDashboard from '../components/UserDashboard';
 import AIChatModal from '../components/AIChatModal';
 import { ProjectDetailsModal, MeetingSchedulerModal, FeatureRequestModal, FeatureAssignmentModal } from '../components/modals';
 import SimpleFeatureRequestModal from '../components/modals/SimpleFeatureRequestModal';
-import TestPaymentHelper from '../components/TestPaymentHelper';
+
 
 import RequestsModal from '../components/RequestsModal';
 import RequestedProjectsModal from '../components/RequestedProjectsModal';
 import UIDesignModal from '../components/UIDesignModal';
+import PaymentSuccessModal from '../components/PaymentSuccessModal';
 import { modalEvents } from '../utils/modalEvents';
 
 
@@ -37,6 +38,9 @@ const Dashboard: React.FC = () => {
   const [showRequestsModal, setShowRequestsModal] = useState(false);
   const [showRequestedProjectsModal, setShowRequestedProjectsModal] = useState(false);
   const [showUIDesignModal, setShowUIDesignModal] = useState(false);
+  const [showPaymentSuccessModal, setShowPaymentSuccessModal] = useState(false);
+  const [paymentSessionId, setPaymentSessionId] = useState<string>('');
+  const [subscriptionUpdated, setSubscriptionUpdated] = useState(false);
 
   // Check authentication and mobile state
   useEffect(() => {
@@ -47,28 +51,77 @@ const Dashboard: React.FC = () => {
 
   // Handle payment success/cancel from Stripe Checkout
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const paymentStatus = urlParams.get('payment');
-    const sessionId = urlParams.get('session_id');
+    const handlePaymentStatus = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const paymentStatus = urlParams.get('payment');
+      const sessionId = urlParams.get('session_id');
 
-    if (paymentStatus === 'success' && sessionId) {
-      // Payment was successful, update subscription status
-      console.log('Payment successful, session ID:', sessionId);
-      
-      // You can add logic here to update the subscription status
-      // For now, we'll just show a success message
-      alert('Payment successful! Your subscription has been activated.');
-      
-      // Clean up the URL
-      window.history.replaceState({}, document.title, '/dashboard');
-    } else if (paymentStatus === 'cancelled') {
-      console.log('Payment was cancelled');
-      alert('Payment was cancelled. You can try again anytime.');
-      
-      // Clean up the URL
-      window.history.replaceState({}, document.title, '/dashboard');
-    }
+      if (paymentStatus === 'success' && sessionId) {
+        // Payment was successful, update subscription status
+        console.log('Payment successful, session ID:', sessionId);
+        
+        // Update subscription status in database
+        await updateSubscriptionStatus(sessionId);
+        
+        // Show success modal
+        setPaymentSessionId(sessionId);
+        setShowPaymentSuccessModal(true);
+        setSubscriptionUpdated(true);
+        
+        // Reset the subscription updated flag after a delay
+        setTimeout(() => {
+          setSubscriptionUpdated(false);
+        }, 3000);
+        
+        // Dispatch a custom event to notify components about subscription update
+        window.dispatchEvent(new CustomEvent('subscriptionUpdated', { 
+          detail: { sessionId, projectId: 'all' } 
+        }));
+        
+        // Clean up the URL
+        window.history.replaceState({}, document.title, '/dashboard');
+      } else if (paymentStatus === 'cancelled') {
+        console.log('Payment was cancelled');
+        alert('Payment was cancelled. You can try again anytime.');
+        
+        // Clean up the URL
+        window.history.replaceState({}, document.title, '/dashboard');
+      }
+    };
+
+    handlePaymentStatus();
   }, []);
+
+  // Update subscription status in database
+  const updateSubscriptionStatus = async (sessionId: string) => {
+    try {
+      if (!currentUser?.uid) return;
+
+      // Create or update the subscription status in Firestore
+      const subscriptionRef = doc(db, 'subscriptions', sessionId);
+      await setDoc(subscriptionRef, {
+        status: 'active',
+        updatedAt: new Date(),
+        sessionId: sessionId,
+        userId: currentUser.uid,
+        userEmail: currentUser.email,
+        createdAt: new Date()
+      }, { merge: true });
+
+      console.log('Subscription status updated to active');
+      
+      // Trigger a refresh of subscription data
+      // The component will reload subscription data on next render
+      
+    } catch (error) {
+      console.error('Error updating subscription status:', error);
+      
+      // Log specific error details for debugging
+      if (error.code === 'permission-denied') {
+        console.error('Permission denied - check Firestore rules');
+      }
+    }
+  };
 
   // Check mobile state
   useEffect(() => {
@@ -187,6 +240,7 @@ const Dashboard: React.FC = () => {
   return (
     <>
       <UserDashboard
+        key={subscriptionUpdated ? 'updated' : 'default'}
         customerProjects={dashboardData.customerProjects}
         requestedProjects={dashboardData.requestedProjects}
         customerProjectsLoading={dashboardData.customerProjectsLoading}
@@ -198,10 +252,7 @@ const Dashboard: React.FC = () => {
         onOpenRequestedProjectsModal={() => setShowRequestedProjectsModal(true)}
       />
 
-      {/* Test Payment Helper - Only show in development */}
-      {process.env.NODE_ENV === 'development' && (
-        <TestPaymentHelper />
-      )}
+
 
       {/* Modals */}
       <AIChatModal
@@ -273,6 +324,12 @@ const Dashboard: React.FC = () => {
         isOpen={showUIDesignModal}
         onClose={() => setShowUIDesignModal(false)}
         currentUser={currentUser}
+      />
+
+      <PaymentSuccessModal
+        isOpen={showPaymentSuccessModal}
+        onClose={() => setShowPaymentSuccessModal(false)}
+        sessionId={paymentSessionId}
       />
 
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, Shield, Phone, Check, AlertCircle, Loader, Key, Lock, Smartphone } from 'lucide-react';
+import { X, User, Shield, Phone, Check, AlertCircle, Loader, Key, Lock, Smartphone, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { 
   multiFactor, 
@@ -735,191 +735,134 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, currentUse
   return (
     <div className="settings-page-inline">
       <div className="settings-content-inline">
-
-
         <div className="settings-content">
-          {/* Secondary Navigation Bar - Updated to match ProjectNavbar design */}
-          <div className="settings-secondary-navbar">
-            <div className="settings-navbar-content">
-              <div className="settings-navbar-left">
-                <div className="settings-navbar-header">
-                  <User size={20} />
-                  <span>Account Settings</span>
-                </div>
-              </div>
-              
-              <div className="settings-navbar-center">
-                <div className="settings-nav-items">
-                  <button 
-                    className={`settings-nav-item ${activeSection === 'profile' ? 'active' : ''}`}
-                    onClick={() => {
-                      setActiveSection('profile');
-                      resetMessages();
-                      resetPasswordFlow();
-                    }}
-                  >
-                    <User size={16} />
-                    <span>Profile</span>
-                  </button>
-                  <button 
-                    className={`settings-nav-item ${activeSection === 'two-factor' ? 'active' : ''}`}
-                    onClick={() => {
-                      setActiveSection('two-factor');
-                      resetMessages();
-                      resetPasswordFlow();
-                    }}
-                  >
-                    <Smartphone size={16} />
-                    <span>Two-Factor Auth</span>
-                  </button>
-                  <button 
-                    className={`settings-nav-item ${activeSection === 'secondary-password' ? 'active' : ''}`}
-                    onClick={() => {
-                      setActiveSection('secondary-password');
-                      resetMessages();
-                      resetPasswordFlow();
-                    }}
-                  >
-                    <Lock size={16} />
-                    <span>Secondary Password</span>
-                  </button>
-                </div>
-              </div>
-              
-              <div className="settings-navbar-right">
-                <button className="settings-close-btn" onClick={onClose}>
-                  <X size={16} />
-                </button>
-              </div>
+          {/* Compact Header */}
+          <div className="settings-header-compact">
+            <div className="settings-header-left">
+              <User size={20} />
+              <span>Account Settings</span>
+            </div>
+            
+            <div className="settings-header-right">
+              <button className="settings-close-btn" onClick={onClose}>
+                <X size={16} />
+              </button>
             </div>
           </div>
 
-          <div className="settings-main">
+          {/* Compact Navigation */}
+          <div className="settings-nav-compact">
+            <button 
+              className={`settings-nav-btn ${activeSection === 'profile' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveSection('profile');
+                resetMessages();
+                resetPasswordFlow();
+              }}
+            >
+              <User size={16} />
+              <span>Profile</span>
+            </button>
+            <button 
+              className={`settings-nav-btn ${activeSection === 'two-factor' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveSection('two-factor');
+                resetMessages();
+                resetPasswordFlow();
+              }}
+            >
+              <Smartphone size={16} />
+              <span>Two-Factor Auth</span>
+            </button>
+            <button 
+              className={`settings-nav-btn ${activeSection === 'secondary-password' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveSection('secondary-password');
+                resetMessages();
+                resetPasswordFlow();
+              }}
+            >
+              <Lock size={16} />
+              <span>Secondary Password</span>
+            </button>
+          </div>
+
+          <div className="settings-main-compact">
             {error && (
-              <div className="error-message">
+              <div className="error-message-compact">
                 <AlertCircle size={16} />
                 {error}
               </div>
             )}
             
-            {showRetryButton && (
-              <div className="retry-section">
-                <div className="troubleshooting-guide">
-                  <h4>🔧 Troubleshooting Firebase Internal Error</h4>
-                  <div className="troubleshooting-steps">
-                    <div className="step">
-                      <strong>1. Check Firebase Console Configuration:</strong>
-                      <ul>
-                        <li>✅ Multi-Factor Auth is enabled</li>
-                        <li>✅ Phone provider is enabled</li>
-                        <li>✅ Authorized domains include localhost</li>
-                      </ul>
-                    </div>
-                    <div className="step">
-                      <strong>2. Verify Project Settings:</strong>
-                      <ul>
-                        <li>📱 SMS usage quota not exceeded</li>
-                        <li>💳 Firebase project has active billing (for production)</li>
-                        <li>🌍 No regional restrictions on SMS</li>
-                      </ul>
-                    </div>
-                                         <div className="step">
-                       <strong>3. Quick Fixes to Try:</strong>
-                       <ul>
-                         <li>🔄 Refresh this page completely</li>
-                         <li>⏱️ Wait 5-10 minutes for Firebase changes to propagate</li>
-                         <li>🚪 Sign out and sign back in</li>
-                         <li>💻 Try in incognito/private browsing mode</li>
-                         <li>🌐 Test with different browser if on localhost</li>
-                       </ul>
-                     </div>
-                  </div>
-                </div>
-                <div className="retry-buttons">
-                  <button
-                    className="action-btn secondary"
-                    onClick={retryPhoneVerification}
-                    disabled={phoneVerificationLoading}
-                  >
-                    {phoneVerificationLoading ? <Loader size={16} className="spinning" /> : <Phone size={16} />}
-                    Retry Phone Verification
-                  </button>
-                  <button
-                    className="action-btn secondary"
-                    onClick={() => window.location.reload()}
-                  >
-                    🔄 Refresh Page
-                  </button>
-                </div>
-              </div>
-            )}
-            
             {success && (
-              <div className="success-message">
+              <div className="success-message-compact">
                 <Check size={16} />
                 {success}
               </div>
             )}
 
             {activeSection === 'profile' && (
-              <div className="settings-section">
-                <h3>Profile Information</h3>
-                <p>View your account information. Contact support to make changes.</p>
+              <div className="settings-section-compact">
+                <div className="section-header-compact">
+                  <h3>Profile Information</h3>
+                  <p>View your account information. Contact support to make changes.</p>
+                </div>
 
-                <div className="profile-info-card">
-                  <div className="profile-field">
-                    <label>Display Name</label>
-                    <div className="read-only-field">
-                      <User size={16} />
+                <div className="profile-info-compact">
+                  <div className="profile-field-compact">
+                    <div className="field-label">Display Name</div>
+                    <div className="field-value">
+                      <User size={14} />
                       <span>{currentUser?.displayName || 'Not set'}</span>
                     </div>
                   </div>
 
-                  <div className="profile-field">
-                    <label>Email Address</label>
-                    <div className="read-only-field">
+                  <div className="profile-field-compact">
+                    <div className="field-label">Email Address</div>
+                    <div className="field-value">
                       <span>📧</span>
                       <span>{currentUser?.email || 'Not set'}</span>
                     </div>
                   </div>
 
-                  <div className="profile-field">
-                    <label>Account Created</label>
-                    <div className="read-only-field">
+                  <div className="profile-field-compact">
+                    <div className="field-label">Account Created</div>
+                    <div className="field-value">
                       <span>📅</span>
                       <span>{currentUser?.metadata?.creationTime ? new Date(currentUser.metadata.creationTime).toLocaleDateString() : 'Unknown'}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="profile-notice">
-                  <div className="notice-content">
-                    <AlertCircle size={20} />
-                    <div>
-                      <h4>Need to update your information?</h4>
-                      <p>Contact our support team to make changes to your profile information.</p>
-                    </div>
+                <div className="profile-notice-compact">
+                  <AlertCircle size={16} />
+                  <div>
+                    <strong>Need to update your information?</strong>
+                    <p>Contact our support team to make changes to your profile information.</p>
                   </div>
                 </div>
               </div>
             )}
 
             {activeSection === 'two-factor' && (
-              <div className="settings-section">
-                <h3>Two-Factor Authentication</h3>
-                <p>Secure your account with SMS verification using your phone number.</p>
+              <div className="settings-section-compact">
+                <div className="section-header-compact">
+                  <h3>Two-Factor Authentication</h3>
+                  <p>Secure your account with SMS verification using your phone number.</p>
+                </div>
 
-                <div className="security-info">
-                  <div className="info-card">
-                    <div className="info-icon">
-                      <Phone size={24} />
+                <div className="security-status-compact">
+                  <div className="status-card">
+                    <div className="status-icon">
+                      <Phone size={20} />
                     </div>
-                    <div className="info-content">
+                    <div className="status-content">
                       <h4>SMS Verification</h4>
                       <p>Receive verification codes via text message for enhanced security.</p>
                     </div>
-                    <div className="info-status">
-                      <span className={`status-badge ${isPhoneVerified ? 'configured' : 'not-configured'}`}>
+                    <div className="status-badge">
+                      <span className={`badge ${isPhoneVerified ? 'enabled' : 'disabled'}`}>
                         {isPhoneVerified ? 'Enabled' : 'Disabled'}
                       </span>
                     </div>
@@ -927,72 +870,66 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, currentUse
                 </div>
 
                 {!isPhoneVerified ? (
-                  <div className="verification-steps">
+                  <div className="verification-steps-compact">
                     {phoneVerificationSteps.map((step) => (
-                      <div key={step.step} className={`verification-step ${step.status}`}>
-                        <div className={`step-icon ${step.status}`}>
-                          {step.status === 'completed' ? <Check size={16} /> : step.step}
+                      <div key={step.step} className={`verification-step-compact ${step.status}`}>
+                        <div className={`step-icon-compact ${step.status}`}>
+                          {step.status === 'completed' ? <Check size={14} /> : step.step}
                         </div>
-                        <div className="step-content">
+                        <div className="step-content-compact">
                           <h4>{step.title}</h4>
                           <p>{step.description}</p>
                           
                           {step.step === 1 && step.status === 'active' && (
-                            <div className="phone-input-group">
-                              <div className="phone-input-instructions">
-                                <p>Enter your phone number in any of these formats:</p>
+                            <div className="phone-input-compact">
+                              <div className="input-instructions">
+                                <p>Enter your phone number in any format:</p>
                                 <ul>
                                   <li>+1 (415) 999-4541</li>
                                   <li>+14159994541</li>
                                   <li>4159994541 (US numbers)</li>
-                                  <li>(415) 999-4541</li>
                                 </ul>
                               </div>
-                              <input
-                                type="tel"
-                                value={phoneNumber}
-                                onChange={(e) => setPhoneNumber(e.target.value)}
-                                placeholder="Enter phone number: +1 (415) 999-4541 or 4159994541"
-                                className="form-input-enhanced"
-                                disabled={phoneVerificationLoading}
-                              />
-                              <button
-                                className="action-btn primary"
-                                onClick={sendPhoneVerification}
-                                disabled={phoneVerificationLoading || !phoneNumber.trim()}
-                              >
-                                {phoneVerificationLoading ? <Loader size={16} className="spinning" /> : <Phone size={16} />}
-                                Send Code
-                              </button>
+                              <div className="input-group-compact">
+                                <input
+                                  type="tel"
+                                  value={phoneNumber}
+                                  onChange={(e) => setPhoneNumber(e.target.value)}
+                                  placeholder="Enter phone number"
+                                  className="phone-input"
+                                />
+                                <button
+                                  className="action-btn-compact primary"
+                                  onClick={sendPhoneVerification}
+                                  disabled={phoneVerificationLoading || !phoneNumber.trim()}
+                                >
+                                  {phoneVerificationLoading ? <Loader size={14} className="spinning" /> : <Phone size={14} />}
+                                  Send Code
+                                </button>
+                              </div>
                             </div>
                           )}
                           
                           {step.step === 2 && step.status === 'active' && (
-                            <div className="verification-code-group">
-                              <input
-                                type="text"
-                                value={verificationCode}
-                                onChange={(e) => setVerificationCode(e.target.value)}
-                                placeholder="Enter 6-digit code"
-                                className="form-input-enhanced verification-code-input"
-                                maxLength={6}
-                                disabled={phoneVerificationLoading}
-                              />
-                              <button
-                                className="action-btn primary"
-                                onClick={verifyPhoneCode}
-                                disabled={phoneVerificationLoading || !verificationCode.trim()}
-                              >
-                                {phoneVerificationLoading ? <Loader size={16} className="spinning" /> : <Check size={16} />}
-                                Verify
-                              </button>
-                              <button
-                                className="resend-code-btn"
-                                onClick={sendPhoneVerification}
-                                disabled={phoneVerificationLoading}
-                              >
-                                Resend Code
-                              </button>
+                            <div className="verification-code-compact">
+                              <div className="input-group-compact">
+                                <input
+                                  type="text"
+                                  value={verificationCode}
+                                  onChange={(e) => setVerificationCode(e.target.value)}
+                                  placeholder="Enter 6-digit code"
+                                  className="code-input"
+                                  maxLength={6}
+                                />
+                                <button
+                                  className="action-btn-compact primary"
+                                  onClick={verifyPhoneCode}
+                                  disabled={phoneVerificationLoading || !verificationCode.trim()}
+                                >
+                                  {phoneVerificationLoading ? <Loader size={14} className="spinning" /> : <Check size={14} />}
+                                  Verify Code
+                                </button>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -1000,11 +937,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, currentUse
                     ))}
                   </div>
                 ) : (
-                  <div className="verification-enabled">
-                    <div className="enabled-info">
-                      <Check size={32} className="success-icon" />
-                      <h4>Two-Factor Authentication Enabled</h4>
-                      <p>Your account is protected with SMS verification.</p>
+                  <div className="verification-enabled-compact">
+                    <div className="enabled-card">
+                      <CheckCircle size={20} />
+                      <div>
+                        <h4>Two-Factor Authentication Enabled</h4>
+                        <p>Your account is now protected with SMS verification.</p>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1012,193 +951,97 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, currentUse
             )}
 
             {activeSection === 'secondary-password' && (
-              <div className="settings-section">
-                <h3>Secondary Password</h3>
-                <p>Set a secondary password for accessing sensitive areas like API keys management.</p>
+              <div className="settings-section-compact">
+                <div className="section-header-compact">
+                  <h3>Secondary Password</h3>
+                  <p>Set up an additional password for enhanced security on sensitive operations.</p>
+                </div>
 
-                <div className="security-info">
-                  <div className="info-card">
-                    <div className="info-icon">
-                      <Key size={24} />
+                <div className="password-status-compact">
+                  <div className="status-card">
+                    <div className="status-icon">
+                      <Key size={20} />
                     </div>
-                    <div className="info-content">
-                      <h4>Administrative Access</h4>
-                      <p>Required for viewing API keys and other sensitive information.</p>
+                    <div className="status-content">
+                      <h4>Secondary Password</h4>
+                      <p>Additional password required for API key management and DNS changes.</p>
                     </div>
-                    <div className="info-status">
-                      <span className={`status-badge ${hasSecondaryPassword ? 'configured' : 'not-configured'}`}>
-                        {hasSecondaryPassword ? 'Configured' : 'Not Set'}
+                    <div className="status-badge">
+                      <span className={`badge ${hasSecondaryPassword ? 'enabled' : 'disabled'}`}>
+                        {hasSecondaryPassword ? 'Set' : 'Not Set'}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {!isPhoneVerified && (
-                  <div className="requirement-notice">
-                    <div className="notice-content">
-                      <Shield size={20} />
-                      <div>
-                        <h4>Two-Factor Authentication Required</h4>
-                        <p>You must enable Two-Factor Authentication before setting a secondary password.</p>
-                        <button 
-                          className="action-btn primary"
-                          onClick={() => setActiveSection('two-factor')}
-                        >
-                          <Smartphone size={16} />
-                          Set Up 2FA
-                        </button>
+                {!hasSecondaryPassword ? (
+                  <div className="password-setup-compact">
+                    <div className="setup-form">
+                      <div className="form-group-compact">
+                        <label>New Secondary Password</label>
+                        <div className="password-input-group-compact">
+                          <input
+                            type={showNewPassword ? 'text' : 'password'}
+                            value={newSecondaryPassword}
+                            onChange={(e) => setNewSecondaryPassword(e.target.value)}
+                            placeholder="Enter new password"
+                            className="password-input-compact"
+                          />
+                          <button
+                            type="button"
+                            className="toggle-password-compact"
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                          >
+                            {showNewPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                )}
 
-                {isPhoneVerified && !showPasswordChangeFlow && (
-                  <div className="password-actions">
-                    <h4>{hasSecondaryPassword ? 'Change Secondary Password' : 'Set Secondary Password'}</h4>
-                    <p>Two-factor authentication is enabled. You can now {hasSecondaryPassword ? 'change' : 'set'} your secondary password.</p>
-                    
-                    <button
-                      className="action-btn primary"
-                      onClick={handleSecondaryPasswordRequest}
-                      disabled={loading}
-                    >
-                      <Shield size={16} />
-                      {hasSecondaryPassword ? 'Change Password' : 'Set Password'}
-                    </button>
-                  </div>
-                )}
-
-                {showPasswordChangeFlow && (
-                  <div className="password-change-form">
-                    <h4>Set New Secondary Password</h4>
-                    <p>Create a secure password for administrative access.</p>
-
-                    <div className="form-group">
-                      <label>New Secondary Password</label>
-                      <div className="password-input-group">
-                        <input
-                          type={showNewPassword ? 'text' : 'password'}
-                          value={newSecondaryPassword}
-                          onChange={(e) => setNewSecondaryPassword(e.target.value)}
-                          placeholder="Enter secondary password (min. 6 characters)"
-                          className="form-input-enhanced"
-                        />
-                        <button
-                          type="button"
-                          className="toggle-password-btn"
-                          onClick={() => setShowNewPassword(!showNewPassword)}
-                        >
-                          {showNewPassword ? '🙈' : '👁️'}
-                        </button>
+                      <div className="form-group-compact">
+                        <label>Confirm Password</label>
+                        <div className="password-input-group-compact">
+                          <input
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            value={confirmSecondaryPassword}
+                            onChange={(e) => setConfirmSecondaryPassword(e.target.value)}
+                            placeholder="Confirm password"
+                            className="password-input-compact"
+                          />
+                          <button
+                            type="button"
+                            className="toggle-password-compact"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          >
+                            {showConfirmPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="form-group">
-                      <label>Confirm Secondary Password</label>
-                      <div className="password-input-group">
-                        <input
-                          type={showConfirmPassword ? 'text' : 'password'}
-                          value={confirmSecondaryPassword}
-                          onChange={(e) => setConfirmSecondaryPassword(e.target.value)}
-                          placeholder="Confirm secondary password"
-                          className="form-input-enhanced"
-                        />
-                        <button
-                          type="button"
-                          className="toggle-password-btn"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        >
-                          {showConfirmPassword ? '🙈' : '👁️'}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="form-actions">
                       <button
-                        className="action-btn secondary"
-                        onClick={resetPasswordFlow}
-                        disabled={loading}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        className="action-btn primary"
+                        className="action-btn-compact primary"
                         onClick={updateSecondaryPassword}
                         disabled={loading || !newSecondaryPassword || !confirmSecondaryPassword}
                       >
-                        {loading ? <Loader size={16} className="spinning" /> : <Key size={16} />}
-                        {hasSecondaryPassword ? 'Update' : 'Set'} Password
+                        {loading ? <Loader size={14} className="spinning" /> : <Key size={14} />}
+                        Set Secondary Password
                       </button>
                     </div>
                   </div>
+                ) : (
+                  <div className="password-enabled-compact">
+                    <div className="enabled-card">
+                      <CheckCircle size={20} />
+                      <div>
+                        <h4>Secondary Password Set</h4>
+                        <p>Your secondary password is active and protecting sensitive operations.</p>
+                      </div>
+                    </div>
+                  </div>
                 )}
-
-
               </div>
             )}
           </div>
         </div>
-        
-        {/* Re-authentication Modal */}
-        {showReauthModal && (
-          <div className="modal-overlay" onClick={closeReauthModal}>
-            <div className="reauth-modal" onClick={(e) => e.stopPropagation()}>
-              <div className="reauth-header">
-                <h3>Sign In Again</h3>
-                <button onClick={closeReauthModal} className="modal-close">
-                  <X size={20} />
-                </button>
-              </div>
-              
-              <div className="reauth-content">
-                <div className="reauth-info">
-                  <Shield size={48} />
-                  <h4>Authentication Required</h4>
-                  <p>For security, you need to sign in again before setting up two-factor authentication.</p>
-                </div>
-                
-                {currentUser?.providerData?.some((provider: any) => provider.providerId === 'google.com') ? (
-                  <div className="google-reauth">
-                    <p>You signed in with Google. Click the button below to authenticate again.</p>
-                    <button
-                      className="action-btn primary"
-                      onClick={handleReauthentication}
-                      disabled={reauthLoading}
-                    >
-                      {reauthLoading ? <Loader size={16} className="spinning" /> : <span>🔐</span>}
-                      Sign In with Google
-                    </button>
-                  </div>
-                ) : (
-                  <div className="password-reauth">
-                    <label>Enter Your Password</label>
-                    <div className="password-input-group">
-                      <input
-                        type="password"
-                        value={reauthPassword}
-                        onChange={(e) => setReauthPassword(e.target.value)}
-                        placeholder="Enter your account password"
-                        className="form-input-enhanced"
-                        onKeyPress={(e) => e.key === 'Enter' && handleReauthentication()}
-                        autoFocus
-                      />
-                    </div>
-                    <button
-                      className="action-btn primary"
-                      onClick={handleReauthentication}
-                      disabled={reauthLoading || !reauthPassword.trim()}
-                    >
-                      {reauthLoading ? <Loader size={16} className="spinning" /> : <Shield size={16} />}
-                      Verify Identity
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* reCAPTCHA container is created dynamically */}
       </div>
     </div>
   );

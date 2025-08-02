@@ -165,6 +165,13 @@ service cloud.firestore {
       allow list, read: if isAdmin();
     }
     
+    // Subscriptions - users can read/write their own subscriptions, admins can read/write all
+    match /subscriptions/{subscriptionId} {
+      allow read, write, create, update: if request.auth != null && 
+        (resource == null || resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if request.auth != null;
+    }
+    
     // Admin audit logs - admins can read/write, users cannot access
     match /admin_audit_logs/{logId} {
       allow read, write: if isAdmin();

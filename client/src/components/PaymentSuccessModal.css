@@ -1,0 +1,127 @@
+.payment-success-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(8px);
+}
+
+.payment-success-modal {
+  background: #000000;
+  border: 1px solid #333333;
+  border-radius: 12px;
+  padding: 0;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.payment-success-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 1.5rem 0 1.5rem;
+}
+
+.payment-success-icon {
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(16, 185, 129, 0.2);
+  border-radius: 50%;
+}
+
+.payment-success-close-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.payment-success-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.payment-success-content {
+  padding: 0 1.5rem 1.5rem 1.5rem;
+  text-align: center;
+}
+
+.payment-success-content h2 {
+  margin: 1rem 0 0.5rem 0;
+  color: #ffffff;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.payment-success-content p {
+  margin: 0 0 1.25rem 0;
+  color: #cccccc;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.payment-session-info {
+  background: #1a1a1a;
+  border: 1px solid #333333;
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin: 1rem 0;
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  color: #999999;
+  word-break: break-all;
+}
+
+.payment-success-actions {
+  margin-top: 1.5rem;
+}
+
+.payment-success-btn {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  font-size: 0.875rem;
+}
+
+.payment-success-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.payment-success-btn:active {
+  transform: translateY(0);
+} 
