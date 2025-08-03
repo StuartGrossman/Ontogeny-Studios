@@ -91,12 +91,15 @@ const CancelSubscriptionModal: React.FC<CancelSubscriptionModalProps> = ({
           <div className="warning-section">
             <div className="warning-header">
               <WifiOff size={20} className="warning-icon" />
-              <h3>Your project will go offline</h3>
+              <h3>⚠️ Your project will be deactivated</h3>
             </div>
             <p className="warning-text">
-              Cancelling your subscription will immediately take your project offline. 
-              All features and services will be suspended until you reactivate your subscription.
+              <strong>Important:</strong> When you cancel your subscription, your project will immediately go offline and all features will be disabled. However, you can reactivate your project at any time by resubscribing to restore full functionality.
             </p>
+            <div className="reactivation-info">
+              <Wifi size={16} className="reactivation-icon" />
+              <span>You can resubscribe anytime to reactivate your project</span>
+            </div>
           </div>
 
           {/* Subscription Details */}
@@ -152,11 +155,11 @@ const CancelSubscriptionModal: React.FC<CancelSubscriptionModalProps> = ({
             <div className="impact-list">
               <div className="impact-item negative">
                 <WifiOff size={16} />
-                <span>Project will go offline immediately</span>
+                <span>Project will be deactivated immediately</span>
               </div>
               <div className="impact-item negative">
                 <X size={16} />
-                <span>All features will be disabled</span>
+                <span>All features and services disabled</span>
               </div>
               <div className="impact-item negative">
                 <Calendar size={16} />
@@ -164,7 +167,11 @@ const CancelSubscriptionModal: React.FC<CancelSubscriptionModalProps> = ({
               </div>
               <div className="impact-item positive">
                 <Wifi size={16} />
-                <span>Can reactivate anytime</span>
+                <span>Can resubscribe to reactivate anytime</span>
+              </div>
+              <div className="impact-item positive">
+                <CreditCard size={16} />
+                <span>Your project data is preserved</span>
               </div>
             </div>
           </div>

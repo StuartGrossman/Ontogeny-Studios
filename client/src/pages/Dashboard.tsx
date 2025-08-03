@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
+import { doc, setDoc, addDoc, collection, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 // Custom hooks
@@ -40,52 +40,72 @@ const Dashboard: React.FC = () => {
   const [showUIDesignModal, setShowUIDesignModal] = useState(false);
   const [showPaymentSuccessModal, setShowPaymentSuccessModal] = useState(false);
   const [paymentSessionId, setPaymentSessionId] = useState<string>('');
-  const [subscriptionUpdated, setSubscriptionUpdated] = useState(false);
 
   // Check authentication and mobile state
   useEffect(() => {
+    console.log('🔍 Dashboard mounted, checking authentication...');
+    console.log('👤 Current user:', currentUser);
+    console.log('📍 Current URL:', window.location.href);
+    
     if (!currentUser) {
+      console.log('❌ No current user, redirecting to home');
       navigate('/');
+    } else {
+      console.log('✅ User authenticated, staying on dashboard');
     }
   }, [currentUser, navigate]);
 
   // Handle payment success/cancel from Stripe Checkout
   useEffect(() => {
     const handlePaymentStatus = async () => {
+      console.log('🔍 Checking payment status from URL...');
       const urlParams = new URLSearchParams(window.location.search);
       const paymentStatus = urlParams.get('payment');
       const sessionId = urlParams.get('session_id');
 
+      console.log('📊 URL Parameters:', {
+        paymentStatus,
+        sessionId,
+        fullUrl: window.location.href
+      });
+
       if (paymentStatus === 'success' && sessionId) {
         // Payment was successful, update subscription status
-        console.log('Payment successful, session ID:', sessionId);
+        console.log('✅ Payment successful, session ID:', sessionId);
         
-        // Update subscription status in database
-        await updateSubscriptionStatus(sessionId);
-        
-        // Show success modal
-        setPaymentSessionId(sessionId);
-        setShowPaymentSuccessModal(true);
-        setSubscriptionUpdated(true);
-        
-        // Reset the subscription updated flag after a delay
-        setTimeout(() => {
-          setSubscriptionUpdated(false);
-        }, 3000);
-        
-        // Dispatch a custom event to notify components about subscription update
-        window.dispatchEvent(new CustomEvent('subscriptionUpdated', { 
-          detail: { sessionId, projectId: 'all' } 
-        }));
+        try {
+          // Update subscription status in database
+          await updateSubscriptionStatus(sessionId);
+          
+          // Show success modal
+          setPaymentSessionId(sessionId);
+          setShowPaymentSuccessModal(true);
+          
+          // Dispatch a custom event to notify components about subscription update
+          window.dispatchEvent(new CustomEvent('subscriptionUpdated', { 
+            detail: { sessionId, projectId: 'all' } 
+          }));
+          
+          // Also dispatch a payment success event
+          window.dispatchEvent(new CustomEvent('paymentSuccess', { 
+            detail: { sessionId, projectId: 'all' } 
+          }));
+          
+          console.log('✅ Payment processing completed successfully');
+        } catch (error) {
+          console.error('❌ Error processing payment:', error);
+        }
         
         // Clean up the URL
         window.history.replaceState({}, document.title, '/dashboard');
       } else if (paymentStatus === 'cancelled') {
-        console.log('Payment was cancelled');
+        console.log('❌ Payment was cancelled');
         alert('Payment was cancelled. You can try again anytime.');
         
         // Clean up the URL
         window.history.replaceState({}, document.title, '/dashboard');
+      } else {
+        console.log('ℹ️ No payment status found in URL');
       }
     };
 
@@ -95,30 +115,71 @@ const Dashboard: React.FC = () => {
   // Update subscription status in database
   const updateSubscriptionStatus = async (sessionId: string) => {
     try {
-      if (!currentUser?.uid) return;
+      console.log('🔄 Updating subscription status for session:', sessionId);
+      
+      if (!currentUser?.uid) {
+        console.error('❌ No current user found');
+        return;
+      }
+
+      console.log('👤 Current user:', currentUser.uid);
+
+      // First, verify the session with Stripe
+      let sessionData = null;
+      try {
+        console.log('🔍 Verifying session with Stripe...');
+        const verifyResponse = await fetch(`http://localhost:3002/api/payments/verify-session/${sessionId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (verifyResponse.ok) {
+          sessionData = await verifyResponse.json();
+          console.log('✅ Session verified with Stripe:', sessionData);
+        } else {
+          console.warn('⚠️ Could not verify session with Stripe, continuing anyway...');
+        }
+      } catch (verifyError) {
+        console.warn('⚠️ Session verification failed, continuing anyway:', verifyError);
+      }
 
       // Create or update the subscription status in Firestore
       const subscriptionRef = doc(db, 'subscriptions', sessionId);
-      await setDoc(subscriptionRef, {
+      
+      // Get the projectId from the session metadata or URL
+      const projectId = sessionData?.metadata?.projectId || 
+                       new URLSearchParams(window.location.search).get('projectId') || 
+                       'unknown';
+      
+      const subscriptionData = {
         status: 'active',
         updatedAt: new Date(),
         sessionId: sessionId,
         userId: currentUser.uid,
         userEmail: currentUser.email,
+        projectId: projectId, // Add projectId to the subscription data
         createdAt: new Date()
-      }, { merge: true });
+      };
 
-      console.log('Subscription status updated to active');
+      console.log('📝 Writing subscription data with projectId:', projectId);
+
+      console.log('📝 Writing subscription data:', subscriptionData);
+      
+      await setDoc(subscriptionRef, subscriptionData, { merge: true });
+
+      console.log('✅ Subscription status updated to active');
       
       // Trigger a refresh of subscription data
       // The component will reload subscription data on next render
       
     } catch (error) {
-      console.error('Error updating subscription status:', error);
+      console.error('❌ Error updating subscription status:', error);
       
       // Log specific error details for debugging
       if (error.code === 'permission-denied') {
-        console.error('Permission denied - check Firestore rules');
+        console.error('❌ Permission denied - check Firestore rules');
       }
     }
   };
@@ -240,7 +301,6 @@ const Dashboard: React.FC = () => {
   return (
     <>
       <UserDashboard
-        key={subscriptionUpdated ? 'updated' : 'default'}
         customerProjects={dashboardData.customerProjects}
         requestedProjects={dashboardData.requestedProjects}
         customerProjectsLoading={dashboardData.customerProjectsLoading}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Activity, RefreshCw, TrendingUp, Clock, AlertCircle, Zap, Target, MessageSquare, Play, Calendar, Users, CheckCircle, Settings, BarChart3, FileText, GitBranch, Plus, X, Key, Palette, Globe, Copy, Trash2, Eye, Shield, Edit, Send, Lightbulb, ArrowRight, Check, EyeOff, Upload, Download, Star, Heart, Layers, Sparkles, Image, Monitor, Smartphone, Tablet, ExternalLink, Server, Loader, CreditCard } from 'lucide-react';
 import ProjectNavbar from './ProjectNavbar';
 import DashboardPaymentSection from './DashboardPaymentSection';
@@ -7,7 +7,7 @@ import '../styles/ActiveProjectsSection.css';
 import { useAuth } from '../contexts/AuthContext';
 import { storage, db } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, getDoc, orderBy } from 'firebase/firestore';
 
 interface ProjectFeature {
   id: string;
@@ -84,6 +84,9 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
   const [featuresLoading, setFeaturesLoading] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [subscription, setSubscription] = useState<any>(null);
+  const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
+  const [paymentHistoryLoading, setPaymentHistoryLoading] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   // Use external selected project if provided, otherwise use internal state
   const selectedProject = externalSelectedProject !== undefined ? externalSelectedProject : internalSelectedProject;
@@ -92,49 +95,31 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
   // Use the actual selected project
   const effectiveSelectedProject = selectedProject;
 
-  console.log('🔍 PROJECT SELECTION DEBUG:');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('📊 External Selected Project:', externalSelectedProject);
-  console.log('📊 Internal Selected Project:', internalSelectedProject);
-  console.log('📊 Final Selected Project:', selectedProject);
-  console.log('📊 Selected Project ID:', selectedProject?.id);
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
-  console.log('🎯 ActiveProjectsSection rendered');
-  console.log('📊 customerProjects:', customerProjects);
-  console.log('⏳ customerProjectsLoading:', customerProjectsLoading);
-  console.log('📈 customerProjects.length:', customerProjects?.length || 0);
+  // Reduced logging to prevent console spam
+  // console.log('🔍 PROJECT SELECTION DEBUG:');
+  // console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  // console.log('📊 External Selected Project:', externalSelectedProject);
+  // console.log('📊 Internal Selected Project:', internalSelectedProject);
+  // console.log('📊 Final Selected Project:', selectedProject);
+  // console.log('📊 Selected Project ID:', selectedProject?.id);
+  // console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
   // Calculate project arrays
   const activeProjects = customerProjects.filter(p => p.status === 'in-progress' || p.status === 'planning');
   const completedProjects = customerProjects.filter(p => p.status === 'completed');
 
-  console.log('🔄 INITIAL COMPONENT STATE:');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('📊 Active Projects Count:', activeProjects.length);
-  console.log('✅ Completed Projects Count:', completedProjects.length);
-  console.log('🎯 Selected Project:', selectedProject);
-  console.log('⚡ External Selected Project:', externalSelectedProject);
-  console.log('📱 Component Props:', {
-    customerProjectsLoading,
-    onOpenCustomerProject: !!onOpenCustomerProject,
-    onFeatureRequest: !!onFeatureRequest,
-    selectedProject: !!externalSelectedProject,
-    onProjectSelect: !!onProjectSelect
-  });
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  // Use actual active projects - memoized to prevent unnecessary re-renders
+  const mockActiveProjects = useMemo(() => activeProjects, [activeProjects]);
 
-  // Use actual active projects
-  const mockActiveProjects = activeProjects;
-
-  console.log('🚀 FINAL PROJECT ARRAYS:');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('📊 Mock Active Projects:', mockActiveProjects);
-  console.log('🔢 Mock Active Projects Count:', mockActiveProjects.length);
-  console.log('📝 Project Names:', mockActiveProjects.map(p => p.name));
-  console.log('📈 Project Progress:', mockActiveProjects.map(p => `${p.name}: ${p.progress}%`));
-  console.log('🔗 Live Links:', mockActiveProjects.map(p => `${p.name}: ${p.liveLink || p.websiteUrl || 'None'}`));
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  // Reduced logging to prevent console spam
+  // console.log('🚀 FINAL PROJECT ARRAYS:');
+  // console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  // console.log('📊 Mock Active Projects:', mockActiveProjects);
+  // console.log('🔢 Mock Active Projects Count:', mockActiveProjects.length);
+  // console.log('📝 Project Names:', mockActiveProjects.map(p => p.name));
+  // console.log('📈 Project Progress:', mockActiveProjects.map(p => `${p.name}: ${p.progress}%`));
+  // console.log('🔗 Live Links:', mockActiveProjects.map(p => `${p.name}: ${p.liveLink || p.websiteUrl || 'None'}`));
+  // console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
   // Auto-select first project if none selected
   useEffect(() => {
@@ -157,7 +142,7 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
       });
       setSelectedProject(mockActiveProjects[0]);
     }
-  }, [mockActiveProjects, selectedProject]);
+  }, [mockActiveProjects]); // Only depend on mockActiveProjects to prevent infinite re-renders
 
   // Enhanced project selection with full logging
   const handleProjectSelect = (project: Project) => {
@@ -2601,6 +2586,85 @@ The more details you provide, the better I can help you plan it out!`
     fetchProjectFeatures();
   }, [effectiveSelectedProject?.id]);
 
+  // Fetch payment history when project changes
+  useEffect(() => {
+    const fetchPaymentHistory = async () => {
+      if (!effectiveSelectedProject?.id || !currentUser?.uid) {
+        console.log('No project selected or user not authenticated, clearing payment history');
+        setPaymentHistory([]);
+        return;
+      }
+
+      console.log('🔄 Fetching payment history for project:', effectiveSelectedProject.id);
+      setPaymentHistoryLoading(true);
+      
+      try {
+        // Query subscriptions collection for this project and user
+        const subscriptionsQuery = query(
+          collection(db, 'subscriptions'),
+          where('projectId', '==', effectiveSelectedProject.id),
+          where('userId', '==', currentUser.uid),
+          orderBy('createdAt', 'desc')
+        );
+        
+        const subscriptionsSnapshot = await getDocs(subscriptionsQuery);
+        const history = subscriptionsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            type: 'subscription',
+            amount: data.amount || 0,
+            currency: data.currency || 'USD',
+            status: data.status || 'active',
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
+            sessionId: data.sessionId,
+            projectName: data.projectName || effectiveSelectedProject.name || effectiveSelectedProject.projectName
+          };
+        });
+
+        // Also check for any payment intents or sessions
+        const paymentsQuery = query(
+          collection(db, 'payments'),
+          where('projectId', '==', effectiveSelectedProject.id),
+          where('userId', '==', currentUser.uid),
+          orderBy('createdAt', 'desc')
+        );
+        
+        const paymentsSnapshot = await getDocs(paymentsQuery);
+        const paymentHistory = paymentsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            type: 'payment',
+            amount: data.amount || 0,
+            currency: data.currency || 'USD',
+            status: data.status || 'succeeded',
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
+            sessionId: data.sessionId,
+            projectName: data.projectName || effectiveSelectedProject.name || effectiveSelectedProject.projectName
+          };
+        });
+
+        // Combine and sort by date
+        const allHistory = [...history, ...paymentHistory].sort((a, b) => {
+          const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+          const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+          return dateB.getTime() - dateA.getTime();
+        });
+
+        console.log('✅ Found payment history:', allHistory.length, 'entries');
+        setPaymentHistory(allHistory);
+      } catch (error) {
+        console.error('❌ Error fetching payment history:', error);
+        setPaymentHistory([]);
+      } finally {
+        setPaymentHistoryLoading(false);
+      }
+    };
+
+    fetchPaymentHistory();
+  }, [effectiveSelectedProject?.id, currentUser?.uid]);
+
   // Payment Card Content Component
   const PaymentCardContent = ({ project }: { project: Project }) => {
     const [loading, setLoading] = useState(false);
@@ -2633,6 +2697,17 @@ The more details you provide, the better I can help you plan it out!`
         const subscriptionSnapshot = await getDocs(subscriptionQuery);
         console.log('Query result - documents found:', subscriptionSnapshot.size);
         
+        // Debug: Log all subscriptions for this user to see what's in the database
+        const allSubscriptionsQuery = query(
+          collection(db, 'subscriptions'),
+          where('userId', '==', currentUser.uid)
+        );
+        const allSubscriptionsSnapshot = await getDocs(allSubscriptionsQuery);
+        console.log('All subscriptions for user:', allSubscriptionsSnapshot.size);
+        allSubscriptionsSnapshot.forEach(doc => {
+          console.log('Subscription doc:', doc.id, doc.data());
+        });
+        
         if (!subscriptionSnapshot.empty) {
           // Active subscription found
           const subscriptionDoc = subscriptionSnapshot.docs[0];
@@ -2653,6 +2728,12 @@ The more details you provide, the better I can help you plan it out!`
             createdAt: subscriptionData.createdAt || new Date(),
             sessionId: subscriptionData.sessionId
           });
+          
+          // Show success message briefly
+          setShowSuccessMessage(true);
+          setTimeout(() => {
+            setShowSuccessMessage(false);
+          }, 3000);
         } else {
           // No active subscription, show setup pending
           console.log('❌ No active subscription found, showing setup pending');
@@ -2712,33 +2793,79 @@ The more details you provide, the better I can help you plan it out!`
         }
       };
 
-      window.addEventListener('focus', handlePageFocus);
-      
-      return () => {
-        window.removeEventListener('focus', handlePageFocus);
-      };
-    }, [project?.id, currentUser?.uid]); // Removed loadSubscription from dependencies
-
-    // Listen for subscription update events
-    useEffect(() => {
-      const handleSubscriptionUpdate = (event: CustomEvent) => {
-        console.log('=== SUBSCRIPTION UPDATE EVENT RECEIVED ===');
-        console.log('Event detail:', event.detail);
-        // Reload subscription data when we receive an update event
-        if (project?.id && currentUser?.uid) {
-          console.log('Reloading subscription after update event...');
+      // Also handle visibility change (when user returns to tab)
+      const handleVisibilityChange = () => {
+        if (!document.hidden && project?.id && currentUser?.uid) {
+          console.log('=== TAB VISIBILITY CHANGE DETECTED ===');
+          console.log('Refreshing subscription after tab becomes visible...');
           setTimeout(() => {
             loadSubscription();
           }, 1000);
         }
       };
 
+      window.addEventListener('focus', handlePageFocus);
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      return () => {
+        window.removeEventListener('focus', handlePageFocus);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
+    }, [project?.id, currentUser?.uid, loadSubscription]); // Added loadSubscription to dependencies
+
+    // Listen for subscription update events
+    useEffect(() => {
+      const handleSubscriptionUpdate = (event: CustomEvent) => {
+        console.log('=== SUBSCRIPTION UPDATE EVENT RECEIVED ===');
+        console.log('Event detail:', event.detail);
+        console.log('Project ID:', project?.id);
+        console.log('User ID:', currentUser?.uid);
+        
+        // Reload subscription data when we receive an update event
+        if (project?.id && currentUser?.uid) {
+          console.log('Reloading subscription after update event...');
+          // Try multiple times with increasing delays
+          setTimeout(() => {
+            loadSubscription();
+          }, 1000);
+          setTimeout(() => {
+            loadSubscription();
+          }, 3000);
+          setTimeout(() => {
+            loadSubscription();
+          }, 5000);
+        } else {
+          console.log('Cannot reload subscription - missing project or user data');
+        }
+      };
+
+      // Also listen for the custom event from Dashboard
+      const handlePaymentSuccess = (event: CustomEvent) => {
+        console.log('=== PAYMENT SUCCESS EVENT RECEIVED ===');
+        console.log('Event detail:', event.detail);
+        if (project?.id && currentUser?.uid) {
+          console.log('Reloading subscription after payment success...');
+          // Try multiple times with increasing delays
+          setTimeout(() => {
+            loadSubscription();
+          }, 2000); // Longer delay to ensure database is updated
+          setTimeout(() => {
+            loadSubscription();
+          }, 4000);
+          setTimeout(() => {
+            loadSubscription();
+          }, 6000);
+        }
+      };
+
       window.addEventListener('subscriptionUpdated', handleSubscriptionUpdate as EventListener);
+      window.addEventListener('paymentSuccess', handlePaymentSuccess as EventListener);
       
       return () => {
         window.removeEventListener('subscriptionUpdated', handleSubscriptionUpdate as EventListener);
+        window.removeEventListener('paymentSuccess', handlePaymentSuccess as EventListener);
       };
-    }, [project?.id, currentUser?.uid]); // Removed loadSubscription from dependencies
+    }, [project?.id, currentUser?.uid, loadSubscription]); // Added loadSubscription to dependencies
 
     const handleConnectCard = async () => {
       if (!subscriptionData || !currentUser?.uid) {
@@ -2798,61 +2925,7 @@ The more details you provide, the better I can help you plan it out!`
       }
     };
 
-    const handleManualSubscription = async () => {
-      if (!currentUser?.uid || !project?.id) {
-        console.error('Missing data:', { currentUser, project });
-        return;
-      }
 
-      console.log('=== MANUAL SUBSCRIPTION CREATION ===');
-      console.log('User ID:', currentUser.uid);
-      console.log('Project ID:', project.id);
-
-      try {
-        setLoading(true);
-        
-        const requestData = {
-          projectId: project.id,
-          userId: currentUser.uid,
-          projectName: project.name || project.projectName || 'Unknown Project',
-          userEmail: currentUser.email || 'test@example.com',
-          sessionId: 'manual-session-' + Date.now()
-        };
-        
-        console.log('Sending manual subscription request:', requestData);
-        
-        const response = await fetch('http://localhost:3002/api/payments/create-subscription-manual', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestData),
-        });
-
-        console.log('Response status:', response.status);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Server error response:', errorText);
-          throw new Error(`Failed to create manual subscription: ${response.status} ${response.statusText}`);
-        }
-
-        const responseData = await response.json();
-        console.log('Manual subscription response:', responseData);
-
-        if (responseData.success) {
-          console.log('✅ Manual subscription created successfully');
-          // Reload subscription data
-          await loadSubscription();
-        } else {
-          throw new Error('Manual subscription creation failed');
-        }
-      } catch (error) {
-        console.error('Error creating manual subscription:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
 
     const handleCancelSubscription = async () => {
       if (!subscriptionData || !currentUser?.uid) {
@@ -2942,16 +3015,9 @@ The more details you provide, the better I can help you plan it out!`
 
     return (
       <div className="payment-card-content">
-        <div className="payment-amount">
-          <span className="amount-value">
-            {formatCurrency(subscriptionData.amount, subscriptionData.currency)}
-          </span>
-          <span className="amount-period">/month</span>
-        </div>
-        
-        <div className="payment-status">
-          <span className={`status-badge ${subscriptionData.status}`}>
-            {subscriptionData.status === 'active' ? 'Active' : 'Setup Required'}
+        <div className="payment-status-top">
+          <span className={`status-badge-small ${subscriptionData.status}`}>
+            {subscriptionData.status === 'active' ? '✅ Active' : '⚠️ Setup Required'}
           </span>
           <button 
             className="refresh-subscription-btn"
@@ -2959,9 +3025,22 @@ The more details you provide, the better I can help you plan it out!`
             disabled={loading}
             title="Refresh subscription status"
           >
-            <RefreshCw size={12} />
+            <RefreshCw size={10} className={loading ? 'spinning' : ''} />
           </button>
         </div>
+        
+        <div className="payment-amount">
+          <span className="amount-value">
+            {formatCurrency(subscriptionData.amount, subscriptionData.currency)}
+          </span>
+          <span className="amount-period">/month</span>
+        </div>
+        
+        {showSuccessMessage && (
+          <div className="payment-success-message">
+            <span>✅ Subscription activated successfully!</span>
+          </div>
+        )}
         
         {/* Debug info */}
         <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>
@@ -2990,33 +3069,7 @@ The more details you provide, the better I can help you plan it out!`
               )}
             </button>
             
-            {/* Temporary manual subscription button for testing */}
-            <button 
-              className="manual-subscription-btn"
-              onClick={handleManualSubscription}
-              disabled={loading}
-              style={{
-                marginTop: '8px',
-                backgroundColor: '#333',
-                color: '#fff',
-                border: '1px solid #555',
-                padding: '8px 12px',
-                borderRadius: '4px',
-                fontSize: '12px',
-                cursor: 'pointer'
-              }}
-            >
-              {loading ? (
-                <>
-                  <RefreshCw className="spinning" size={12} />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  🔧 Manual Create Subscription
-                </>
-              )}
-            </button>
+
           </>
         )}
         
@@ -3315,8 +3368,71 @@ The more details you provide, the better I can help you plan it out!`
 
               </div>
 
-
-
+              {/* Payment History Section */}
+              <div className="payment-history-section">
+                <h3 className="section-title">Payment History</h3>
+                <div className="payment-history-content">
+                  {paymentHistoryLoading ? (
+                    <div className="loading-state">
+                      <div className="spinning">
+                        <Loader size={24} />
+                      </div>
+                      <p>Loading payment history...</p>
+                    </div>
+                  ) : paymentHistory.length > 0 ? (
+                    <div className="payment-history-list">
+                      {paymentHistory.map((payment) => (
+                        <div key={payment.id} className={`payment-history-item ${payment.status}`}>
+                          <div className="payment-history-icon">
+                            {payment.type === 'subscription' ? (
+                              <CreditCard size={20} />
+                            ) : (
+                              <CheckCircle size={20} />
+                            )}
+                          </div>
+                          <div className="payment-history-content">
+                            <div className="payment-history-header">
+                              <span className="payment-type">
+                                {payment.type === 'subscription' ? 'Subscription' : 'Payment'}
+                              </span>
+                              <span className={`payment-status ${payment.status}`}>
+                                {payment.status}
+                              </span>
+                            </div>
+                            <div className="payment-history-details">
+                              <span className="payment-amount">
+                                {formatCurrency(payment.amount, payment.currency)}
+                              </span>
+                              <span className="payment-date">
+                                {payment.createdAt ? 
+                                  new Date(payment.createdAt).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  }) : 'Unknown date'
+                                }
+                              </span>
+                            </div>
+                            {payment.sessionId && (
+                              <span className="payment-session">
+                                Session: {payment.sessionId.substring(0, 8)}...
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="empty-state">
+                      <CreditCard size={48} />
+                      <h4>No Payment History</h4>
+                      <p>No payments or subscriptions found for this project yet.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
 
             </>
           )}
