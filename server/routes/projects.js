@@ -1,5 +1,6 @@
 const express = require('express');
 const admin = require('firebase-admin');
+const { query, where, orderBy } = require('firebase-admin/firestore');
 const router = express.Router();
 
 // Initialize Firebase Admin SDK
@@ -967,6 +968,218 @@ router.post('/project/:projectId/required-dns-record', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to create required DNS record request'
+    });
+  }
+});
+
+// Get project features
+router.get('/project/:projectId/features', async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    
+    console.log('🔍 Server: Received request for project features');
+    console.log('🔍 Server: Project ID:', projectId);
+    console.log('🔍 Server: Project ID type:', typeof projectId);
+    
+    if (!projectId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Project ID is required'
+      });
+    }
+
+    const db = getDb();
+    if (!db) {
+      return res.status(500).json({
+        success: false,
+        error: 'Database not available'
+      });
+    }
+
+    let features = [];
+    let projectFound = false;
+
+    // Check multiple collections for the project
+    const collectionsToCheck = [
+      'admin_projects',
+      'projects', 
+      'user_project_requests',
+      'project_requests'
+    ];
+
+    for (const collectionName of collectionsToCheck) {
+      try {
+        console.log(`🔍 Server: Checking ${collectionName} collection for project ${projectId}`);
+        
+        // First try direct lookup
+        const projectDoc = await db.collection(collectionName).doc(projectId).get();
+        
+        if (projectDoc.exists) {
+          const projectData = projectDoc.data();
+          console.log(`✅ Server: Found project in ${collectionName}:`, projectData.name || projectData.projectName);
+          
+          let projectFeatures = projectData.features || [];
+          console.log('🔍 Server: Raw features from project:', projectFeatures);
+          console.log('🔍 Server: Features type:', typeof projectFeatures);
+
+          // Handle case where features is stored as a string
+          if (typeof projectFeatures === 'string') {
+            console.log('🔍 Server: Features is a string, parsing...');
+            const lines = projectFeatures.split('\n').filter(line => line.trim());
+            projectFeatures = lines.map((line, index) => {
+              const cleanLine = line.replace(/^[\[\]✓\s]+/, '').trim();
+              const isCompleted = /^(\[x\]|\✓)/.test(line);
+              return {
+                id: index,
+                text: cleanLine,
+                priority: 'medium', // Default priority for now
+                completed: isCompleted,
+                startedAt: null,
+                completedAt: isCompleted ? new Date() : null,
+                workLog: '',
+                estimatedHours: 8, // Default hours for now
+                actualHours: 0
+              };
+            });
+            console.log('🔍 Server: Parsed features from string:', projectFeatures);
+          }
+
+          // Transform features to match the expected format
+          features = projectFeatures.map((feature, index) => ({
+            id: feature.id || index,
+            title: feature.text || feature.title || `Feature ${index + 1}`,
+            description: feature.text || feature.description || feature.title || `Feature ${index + 1}`,
+            status: feature.completed ? 'completed' : (feature.startedAt ? 'in-progress' : 'pending'),
+            priority: feature.priority || 'medium',
+            category: 'feature',
+            estimatedHours: feature.estimatedHours || 0,
+            actualHours: feature.actualHours || 0,
+            completed: feature.completed || false,
+            startedAt: feature.startedAt,
+            completedAt: feature.completedAt
+          }));
+
+          projectFound = true;
+          console.log(`✅ Server: Retrieved ${features.length} features from ${collectionName}`);
+          break;
+        }
+
+        // If not found by direct ID, check if it's an originalRequestId for admin_projects
+        if (collectionName === 'admin_projects') {
+          const adminProjectsQuery = db.collection('admin_projects')
+            .where('originalRequestId', '==', projectId);
+          
+          const adminProjectsSnapshot = await adminProjectsQuery.get();
+          
+          if (!adminProjectsSnapshot.empty) {
+            const adminProjectDoc = adminProjectsSnapshot.docs[0];
+            const projectData = adminProjectDoc.data();
+            console.log(`✅ Server: Found admin project by originalRequestId: ${adminProjectDoc.id}`);
+            
+            let projectFeatures = projectData.features || [];
+            
+            if (typeof projectFeatures === 'string') {
+              const lines = projectFeatures.split('\n').filter(line => line.trim());
+              projectFeatures = lines.map((line, index) => {
+                const cleanLine = line.replace(/^[\[\]✓\s]+/, '').trim();
+                const isCompleted = /^(\[x\]|\✓)/.test(line);
+                return {
+                  id: index,
+                  text: cleanLine,
+                  priority: 'medium',
+                  completed: isCompleted,
+                  startedAt: null,
+                  completedAt: isCompleted ? new Date() : null,
+                  workLog: '',
+                  estimatedHours: 8,
+                  actualHours: 0
+                };
+              });
+            }
+
+            features = projectFeatures.map((feature, index) => ({
+              id: feature.id || index,
+              title: feature.text || feature.title || `Feature ${index + 1}`,
+              description: feature.text || feature.description || feature.title || `Feature ${index + 1}`,
+              status: feature.completed ? 'completed' : (feature.startedAt ? 'in-progress' : 'pending'),
+              priority: feature.priority || 'medium',
+              category: 'feature',
+              estimatedHours: feature.estimatedHours || 0,
+              actualHours: feature.actualHours || 0,
+              completed: feature.completed || false,
+              startedAt: feature.startedAt,
+              completedAt: feature.completedAt
+            }));
+
+            projectFound = true;
+            console.log(`✅ Server: Retrieved ${features.length} features from admin_projects by originalRequestId`);
+            break;
+          }
+        }
+        
+      } catch (error) {
+        console.log(`❌ Server: Error checking ${collectionName}:`, error.message);
+        continue;
+      }
+    }
+
+    if (!projectFound) {
+      console.log('❌ Server: Project not found in any collection');
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found in any collection'
+      });
+    }
+
+    console.log(`✅ Server: Successfully retrieved ${features.length} features for project ${projectId}`);
+    console.log('🔍 Server: Final features:', features);
+
+    res.json({
+      success: true,
+      features: features
+    });
+
+  } catch (error) {
+    console.error('❌ Server: Error fetching project features:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch project features'
+    });
+  }
+});
+
+// Debug endpoint to list all admin projects
+router.get('/debug/admin-projects', async (req, res) => {
+  try {
+    const db = getDb();
+    if (!db) {
+      return res.status(500).json({
+        success: false,
+        error: 'Database not available'
+      });
+    }
+
+    const adminProjectsSnapshot = await db.collection('admin_projects').get();
+    const projects = adminProjectsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      name: doc.data().name,
+      originalRequestId: doc.data().originalRequestId,
+      features: doc.data().features || [],
+      featuresCount: (doc.data().features || []).length
+    }));
+
+    console.log('🔍 Debug: Found admin projects:', projects);
+    
+    res.json({
+      success: true,
+      projects: projects
+    });
+
+  } catch (error) {
+    console.error('❌ Debug: Error listing admin projects:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to list admin projects'
     });
   }
 });

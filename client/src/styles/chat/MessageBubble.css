@@ -52,14 +52,14 @@
 }
 
 .message-own .message-bubble {
-  background: #000000;
+  background: #1a1a1a;
   color: #ffffff;
   border-bottom-right-radius: 6px;
   border: 1px solid #333333;
 }
 
 .message-other .message-bubble {
-  background: #000000;
+  background: #1a1a1a;
   color: #ffffff;
   border-bottom-left-radius: 6px;
   border: 1px solid #333333;

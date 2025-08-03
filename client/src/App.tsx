@@ -178,12 +178,6 @@ const Main: React.FC = () => {
                       Sign in with Google
                     </button>
                   )}
-                  <button 
-                    className="examples-button"
-                    onClick={() => window.location.href = '/examples'}
-                  >
-                    Examples
-                  </button>
                 </div>
               </div>
 

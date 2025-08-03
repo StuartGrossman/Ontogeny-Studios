@@ -3,7 +3,7 @@
   display: flex;
   height: calc(100vh - 80px);
   margin-top: 80px;
-  background: #f8fafc;
+  background: #000000;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow: hidden;
 }
@@ -11,8 +11,8 @@
 /* ===== CHAT SIDEBAR ===== */
 .chat-sidebar {
   width: 320px;
-  background: white;
-  border-right: 1px solid #e2e8f0;
+  background: #1a1a1a;
+  border-right: 1px solid #333333;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -20,11 +20,11 @@
 
 .chat-sidebar-header {
   padding: 1.5rem 1.25rem 1rem;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #333333;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: white;
+  background: #1a1a1a;
 }
 
 .sidebar-title {
@@ -33,7 +33,7 @@
   gap: 0.75rem;
   font-weight: 600;
   font-size: 1.125rem;
-  color: #1e293b;
+  color: #ffffff;
 }
 
 .sidebar-title svg {
@@ -49,19 +49,19 @@
   width: 32px;
   height: 32px;
   border: none;
-  background: #f8fafc;
+  background: #333333;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: #64748b;
+  color: #cccccc;
 }
 
 .sidebar-action-btn:hover {
-  background: #e2e8f0;
-  color: #475569;
+  background: #444444;
+  color: #ffffff;
 }
 
 .sidebar-action-btn svg {
@@ -96,17 +96,18 @@
 .search-input {
   width: 100%;
   padding: 0.75rem 1rem 0.75rem 2.75rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #333333;
   border-radius: 12px;
   font-size: 0.875rem;
-  background: #f8fafc;
+  background: #333333;
+  color: #ffffff;
   transition: all 0.2s ease;
 }
 
 .search-input:focus {
   outline: none;
   border-color: #667eea;
-  background: white;
+  background: #444444;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -123,19 +124,19 @@
 
 .filter-btn {
   padding: 0.5rem 1rem;
-  border: 1px solid #e2e8f0;
-  background: white;
+  border: 1px solid #333333;
+  background: #333333;
   border-radius: 8px;
   font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: #64748b;
+  color: #cccccc;
   white-space: nowrap;
 }
 
 .filter-btn:hover {
   border-color: #667eea;
-  color: #667eea;
+  color: #ffffff;
 }
 
 .filter-btn.active {
@@ -156,18 +157,18 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: white;
+  background: #000000;
   min-width: 0;
 }
 
 /* ===== CHAT HEADER ===== */
 .chat-header {
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #333333;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: white !important;
+  background: #1a1a1a !important;
   z-index: 10;
 }
 
@@ -181,7 +182,7 @@
   margin: 0 0 0.25rem 0;
   font-size: 1.125rem;
   font-weight: 600;
-  color: #1e293b;
+  color: #ffffff;
 }
 
 .status {
@@ -206,8 +207,8 @@
   width: 40px;
   height: 40px;
   border: none;
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: #333333;
+  border: 1px solid #333333;
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -218,7 +219,7 @@
 }
 
 .header-action-btn:hover {
-  background: #f8fafc;
+  background: #444444;
   border-color: #667eea;
   color: #5a67d8;
 }
@@ -237,14 +238,14 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  background: white;
+  background: #000000;
 }
 
 /* ===== CHAT INPUT ===== */
 .chat-input {
   padding: 1.25rem 1.5rem;
-  border-top: 1px solid #e2e8f0;
-  background: white;
+  border-top: 1px solid #333333;
+  background: #1a1a1a;
   position: relative;
 }
 
@@ -295,9 +296,9 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #333333;
   border-radius: 24px;
-  background: #f8fafc;
+  background: #333333;
   transition: all 0.2s ease;
   width: 100%;
   max-width: none;
@@ -305,7 +306,7 @@
 
 .input-container:focus-within {
   border-color: #667eea;
-  background: white;
+  background: #444444;
 }
 
 .input-action-btn {
@@ -349,7 +350,7 @@
   border: none;
   background: transparent;
   font-size: 0.9rem;
-  color: #1e293b;
+  color: #ffffff;
   outline: none;
   padding: 0.5rem 0;
   min-width: 0;

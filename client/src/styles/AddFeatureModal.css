@@ -214,15 +214,16 @@
 }
 
 .message.user .message-bubble {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: #1a1a1a;
+  color: #ffffff;
+  border: 1px solid #333333;
   border-bottom-right-radius: 6px;
 }
 
 .message.consultant .message-bubble {
-  background: white;
-  color: #374151;
-  border: 1px solid #e5e7eb;
+  background: #1a1a1a;
+  color: #ffffff;
+  border: 1px solid #333333;
   border-bottom-left-radius: 6px;
 }
 
@@ -284,19 +285,22 @@
   align-items: center;
   gap: 1rem;
   padding: 1.5rem 2rem;
-  border-top: 1px solid #e5e7eb;
-  background: white;
+  border-top: 1px solid #333333;
+  background: #1a1a1a;
 }
 
 .message-input {
   flex: 1;
   padding: 0.875rem 1.25rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid #333333;
   border-radius: 25px;
   font-size: 0.9375rem;
   outline: none;
   transition: all 0.2s ease;
   font-family: inherit;
+  background: #333333;
+  color: #ffffff;
+}
 }
 
 .message-input:focus {

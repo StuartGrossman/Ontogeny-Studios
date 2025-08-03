@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, CheckCircle, Circle, Clock, User, Calendar, Target, MessageSquare, AlertCircle, Check, Play, FileText, Activity, Edit3 } from 'lucide-react';
-import { doc, updateDoc, addDoc, collection, getDoc, setDoc } from 'firebase/firestore';
+import { doc, updateDoc, addDoc, collection, getDoc, setDoc, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
 import projectService from '../../services/projectService';
 
@@ -217,12 +217,57 @@ const UserRequestedProjectModal: React.FC<UserRequestedProjectModalProps> = ({
         newStatus = 'in-progress';
       }
 
+      // Update user_project_requests collection
       await updateDoc(doc(db, 'user_project_requests', project.id), {
         features: featuresString,
         progress,
         status: newStatus,
         lastUpdated: new Date()
       });
+
+      // Also update the corresponding admin project if it exists
+      try {
+        // Find the admin project by originalRequestId
+        const adminProjectsQuery = query(
+          collection(db, 'admin_projects'),
+          where('originalRequestId', '==', project.id)
+        );
+        
+        const adminProjectsSnapshot = await getDocs(adminProjectsQuery);
+        
+        if (!adminProjectsSnapshot.empty) {
+          const adminProjectDoc = adminProjectsSnapshot.docs[0];
+          const adminProjectId = adminProjectDoc.id;
+          
+          // Transform features to admin project format
+          const adminFeatures = updatedFeatures.map((f, index) => ({
+            id: index,
+            text: f.text,
+            priority: f.priority,
+            completed: f.completed,
+            startedAt: f.startedAt,
+            completedAt: f.completedAt,
+            workLog: f.workLog || '',
+            estimatedHours: getEstimatedHours(f.text, f.priority),
+            actualHours: 0
+          }));
+
+          // Update admin project
+          await updateDoc(doc(db, 'admin_projects', adminProjectId), {
+            features: adminFeatures,
+            progress,
+            status: newStatus,
+            lastUpdated: new Date()
+          });
+
+          console.log('✅ Updated admin project features after completion toggle:', adminProjectId);
+        } else {
+          console.log('⚠️ No admin project found for original request:', project.id);
+        }
+      } catch (adminError) {
+        console.error('❌ Error updating admin project after completion toggle:', adminError);
+        // Don't fail the whole operation if admin update fails
+      }
 
       onUpdate();
     } catch (error) {
@@ -352,11 +397,54 @@ const UserRequestedProjectModal: React.FC<UserRequestedProjectModalProps> = ({
         `${f.completed ? '✓' : '[ ]'} ${f.text}`
       ).join('\n');
 
+      // Update user_project_requests collection
       const docRef = doc(db, 'user_project_requests', project.id);
       await updateDoc(docRef, {
         features: featuresString,
         lastUpdated: new Date()
       });
+
+      // Also update the corresponding admin project if it exists
+      try {
+        // Find the admin project by originalRequestId
+        const adminProjectsQuery = query(
+          collection(db, 'admin_projects'),
+          where('originalRequestId', '==', project.id)
+        );
+        
+        const adminProjectsSnapshot = await getDocs(adminProjectsQuery);
+        
+        if (!adminProjectsSnapshot.empty) {
+          const adminProjectDoc = adminProjectsSnapshot.docs[0];
+          const adminProjectId = adminProjectDoc.id;
+          
+          // Transform features to admin project format
+          const adminFeatures = updatedFeatures.map((f, index) => ({
+            id: index,
+            text: f.text,
+            priority: f.priority,
+            completed: f.completed,
+            startedAt: f.startedAt,
+            completedAt: f.completedAt,
+            workLog: f.workLog || '',
+            estimatedHours: getEstimatedHours(f.text, f.priority),
+            actualHours: 0
+          }));
+
+          // Update admin project
+          await updateDoc(doc(db, 'admin_projects', adminProjectId), {
+            features: adminFeatures,
+            lastUpdated: new Date()
+          });
+
+          console.log('✅ Updated admin project features:', adminProjectId);
+        } else {
+          console.log('⚠️ No admin project found for original request:', project.id);
+        }
+      } catch (adminError) {
+        console.error('❌ Error updating admin project:', adminError);
+        // Don't fail the whole operation if admin update fails
+      }
 
       setNewFeature('');
       onUpdate();
@@ -394,10 +482,53 @@ const UserRequestedProjectModal: React.FC<UserRequestedProjectModalProps> = ({
         `${f.completed ? '✓' : '[ ]'} ${f.text}`
       ).join('\n');
 
+      // Update user_project_requests collection
       await updateDoc(doc(db, 'user_project_requests', project.id), {
         features: featuresString,
         lastUpdated: new Date()
       });
+
+      // Also update the corresponding admin project if it exists
+      try {
+        // Find the admin project by originalRequestId
+        const adminProjectsQuery = query(
+          collection(db, 'admin_projects'),
+          where('originalRequestId', '==', project.id)
+        );
+        
+        const adminProjectsSnapshot = await getDocs(adminProjectsQuery);
+        
+        if (!adminProjectsSnapshot.empty) {
+          const adminProjectDoc = adminProjectsSnapshot.docs[0];
+          const adminProjectId = adminProjectDoc.id;
+          
+          // Transform features to admin project format
+          const adminFeatures = reindexedFeatures.map((f, index) => ({
+            id: index,
+            text: f.text,
+            priority: f.priority,
+            completed: f.completed,
+            startedAt: f.startedAt,
+            completedAt: f.completedAt,
+            workLog: f.workLog || '',
+            estimatedHours: getEstimatedHours(f.text, f.priority),
+            actualHours: 0
+          }));
+
+          // Update admin project
+          await updateDoc(doc(db, 'admin_projects', adminProjectId), {
+            features: adminFeatures,
+            lastUpdated: new Date()
+          });
+
+          console.log('✅ Updated admin project features after deletion:', adminProjectId);
+        } else {
+          console.log('⚠️ No admin project found for original request:', project.id);
+        }
+      } catch (adminError) {
+        console.error('❌ Error updating admin project after deletion:', adminError);
+        // Don't fail the whole operation if admin update fails
+      }
 
       onUpdate();
     } catch (error) {

@@ -7,7 +7,7 @@ import '../styles/ActiveProjectsSection.css';
 import { useAuth } from '../contexts/AuthContext';
 import { storage, db } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
 
 interface ProjectFeature {
   id: string;
@@ -2477,15 +2477,29 @@ The more details you provide, the better I can help you plan it out!`
   useEffect(() => {
     const fetchProjectFeatures = async () => {
       if (!effectiveSelectedProject?.id) {
+        console.log('No project selected, clearing features');
         setProjectFeatures([]);
         return;
       }
 
+      console.log('🔄 Fetching features for project:', effectiveSelectedProject.id);
+      console.log('📊 Project data:', effectiveSelectedProject);
+      console.log('🔍 Project ID type:', typeof effectiveSelectedProject.id);
+      console.log('🔍 Project ID value:', effectiveSelectedProject.id);
+      
       setFeaturesLoading(true);
       try {
-        const response = await fetch(`http://localhost:3002/api/projects/project/${effectiveSelectedProject.id}/features`);
+        const url = `http://localhost:3002/api/projects/project/${effectiveSelectedProject.id}/features`;
+        console.log('🌐 Fetching from URL:', url);
+        
+        const response = await fetch(url);
+        console.log('📡 Response status:', response.status);
+        
         const result = await response.json();
+        console.log('📦 Response data:', result);
+        
         if (result.success && Array.isArray(result.features)) {
+          console.log('✅ Features found:', result.features.length);
           setProjectFeatures(result.features.map((feature: any) => ({
             id: feature.id,
             name: feature.title,
@@ -2495,11 +2509,90 @@ The more details you provide, the better I can help you plan it out!`
             category: feature.category
           })));
         } else {
+          console.log('❌ No features found or invalid response');
+          console.log('❌ Response details:', result);
           setProjectFeatures([]);
         }
       } catch (error) {
-        console.error('Error fetching project features:', error);
-        setProjectFeatures([]);
+        console.error('❌ Error fetching project features from server:', error);
+        
+        // Fallback: Try to get features directly from Firestore collections
+        console.log('🔄 Trying Firestore fallback...');
+        try {
+          // Check multiple collections for features
+          const collectionsToCheck = [
+            'projects',
+            'user_project_requests', 
+            'project_requests',
+            'admin_projects'
+          ];
+          
+          let featuresFound = false;
+          
+          for (const collectionName of collectionsToCheck) {
+            try {
+              console.log(`🔍 Checking ${collectionName} collection...`);
+              const projectDoc = await getDoc(doc(db, collectionName, effectiveSelectedProject.id));
+              
+              if (projectDoc.exists()) {
+                const projectData = projectDoc.data();
+                console.log(`✅ Found project in ${collectionName}:`, projectData.name || projectData.projectName);
+                
+                let projectFeatures = projectData.features || [];
+                console.log('🔍 Raw features:', projectFeatures);
+                console.log('🔍 Features type:', typeof projectFeatures);
+                
+                // Handle string format features
+                if (typeof projectFeatures === 'string') {
+                  console.log('🔍 Parsing string features...');
+                  const lines = projectFeatures.split('\n').filter(line => line.trim());
+                  projectFeatures = lines.map((line, index) => {
+                    const cleanLine = line.replace(/^[\[\]✓\s]+/, '').trim();
+                    const isCompleted = /^(\[x\]|\✓)/.test(line);
+                    return {
+                      id: index,
+                      text: cleanLine,
+                      priority: 'medium',
+                      completed: isCompleted,
+                      startedAt: null,
+                      completedAt: isCompleted ? new Date() : null,
+                      workLog: '',
+                      estimatedHours: 8,
+                      actualHours: 0
+                    };
+                  });
+                  console.log('🔍 Parsed features:', projectFeatures);
+                }
+                
+                // Transform to expected format
+                const transformedFeatures = projectFeatures.map((feature, index) => ({
+                  id: feature.id || index,
+                  name: feature.text || feature.title || `Feature ${index + 1}`,
+                  description: feature.text || feature.description || feature.title || `Feature ${index + 1}`,
+                  status: feature.completed ? 'completed' : (feature.startedAt ? 'in-progress' : 'pending'),
+                  priority: (feature.priority || 'medium').toLowerCase(),
+                  category: 'feature'
+                }));
+                
+                console.log('✅ Found features in Firestore:', transformedFeatures.length);
+                setProjectFeatures(transformedFeatures);
+                featuresFound = true;
+                break;
+              }
+            } catch (collectionError) {
+              console.log(`❌ Error checking ${collectionName}:`, collectionError.message);
+              continue;
+            }
+          }
+          
+          if (!featuresFound) {
+            console.log('❌ No features found in any collection');
+            setProjectFeatures([]);
+          }
+        } catch (firestoreError) {
+          console.error('❌ Firestore fallback also failed:', firestoreError);
+          setProjectFeatures([]);
+        }
       } finally {
         setFeaturesLoading(false);
       }
