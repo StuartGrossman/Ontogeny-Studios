@@ -2605,8 +2605,16 @@ The more details you provide, the better I can help you plan it out!`
   const PaymentCardContent = ({ project }: { project: Project }) => {
     const [loading, setLoading] = useState(false);
     const [subscriptionData, setSubscriptionData] = useState<any>(null);
+    const lastLoadRef = useRef<number>(0);
 
     const loadSubscription = useCallback(async () => {
+      // Debounce rapid refreshes to avoid visual glitches
+      const now = Date.now();
+      if (now - (lastLoadRef.current || 0) < 5000) {
+        console.log('⏱️ Skipping subscription load (debounced)');
+        return;
+      }
+      lastLoadRef.current = now;
       if (!currentUser?.uid || !project?.id) return;
       
       console.log('=== LOADING SUBSCRIPTION ===');
@@ -2950,22 +2958,21 @@ The more details you provide, the better I can help you plan it out!`
         </div>
         
         <div className="payment-status">
-          <span className={`status-badge ${subscriptionData.status}`}>
-            {subscriptionData.status === 'active' ? 'Active' : 'Setup Required'}
-          </span>
-          <button 
-            className="refresh-subscription-btn"
-            onClick={loadSubscription}
-            disabled={loading}
-            title="Refresh subscription status"
-          >
-            <RefreshCw size={12} />
-          </button>
-        </div>
-        
-        {/* Debug info */}
-        <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>
-          Status: {subscriptionData.status} | ID: {subscriptionData.id}
+          {subscriptionData.status === 'active' ? (
+            <button
+              className="payment-status-button"
+              onClick={() => setShowPaymentHistoryModal(true)}
+              title="View payment history"
+            >
+              <span className="status-dot active" />
+              <span className="status-label">Active</span>
+            </button>
+          ) : (
+            <div className="payment-status-indicator">
+              <span className="status-dot pending" />
+              <span className="status-label">Setup Required</span>
+            </div>
+          )}
         </div>
         
 
@@ -3039,6 +3046,86 @@ The more details you provide, the better I can help you plan it out!`
             )}
           </button>
         )}
+      </div>
+    );
+  };
+
+  // ===== Payment History Modal =====
+  const [showPaymentHistoryModal, setShowPaymentHistoryModal] = useState(false);
+  const PaymentHistoryModal: React.FC = () => {
+    const [loadingHistory, setLoadingHistory] = useState(false);
+    const [payments, setPayments] = useState<Array<{ id: string; amount: number; currency: string; status: string; description?: string; createdAt?: any }>>([]);
+
+    useEffect(() => {
+      const fetchPayments = async () => {
+        if (!currentUser?.uid) return;
+        try {
+          setLoadingHistory(true);
+          const paymentsRef = collection(db, 'payments');
+          const q = query(paymentsRef, where('userId', '==', currentUser.uid));
+          const snap = await getDocs(q);
+          const items: any[] = [];
+          snap.forEach((docSnap) => {
+            const data = docSnap.data() as any;
+            items.push({
+              id: docSnap.id,
+              amount: data.amount || 0,
+              currency: data.currency || 'USD',
+              status: data.status || 'succeeded',
+              description: data.description,
+              createdAt: data.createdAt?.toDate?.() || new Date()
+            });
+          });
+          // Sort newest first
+          items.sort((a, b) => (b.createdAt as any) - (a.createdAt as any));
+          setPayments(items);
+        } catch (e) {
+          console.error('Error loading payment history', e);
+        } finally {
+          setLoadingHistory(false);
+        }
+      };
+      fetchPayments();
+    }, [currentUser?.uid]);
+
+    const formatCurrency = (amount: number, currency: string) => {
+      const symbols: Record<string, string> = { USD: '$', EUR: '€', GBP: '£' };
+      const symbol = symbols[currency] || '$';
+      return `${symbol}${amount.toFixed(2)}`;
+    };
+
+    return (
+      <div className="modal-overlay" onClick={() => setShowPaymentHistoryModal(false)}>
+        <div className="modal-content payment-history-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <div className="modal-title-section">
+              <CreditCard size={20} />
+              <div>
+                <h2>Payment History</h2>
+                <p>All payments over time</p>
+              </div>
+            </div>
+            <button className="modal-close-btn" onClick={() => setShowPaymentHistoryModal(false)}>
+              <X size={20} />
+            </button>
+          </div>
+          <div className="payment-history-list">
+            {loadingHistory ? (
+              <div className="payment-loading"><RefreshCw className="spinning" size={16} /> Loading...</div>
+            ) : payments.length === 0 ? (
+              <div className="payment-empty">No payments yet.</div>
+            ) : (
+              payments.map((p) => (
+                <div key={p.id} className="payment-history-row">
+                  <div className="ph-date">{new Date(p.createdAt).toLocaleDateString()}</div>
+                  <div className="ph-desc">{p.description || 'Subscription payment'}</div>
+                  <div className="ph-amt">{formatCurrency(p.amount, p.currency)}</div>
+                  <div className={`ph-status ${p.status}`}>{p.status}</div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
     );
   };

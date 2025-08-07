@@ -5651,27 +5651,51 @@
   background: #000000 !important;
 }
 
-.refresh-subscription-btn {
-  background: none;
-  border: none;
-  color: #666666;
-  cursor: pointer;
-  padding: 2px;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-  display: flex;
+/* Payment status indicator + button */
+.payment-status-button,
+.payment-status-indicator {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid #333333;
+  padding: 6px 10px;
+  border-radius: 9999px;
 }
 
-.refresh-subscription-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+.payment-status-button {
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.payment-status-button:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: #8b5cf6;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot.active {
+  background: #10b981; /* green */
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+.status-dot.pending {
+  background: #f59e0b; /* amber */
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+.status-label {
   color: #ffffff;
-}
-
-.refresh-subscription-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
 .status-badge {
@@ -5702,6 +5726,54 @@
   background: #1a1a1a !important;
   color: #ffffff !important;
   border: 1px solid #333333 !important;
+}
+
+/* Payment History Modal tweaks */
+.payment-history-modal {
+  max-width: 900px;
+}
+
+.payment-history-list {
+  padding: 16px 20px;
+}
+
+.payment-history-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 120px 120px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid #333333;
+  border-radius: 8px;
+  background: #0a0a0a;
+  margin-bottom: 10px;
+}
+
+.payment-history-row .ph-date,
+.payment-history-row .ph-desc,
+.payment-history-row .ph-amt,
+.payment-history-row .ph-status {
+  color: #ddd;
+  font-size: 13px;
+}
+
+.payment-history-row .ph-amt {
+  font-weight: 700;
+  color: #fff;
+}
+
+.payment-history-row .ph-status.succeeded {
+  color: #10b981;
+}
+
+.payment-history-row .ph-status.failed {
+  color: #ef4444;
+}
+
+.payment-empty {
+  color: #aaa;
+  padding: 24px;
+  text-align: center;
 }
 
 .status-badge-small.setup_pending {
