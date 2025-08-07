@@ -29,7 +29,6 @@ interface ProjectNavbarProps {
   // Project actions mode
   project?: Project;
   onAddFeature?: () => void;
-  onViewRequests?: () => void;
   onAddAPIKey?: () => void;
   onAddUIDesign?: () => void;
   onAddDNSRecords?: () => void;
@@ -48,7 +47,6 @@ const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
   isCollapsed = false, // Main sidebar collapsed state
   project,
   onAddFeature,
-  onViewRequests,
   onAddAPIKey,
   onAddUIDesign,
   onAddDNSRecords,
@@ -67,7 +65,7 @@ const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
     if (name.includes('mobile') || name.includes('app')) return <Settings size={20} />;
     if (name.includes('dashboard') || name.includes('admin')) return <Target size={20} />;
     if (name.includes('api') || name.includes('backend')) return <GitBranch size={20} />;
-    return <GitPullRequest size={20} />;
+    return <GitBranch size={20} />;
   };
 
   // Project Actions Mode
@@ -102,13 +100,7 @@ const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
                 </button>
               )}
               
-              <button 
-                className="secondary-action-btn secondary"
-                onClick={onViewRequests}
-              >
-                <GitPullRequest size={14} />
-                View Requests
-              </button>
+              
               
               <div style={{ position: 'relative', display: 'inline-block' }}>
                 <button 
