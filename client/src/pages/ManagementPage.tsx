@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Settings, LogOut, MessageCircle, GitPullRequest, Star, FileText, RefreshCw } from 'lucide-react';
+import { Settings, LogOut, MessageCircle, GitPullRequest, Star, FileText, RefreshCw, Bell } from 'lucide-react';
 import ontogenyIcon from '../assets/otogeny-icon.png';
 import { doc, setDoc, addDoc, collection, updateDoc, query, where, getDocs, getDoc, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -23,15 +23,8 @@ import UserRequestedProjectModal from '../components/modals/UserRequestedProject
 import ProjectTeamModal from '../components/modals/ProjectTeamModal';
 import { ProjectDetailsModal, MeetingSchedulerModal, FeatureRequestModal, FeatureAssignmentModal } from '../components/modals';
 
-// Styles
-import '../styles/Management.css';
-import '../styles/ProjectDetailsModal.css';
-import '../styles/MeetingSchedulerModal.css';
-import '../styles/FeatureRequestModal.css';
-import '../styles/FeatureAssignmentModal.css';
-import '../styles/EditProjectModal.css';
-import '../styles/UserRequestedProjectModal.css';
-import '../styles/SimpleFeatureRequestModal.css';
+// Styles (scoped to management)
+import '../styles/management/index.css';
 
 const ManagementPage: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -42,9 +35,11 @@ const ManagementPage: React.FC = () => {
   const [currentView, setCurrentView] = useState<'dashboard' | 'requested-projects' | 'requested-features'>('dashboard');
   const [unaddressedProjects, setUnaddressedProjects] = useState<any[]>([]);
   const [unaddressedFeatures, setUnaddressedFeatures] = useState<any[]>([]);
-  const [alertCounts, setAlertCounts] = useState({ projects: 0, features: 0 });
+  const [unaddressedUIDesigns, setUnaddressedUIDesigns] = useState<any[]>([]);
+  const [alertCounts, setAlertCounts] = useState({ projects: 0, features: 0, ui: 0 });
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [selectedProjectForTeam, setSelectedProjectForTeam] = useState<any>(null);
+  const [showBellRequests, setShowBellRequests] = useState(false);
 
   // Custom hooks
   const dashboardData = useDashboardData(currentUser);
@@ -168,11 +163,32 @@ const ManagementPage: React.FC = () => {
           return dateB.getTime() - dateA.getTime();
         });
 
+      // Fetch UI design requests from ui_design_requests collection
+      const uiRequestsQuery = query(
+        collection(db, 'ui_design_requests'),
+        where('status', '==', 'pending')
+      );
+
+      const uiRequestsSnapshot = await getDocs(uiRequestsQuery);
+      const uiRequests = uiRequestsSnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          requestedAt: doc.data().requestedAt?.toDate ? doc.data().requestedAt.toDate() : doc.data().requestedAt,
+        }))
+        .sort((a, b) => {
+          const dateA = a.requestedAt instanceof Date ? a.requestedAt : new Date(a.requestedAt);
+          const dateB = b.requestedAt instanceof Date ? b.requestedAt : new Date(b.requestedAt);
+          return dateB.getTime() - dateA.getTime();
+        });
+
       setUnaddressedProjects(projects);
       setUnaddressedFeatures(featureRequests);
+      setUnaddressedUIDesigns(uiRequests);
       setAlertCounts({
         projects: projects.length,
-        features: featureRequests.length
+        features: featureRequests.length,
+        ui: uiRequests.length
       });
 
     } catch (error: unknown) {
@@ -212,6 +228,25 @@ const ManagementPage: React.FC = () => {
     }
   }, [currentUser, dashboardData.isAdmin]);
 
+  // Listen for client-side events that indicate new requests were added
+  useEffect(() => {
+    const handler = () => {
+      fetchUnaddressedRequests();
+    };
+    try {
+      window.addEventListener('projectRequestAdded', handler as EventListener);
+      window.addEventListener('featureRequestAdded', handler as EventListener);
+      window.addEventListener('uiDesignRequestAdded', handler as EventListener);
+    } catch {}
+    return () => {
+      try {
+        window.removeEventListener('projectRequestAdded', handler as EventListener);
+        window.removeEventListener('featureRequestAdded', handler as EventListener);
+        window.removeEventListener('uiDesignRequestAdded', handler as EventListener);
+      } catch {}
+    };
+  }, []);
+
   // Handle logout
   const handleLogout = async () => {
     try {
@@ -227,7 +262,7 @@ const ManagementPage: React.FC = () => {
     if (!dashboardData.selectedUser) return;
 
     try {
-      await addDoc(collection(db, 'projects'), {
+      const createdRef = await addDoc(collection(db, 'projects'), {
         ...projectData,
         userId: dashboardData.selectedUser.id,
         createdAt: new Date(),
@@ -246,6 +281,7 @@ const ManagementPage: React.FC = () => {
       if (dashboardData.selectedUser) {
         await dashboardData.handleUserSelect(dashboardData.selectedUser);
       }
+      console.log('Created project ID:', createdRef.id);
       
       console.log('Project created successfully for user:', dashboardData.selectedUser.displayName);
     } catch (error) {
@@ -487,6 +523,68 @@ const ManagementPage: React.FC = () => {
           </div>
           
           <div className="mgmt-nav-right">
+            {/* Admin Alert Bell */}
+            <div style={{ position: 'relative' }}>
+              <button 
+                className={`nav-tab ${showBellRequests ? 'active' : ''}`}
+                onClick={() => {
+                  setShowBellRequests(!showBellRequests);
+                  if (!showBellRequests) {
+                    fetchUnaddressedRequests();
+                  }
+                }}
+                title="Alerts"
+              >
+                <Bell size={20} />
+              </button>
+              {(alertCounts.projects + alertCounts.features + alertCounts.ui) > 0 && (
+                <span className="mgmt-alert-badge" style={{ position: 'absolute', top: -6, right: -6 }}>
+                  {alertCounts.projects + alertCounts.features + alertCounts.ui}
+                </span>
+              )}
+              {showBellRequests && (
+                <div style={{ position: 'absolute', right: 0, top: 44, background: '#111', border: '1px solid #333', borderRadius: 12, width: 360, zIndex: 1000, boxShadow: '0 12px 24px rgba(0,0,0,.4)' }}>
+                  <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #333', color: '#fff', fontWeight: 700 }}>Pending Requests</div>
+                  <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+                    {unaddressedProjects.slice(0, 5).map((proj) => (
+                      <div key={proj.id} style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #222', cursor: 'pointer', color: '#ddd' }}
+                        onClick={() => {
+                          setShowBellRequests(false);
+                          modals.openUserRequestedModal(proj);
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                          <span style={{ fontWeight: 600 }}>{proj.name}</span>
+                          <span style={{ color: '#888', fontSize: 12 }}>{proj.status}</span>
+                        </div>
+                        <div style={{ color: '#888', fontSize: 12 }}>Project • {proj.priority} priority</div>
+                      </div>
+                    ))}
+                    {unaddressedFeatures.slice(0, 5).map((fr) => (
+                      <div key={fr.id} style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #222', color: '#ddd' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                          <span style={{ fontWeight: 600 }}>{fr.projectName}</span>
+                          <span style={{ color: '#888', fontSize: 12 }}>{fr.status}</span>
+                        </div>
+                        <div style={{ color: '#888', fontSize: 12 }}>Feature • {fr.priority} priority</div>
+                      </div>
+                    ))}
+                    {unaddressedUIDesigns.slice(0, 5).map((ur) => (
+                      <div key={ur.id} style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #222', color: '#ddd' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                          <span style={{ fontWeight: 600 }}>{ur.projectName || 'UI Design'}</span>
+                          <span style={{ color: '#888', fontSize: 12 }}>{ur.status}</span>
+                        </div>
+                        <div style={{ color: '#888', fontSize: 12 }}>UI Design • {ur.priority} priority</div>
+                      </div>
+                    ))}
+                    {(unaddressedProjects.length + unaddressedFeatures.length + unaddressedUIDesigns.length) === 0 && (
+                      <div style={{ padding: '1rem', color: '#888' }}>No pending requests</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="mgmt-user-profile">
               <UserAvatar
                 photoURL={currentUser?.photoURL}

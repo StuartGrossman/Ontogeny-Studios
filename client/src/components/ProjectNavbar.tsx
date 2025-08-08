@@ -37,6 +37,7 @@ interface ProjectNavbarProps {
   // Notification counts
   apiKeyRequestCount?: number;
   dnsRequestCount?: number;
+  uiDesignRequestCount?: number;
   featureRequestCount?: number;
 }
 
@@ -53,7 +54,8 @@ const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
   mode = 'selection',
   apiKeyRequestCount = 0,
   dnsRequestCount = 0,
-  featureRequestCount = 0
+  featureRequestCount = 0,
+  uiDesignRequestCount = 0
 }) => {
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
   const activeProjects = projects?.filter(p => p.status === 'in-progress' || p.status === 'planning') || [];
@@ -117,13 +119,16 @@ const ProjectNavbar: React.FC<ProjectNavbarProps> = ({
                 )}
               </div>
               
-              <button 
-                className="secondary-action-btn secondary"
-                onClick={() => modalEvents.openModal('uiDesign')}
-              >
-                <Palette size={14} />
-                UI Design
-              </button>
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <button 
+                  className="secondary-action-btn secondary"
+                  onClick={onAddUIDesign || (() => modalEvents.openModal('uiDesign'))}
+                >
+                  <Palette size={14} />
+                  UI Design
+                </button>
+                {/* UI design alert badge intentionally removed per product request */}
+              </div>
               
               <div style={{ position: 'relative', display: 'inline-block' }}>
                 <button 

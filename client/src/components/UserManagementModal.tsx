@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { UserAvatar } from '../utils/avatarGenerator';
-import { Search, Folder, Settings, Star, Key, MessageSquare, Plus, MoreVertical } from 'lucide-react';
+import { Search, Folder, Settings, Star, MessageSquare, Plus, MoreVertical } from 'lucide-react';
 import './UserManagementModal.css';
 
 interface User {
@@ -231,13 +231,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({ isOpen, onClo
                     <Star size={16} />
                     Requested Features 1
                   </button>
-                  <button
-                    className={`tab-button ${activeTab === 'api-keys' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('api-keys')}
-                  >
-                    <Key size={16} />
-                    API Keys
-                  </button>
+                  {/* API Keys tab not needed here */}
                 </div>
 
                 {/* Project Cards */}

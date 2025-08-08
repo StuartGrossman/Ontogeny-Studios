@@ -5,8 +5,24 @@ rules_version = '2';
 //    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
 service firebase.storage {
   match /b/{bucket}/o {
-    match /{allPaths=**} {
-      allow read, write: if false;
+    /* Allow image uploads for feature requests under a project */
+    match /feature_requests/{projectId}/{fileName} {
+      /* Publicly readable via download URLs; restrict writes to authenticated users */
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.resource.size < 10 * 1024 * 1024
+                   && (request.resource.contentType.matches('image/.*') || request.resource.contentType == null);
     }
+
+    /* Allow image uploads for UI design requests under a project */
+    match /ui_design_requests/{projectId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.resource.size < 10 * 1024 * 1024
+                   && (request.resource.contentType.matches('image/.*') || request.resource.contentType == null);
+    }
+
+    /* Default deny for everything else */
+    match /{allPaths=**} { allow read, write: if false; }
   }
 }

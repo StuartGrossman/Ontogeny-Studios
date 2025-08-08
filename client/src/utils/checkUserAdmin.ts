@@ -3,22 +3,24 @@ import { db } from '../firebase';
 
 export const checkAndCreateUserAdmin = async (user: any): Promise<boolean> => {
   if (!user?.uid) {
-    console.log('No user UID provided');
+    if (process.env.NODE_ENV === 'development') console.log('No user UID provided');
     return false;
   }
 
   try {
-    console.log('Checking user document for:', user.uid);
+    if (process.env.NODE_ENV === 'development') console.log('Checking user document for:', user.uid);
     const userDocRef = doc(db, 'users', user.uid);
     const userDoc = await getDoc(userDocRef);
 
     if (userDoc.exists()) {
       const userData = userDoc.data();
-      console.log('User document exists:', userData);
-      console.log('isAdmin field:', userData?.isAdmin);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('User document exists:', userData);
+        console.log('isAdmin field:', userData?.isAdmin);
+      }
       return userData?.isAdmin === true;
     } else {
-      console.log('User document does not exist, creating one...');
+      if (process.env.NODE_ENV === 'development') console.log('User document does not exist, creating one...');
       
       // Create user document with admin status
       const userData = {
@@ -32,7 +34,7 @@ export const checkAndCreateUserAdmin = async (user: any): Promise<boolean> => {
       };
 
       await setDoc(userDocRef, userData);
-      console.log('Created user document with admin status');
+      if (process.env.NODE_ENV === 'development') console.log('Created user document with admin status');
       return true;
     }
   } catch (error) {

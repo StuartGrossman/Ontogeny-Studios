@@ -1,13 +1,20 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Activity, RefreshCw, TrendingUp, Clock, AlertCircle, Zap, Target, MessageSquare, Play, Calendar, Users, CheckCircle, Settings, BarChart3, FileText, GitBranch, Plus, X, Key, Palette, Globe, Copy, Trash2, Eye, Shield, Edit, Send, Lightbulb, ArrowRight, Check, EyeOff, Upload, Download, Star, Heart, Layers, Sparkles, Image, Monitor, Smartphone, Tablet, ExternalLink, Server, Loader, CreditCard } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Activity, RefreshCw, TrendingUp, Clock, AlertCircle, Zap, Target, MessageSquare, Play, Calendar, Users, CheckCircle, Settings, BarChart3, FileText, GitBranch, Plus, X, Key, Palette, Globe, Copy, Trash2, Eye, Shield, Edit, Send, Lightbulb, ArrowRight, Check, EyeOff, Upload, Download, Star, Heart, Layers, Sparkles, Image, Monitor, Smartphone, Tablet, ExternalLink, Server, Loader, CreditCard, ChevronDown } from 'lucide-react';
 import ProjectNavbar from './ProjectNavbar';
+import SimpleFeatureRequestModal from './modals/SimpleFeatureRequestModal';
+import SimpleUIDesignModal from './modals/SimpleUIDesignModal';
+import UIDesignModal from './UIDesignModal';
+import AddAPIKeyModal from './modals/AddAPIKeyModal';
 import DashboardPaymentSection from './DashboardPaymentSection';
+import PaymentCardContent from './PaymentCardContent';
 // Modal imports removed - now using inline sections
 import '../styles/ActiveProjectsSection.css';
+import CancelSubscriptionModal from './modals/CancelSubscriptionModal';
 import { useAuth } from '../contexts/AuthContext';
 import { storage, db } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, getDoc, orderBy } from 'firebase/firestore';
 
 interface ProjectFeature {
   id: string;
@@ -68,22 +75,32 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
   const [projectDetailsLoading, setProjectDetailsLoading] = useState(false);
   const [metricsLoading, setMetricsLoading] = useState(false);
 
-  const [activeSection, setActiveSection] = useState<string | null>(null); // 'feature', 'api', 'design', 'dns'
+  const [activeSection, setActiveSection] = useState<string | null>(null); // 'api', 'design', 'dns'
+  const [showSimpleFeatureModal, setShowSimpleFeatureModal] = useState(false);
+  const [showSimpleUIDesignModal, setShowSimpleUIDesignModal] = useState(false);
+  const [showUIDesignEditModal, setShowUIDesignEditModal] = useState(false);
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [showTimelineModal, setShowTimelineModal] = useState(false);
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
   const [pendingModalAction, setPendingModalAction] = useState<string | null>(null);
   const [passwordInput, setPasswordInput] = useState('');
   const [profilePassword, setProfilePassword] = useState('admin123'); // Default password, should come from profile settings
+  const [showAddAPIKeyModal, setShowAddAPIKeyModal] = useState(false);
   // Add state for toggling full key visibility
   const [visibleUserKeys, setVisibleUserKeys] = useState<{ [key: string]: boolean }>({});
   const [userApiKeys, setUserApiKeys] = useState<any[]>([]);
   const [requiredApiKeysCount, setRequiredApiKeysCount] = useState(0);
   const [requiredDNSRecordsCount, setRequiredDNSRecordsCount] = useState(0);
+  const [uiDesignRequestCount, setUiDesignRequestCount] = useState(0);
   const [projectFeatures, setProjectFeatures] = useState<ProjectFeature[]>([]);
   const [featuresLoading, setFeaturesLoading] = useState(false);
+  const [featureRequests, setFeatureRequests] = useState<any[]>([]);
+  const [featureRequestsLoading, setFeatureRequestsLoading] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [subscription, setSubscription] = useState<any>(null);
+  const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
+  const [selectedFeatureRequestForEdit, setSelectedFeatureRequestForEdit] = useState<any | null>(null);
+  const [selectedUIDesignRequestForEdit, setSelectedUIDesignRequestForEdit] = useState<any | null>(null);
 
   // Use external selected project if provided, otherwise use internal state
   const selectedProject = externalSelectedProject !== undefined ? externalSelectedProject : internalSelectedProject;
@@ -91,113 +108,83 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
 
   // Use the actual selected project
   const effectiveSelectedProject = selectedProject;
-
-  console.log('🔍 PROJECT SELECTION DEBUG:');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('📊 External Selected Project:', externalSelectedProject);
-  console.log('📊 Internal Selected Project:', internalSelectedProject);
-  console.log('📊 Final Selected Project:', selectedProject);
-  console.log('📊 Selected Project ID:', selectedProject?.id);
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
-  console.log('🎯 ActiveProjectsSection rendered');
-  console.log('📊 customerProjects:', customerProjects);
-  console.log('⏳ customerProjectsLoading:', customerProjectsLoading);
-  console.log('📈 customerProjects.length:', customerProjects?.length || 0);
+  // Reduce console noise in production
+  // console.debug('Selected Project ID:', selectedProject?.id);
 
   // Calculate project arrays
   const activeProjects = customerProjects.filter(p => p.status === 'in-progress' || p.status === 'planning');
   const completedProjects = customerProjects.filter(p => p.status === 'completed');
+  // Load alert counts for API keys / DNS / UI designs for selected project
+  useEffect(() => {
+    const loadAlertCounts = async () => {
+      try {
+        if (!effectiveSelectedProject?.id) return;
+        const projectId = effectiveSelectedProject.id;
+        // Fetch attributes endpoint for required API keys and DNS records
+        const resp = await fetch(`http://localhost:3002/api/projects/project/${projectId}/attributes`);
+        const json = await resp.json();
+        if (json.success) {
+          const attrs = json.attributes || {};
+          const apiKeys = (attrs.requiredAPIKeys || []).filter((r: any) => (r.status || 'pending') === 'pending');
+          const dns = (attrs.requiredDNSRecords || []).filter((r: any) => (r.status || 'pending') === 'pending');
+          setRequiredApiKeysCount(apiKeys.length);
+          setRequiredDNSRecordsCount(dns.length);
+        } else {
+          setRequiredApiKeysCount(0);
+          setRequiredDNSRecordsCount(0);
+        }
+      } catch (e) {
+        console.warn('Failed to load attribute alert counts', e);
+        setRequiredApiKeysCount(0);
+        setRequiredDNSRecordsCount(0);
+      }
+      try {
+        // UI design requests: count pending for this project
+        if (!effectiveSelectedProject?.id) return;
+        const q = query(
+          collection(db, 'ui_design_requests'),
+          where('projectId', '==', effectiveSelectedProject.id),
+          where('status', '==', 'pending')
+        );
+        const snap = await getDocs(q);
+        setUiDesignRequestCount(snap.size);
+      } catch (e) {
+        console.warn('Failed to load UI design request count', e);
+        setUiDesignRequestCount(0);
+      }
+    };
+    loadAlertCounts();
+  }, [effectiveSelectedProject?.id]);
 
-  console.log('🔄 INITIAL COMPONENT STATE:');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('📊 Active Projects Count:', activeProjects.length);
-  console.log('✅ Completed Projects Count:', completedProjects.length);
-  console.log('🎯 Selected Project:', selectedProject);
-  console.log('⚡ External Selected Project:', externalSelectedProject);
-  console.log('📱 Component Props:', {
-    customerProjectsLoading,
-    onOpenCustomerProject: !!onOpenCustomerProject,
-    onFeatureRequest: !!onFeatureRequest,
-    selectedProject: !!externalSelectedProject,
-    onProjectSelect: !!onProjectSelect
-  });
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  // console.debug('Dashboard initial state', { active: activeProjects.length, completed: completedProjects.length });
 
   // Use actual active projects
   const mockActiveProjects = activeProjects;
 
-  console.log('🚀 FINAL PROJECT ARRAYS:');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('📊 Mock Active Projects:', mockActiveProjects);
-  console.log('🔢 Mock Active Projects Count:', mockActiveProjects.length);
-  console.log('📝 Project Names:', mockActiveProjects.map(p => p.name));
-  console.log('📈 Project Progress:', mockActiveProjects.map(p => `${p.name}: ${p.progress}%`));
-  console.log('🔗 Live Links:', mockActiveProjects.map(p => `${p.name}: ${p.liveLink || p.websiteUrl || 'None'}`));
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  // console.debug('Active projects ready:', mockActiveProjects.length);
 
   // Auto-select first project if none selected
   useEffect(() => {
     if (!selectedProject && mockActiveProjects.length > 0) {
-      console.log('🎯 AUTO-SELECTING FIRST PROJECT');
-      console.log('📊 Available Projects:', mockActiveProjects);
-      console.log('🔍 Selected Project Data:', mockActiveProjects[0]);
-      console.log('📝 Project Details:', {
-        id: mockActiveProjects[0].id,
-        name: mockActiveProjects[0].name,
-        description: mockActiveProjects[0].description,
-        status: mockActiveProjects[0].status,
-        progress: mockActiveProjects[0].progress,
-        deadline: mockActiveProjects[0].deadline,
-        liveLink: mockActiveProjects[0].liveLink,
-        websiteUrl: mockActiveProjects[0].websiteUrl,
-        createdAt: mockActiveProjects[0].createdAt,
-        tasks: mockActiveProjects[0].tasks,
-        allFields: Object.keys(mockActiveProjects[0])
-      });
+      // console.debug('Auto-selecting first project');
       setSelectedProject(mockActiveProjects[0]);
     }
   }, [mockActiveProjects, selectedProject]);
 
-  // Enhanced project selection with full logging
+  // Enhanced project selection with quieter logging
   const handleProjectSelect = (project: Project) => {
-    console.log('🎯 PROJECT SELECTED!');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('📊 FULL PROJECT DATA:');
-    console.log('Raw Object:', project);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('📝 PROJECT DETAILS:');
-    console.log('• ID:', project.id);
-    console.log('• Name:', project.name);
-    console.log('• Description:', project.description);
-    console.log('• Status:', project.status);
-    console.log('• Progress:', project.progress + '%');
-    console.log('• Deadline:', project.deadline);
-    console.log('• Live Link:', project.liveLink);
-    console.log('• Website URL:', project.websiteUrl);
-    console.log('• Created At:', project.createdAt);
-    console.log('• Tasks:', project.tasks);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('🔍 ALL AVAILABLE FIELDS:');
-    Object.entries(project).forEach(([key, value]) => {
-      console.log(`• ${key}:`, value);
-    });
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('📈 CALCULATED METRICS:');
-    const metrics = generateProjectMetrics(project);
-    console.log('• Tasks Completed:', metrics.tasksCompleted);
-    console.log('• Total Tasks:', metrics.totalTasks);
-    console.log('• Days Remaining:', metrics.daysRemaining);
-    console.log('• Team Members:', metrics.teamMembers);
-    console.log('• Completion Rate:', metrics.completionRate + '%');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
-    setSelectedProject(project);
-    
-    // Call the external onProjectSelect if provided
-    if (onProjectSelect) {
-      onProjectSelect(project);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📈 CALCULATED METRICS:');
+      const metrics = generateProjectMetrics(project);
+      console.log('• Tasks Completed:', metrics.tasksCompleted);
+      console.log('• Total Tasks:', metrics.totalTasks);
+      console.log('• Days Remaining:', metrics.daysRemaining);
+      console.log('• Team Members:', metrics.teamMembers);
+      console.log('• Completion Rate:', metrics.completionRate + '%');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     }
+    setSelectedProject(project);
+    if (onProjectSelect) onProjectSelect(project);
   };
 
   // Simulate loading when project changes
@@ -340,10 +327,10 @@ const ActiveProjectsSection: React.FC<ActiveProjectsSectionProps> = ({
       
       switch (pendingModalAction) {
         case 'apikey':
-          setActiveSection('api');
+          setShowAddAPIKeyModal(true);
           break;
         case 'uidesign':
-          setActiveSection('design');
+          setShowSimpleUIDesignModal(true);
           break;
         case 'dns':
           setActiveSection('dns');
@@ -1179,9 +1166,10 @@ The more details you provide, the better I can help you plan it out!`
           )}
 
           {/* API Key Input Modal */}
-          {selectedRequest && (
-            <div className="api-key-modal-overlay" onClick={() => setSelectedRequest(null)}>
-              <div className="api-key-modal" onClick={(e) => e.stopPropagation()}>
+          {selectedRequest && createPortal(
+            (
+              <div className="api-key-modal-overlay" onClick={() => setSelectedRequest(null)}>
+                <div className="api-key-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                   <h3>Provide API Key</h3>
                   <button 
@@ -1279,8 +1267,10 @@ The more details you provide, the better I can help you plan it out!`
                     </div>
                   </form>
                 </div>
+                </div>
               </div>
-            </div>
+            ),
+            document.body
           )}
         </div>
 
@@ -1304,6 +1294,7 @@ The more details you provide, the better I can help you plan it out!`
       stylePreferences: '',
       uploadedImage: null as File | null
     });
+    const isDev = import.meta.env.DEV;
 
     const deviceTargets = [
       { value: 'desktop', label: 'Desktop', icon: Monitor },
@@ -1341,36 +1332,42 @@ The more details you provide, the better I can help you plan it out!`
         
         // Upload image to Firebase Storage if provided
         if (formData.uploadedImage) {
-          try {
-            setUploadProgress('Uploading image to Firebase Storage...');
-            console.log('📤 Uploading image to Firebase Storage...');
-            
-            // Create a unique filename
-            const timestamp = Date.now();
-            const fileExtension = formData.uploadedImage.name.split('.').pop();
-            const fileName = `ui-designs/${project.id}/${timestamp}_${Math.random().toString(36).substr(2, 9)}.${fileExtension}`;
-            
-            // Create storage reference
-            const storageRef = ref(storage, fileName);
-            
-            // Upload the file
-            const uploadResult = await uploadBytes(storageRef, formData.uploadedImage);
-            console.log('✅ Image uploaded successfully:', uploadResult);
-            
-            setUploadProgress('Getting download URL...');
-            
-            // Get the download URL
-            imageUrl = await getDownloadURL(uploadResult.ref);
-            console.log('✅ Image download URL obtained:', imageUrl);
-            
-            setUploadProgress('Submitting design request...');
-            
-          } catch (uploadError) {
-            console.error('❌ Error uploading image to Firebase Storage:', uploadError);
-            alert('Failed to upload image. Please try again.');
-            setIsSubmitting(false);
-            setUploadProgress('');
-            return;
+          // In development, skip uploads to avoid CORS errors until the bucket CORS is configured
+          if (isDev) {
+            console.info('Dev mode: skipping image upload; submit will proceed without file.');
+            imageUrl = null;
+          } else {
+            try {
+              setUploadProgress('Uploading image to Firebase Storage...');
+              console.log('📤 Uploading image to Firebase Storage...');
+              
+              // Create a unique filename
+              const timestamp = Date.now();
+              const fileExtension = formData.uploadedImage.name.split('.').pop();
+              const fileName = `ui-designs/${project.id}/${timestamp}_${Math.random().toString(36).substr(2, 9)}.${fileExtension}`;
+              
+              // Create storage reference
+              const storageRef = ref(storage, fileName);
+              
+              // Upload the file
+              const uploadResult = await uploadBytes(storageRef, formData.uploadedImage);
+              console.log('✅ Image uploaded successfully:', uploadResult);
+              
+              setUploadProgress('Getting download URL...');
+              
+              // Get the download URL
+              imageUrl = await getDownloadURL(uploadResult.ref);
+              console.log('✅ Image download URL obtained:', imageUrl);
+              
+              setUploadProgress('Submitting design request...');
+              
+            } catch (uploadError) {
+              console.error('❌ Error uploading image to Firebase Storage:', uploadError);
+              alert('Failed to upload image. Please try again.');
+              setIsSubmitting(false);
+              setUploadProgress('');
+              return;
+            }
           }
         }
         
@@ -1396,6 +1393,13 @@ The more details you provide, the better I can help you plan it out!`
         if (result.success) {
           console.log('✅ UI design request submitted successfully:', result);
           setUploadProgress('');
+          
+          // Dispatch event to trigger refresh of UI design requests
+          try {
+            window.dispatchEvent(new CustomEvent('uiDesignRequestAdded', { detail: { projectId: project.id } }));
+          } catch {}
+          
+          // Close after success; success feedback handled in modal
           onClose();
         } else {
           throw new Error(result.error || 'Failed to submit design request');
@@ -2218,260 +2222,7 @@ The more details you provide, the better I can help you plan it out!`
     );
   };
 
-  // View Requests Component
-  const ViewRequestsView = ({ project: _project, onClose: _onClose }: { project: Project; onClose: () => void }) => {
-    // Mock data for feature requests
-    const mockFeatureRequests = [
-      {
-        id: '1',
-        type: 'feature',
-        title: 'User Profile Dashboard',
-        description: 'Create a comprehensive user profile dashboard with settings, preferences, and activity history.',
-        priority: 'high' as const,
-        status: 'pending' as const,
-        category: 'UI/UX',
-        requestedAt: new Date('2024-01-15'),
-        estimatedHours: 16
-      },
-      {
-        id: '2',
-        type: 'feature',
-        title: 'Email Notification System',
-        description: 'Implement automated email notifications for user actions, system updates, and marketing campaigns.',
-        priority: 'medium' as const,
-        status: 'in-review' as const,
-        category: 'Communication',
-        requestedAt: new Date('2024-01-12'),
-        estimatedHours: 24
-      },
-      {
-        id: '3',
-        type: 'feature',
-        title: 'Advanced Search Filters',
-        description: 'Add advanced filtering options for the main content search functionality.',
-        priority: 'low' as const,
-        status: 'approved' as const,
-        category: 'Search',
-        requestedAt: new Date('2024-01-10'),
-        estimatedHours: 8
-      }
-    ];
-
-    // Mock data for UI design requests
-    const mockUIDesignRequests = [
-      {
-        id: '1',
-        type: 'ui-design',
-        title: 'Mobile App Landing Page',
-        description: 'Modern, responsive landing page design for mobile app promotion.',
-        targetDevices: ['desktop', 'tablet', 'mobile'],
-        stylePreferences: 'Modern, minimalist design with bold colors and clean typography. Should feel premium and trustworthy.',
-        status: 'in-progress' as const,
-        requestedAt: new Date('2024-01-14'),
-        hasReferenceImage: true
-      },
-      {
-        id: '2',
-        type: 'ui-design',
-        title: 'Dashboard Redesign',
-        description: 'Complete redesign of the admin dashboard with improved UX.',
-        targetDevices: ['desktop', 'tablet'],
-        stylePreferences: 'Professional, data-focused design with good information hierarchy. Dark mode support preferred.',
-        status: 'pending' as const,
-        requestedAt: new Date('2024-01-11'),
-        hasReferenceImage: false
-      },
-      {
-        id: '3',
-        type: 'ui-design',
-        title: 'E-commerce Product Pages',
-        description: 'Product detail pages for e-commerce platform.',
-        targetDevices: ['desktop', 'mobile'],
-        stylePreferences: 'Clean, conversion-focused design with emphasis on product imagery and clear call-to-actions.',
-        status: 'completed' as const,
-        requestedAt: new Date('2024-01-08'),
-        hasReferenceImage: true
-      }
-    ];
-
-    const getStatusBadgeClass = (status: string) => {
-      switch (status) {
-        case 'pending': return 'status-pending';
-        case 'in-review': return 'status-in-review';
-        case 'approved': return 'status-approved';
-        case 'in-progress': return 'status-in-progress';
-        case 'completed': return 'status-completed';
-        default: return 'status-pending';
-      }
-    };
-
-    const getStatusIcon = (status: string) => {
-      switch (status) {
-        case 'pending': return <Clock size={14} />;
-        case 'in-review': return <AlertCircle size={14} />;
-        case 'approved': return <CheckCircle size={14} />;
-        case 'in-progress': return <Activity size={14} />;
-        case 'completed': return <CheckCircle size={14} className="completed-icon" />;
-        default: return <Clock size={14} />;
-      }
-    };
-
-    const getPriorityBadgeClass = (priority: string) => {
-      switch (priority) {
-        case 'high': return 'priority-high';
-        case 'medium': return 'priority-medium';
-        case 'low': return 'priority-low';
-        default: return 'priority-medium';
-      }
-    };
-
-    const formatDate = (date: Date) => {
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric' 
-      });
-    };
-
-    return (
-      <div className="view-requests-container">
-        {/* Feature Requests Section */}
-        <div className="requests-section">
-          <div className="section-header-requests">
-            <h3>
-              <Plus size={20} />
-              Feature Requests
-              <span className="request-count">{mockFeatureRequests.length}</span>
-            </h3>
-            <p>Track your feature development requests and their progress</p>
-          </div>
-
-          {mockFeatureRequests.length > 0 ? (
-            <div className="requests-grid">
-              {mockFeatureRequests.map((request) => (
-                <div key={request.id} className="request-card feature-request">
-                  <div className="request-header">
-                    <div className="request-title-section">
-                      <h4>{request.title}</h4>
-                      <div className="request-badges">
-                        <span className={`priority-badge ${getPriorityBadgeClass(request.priority)}`}>
-                          {request.priority}
-                        </span>
-                        <span className={`status-badge ${getStatusBadgeClass(request.status)}`}>
-                          {getStatusIcon(request.status)}
-                          {request.status.replace('-', ' ')}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="request-content">
-                    <p className="request-description">{request.description}</p>
-                    <div className="request-meta">
-                      <div className="meta-item">
-                        <Target size={14} />
-                        <span>{request.category}</span>
-                      </div>
-                      <div className="meta-item">
-                        <Clock size={14} />
-                        <span>{request.estimatedHours}h estimated</span>
-                      </div>
-                      <div className="meta-item">
-                        <Calendar size={14} />
-                        <span>Requested {formatDate(request.requestedAt)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="empty-requests">
-              <Plus size={48} />
-              <h4>No Feature Requests</h4>
-              <p>You haven't submitted any feature requests yet</p>
-            </div>
-          )}
-        </div>
-
-        {/* UI Design Requests Section */}
-        <div className="requests-section">
-          <div className="section-header-requests">
-            <h3>
-              <Palette size={20} />
-              UI Design Requests
-              <span className="request-count">{mockUIDesignRequests.length}</span>
-            </h3>
-            <p>Track your UI/UX design requests and deliverables</p>
-          </div>
-
-          {mockUIDesignRequests.length > 0 ? (
-            <div className="requests-grid">
-              {mockUIDesignRequests.map((request) => (
-                <div key={request.id} className="request-card design-request">
-                  <div className="request-header">
-                    <div className="request-title-section">
-                      <h4>{request.title}</h4>
-                      <div className="request-badges">
-                        <span className={`status-badge ${getStatusBadgeClass(request.status)}`}>
-                          {getStatusIcon(request.status)}
-                          {request.status.replace('-', ' ')}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="request-content">
-                    <p className="request-description">{request.description}</p>
-                    
-                    <div className="design-details">
-                      <div className="detail-group">
-                        <span className="detail-label">Target Devices:</span>
-                        <div className="device-tags">
-                          {request.targetDevices.map((device) => (
-                            <span key={device} className="device-tag">
-                              {device === 'desktop' && <Monitor size={12} />}
-                              {device === 'tablet' && <Tablet size={12} />}
-                              {device === 'mobile' && <Smartphone size={12} />}
-                              {device}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <div className="detail-group">
-                        <span className="detail-label">Style Preferences:</span>
-                        <p className="style-preferences">{request.stylePreferences}</p>
-                      </div>
-                    </div>
-
-                    <div className="request-meta design-meta">
-                      <div className="meta-item">
-                        <Calendar size={14} />
-                        <span>Requested {formatDate(request.requestedAt)}</span>
-                      </div>
-                      {request.hasReferenceImage && (
-                        <div className="meta-item">
-                          <Image size={14} />
-                          <span>Reference image provided</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="empty-requests">
-              <Palette size={48} />
-              <h4>No UI Design Requests</h4>
-              <p>You haven't submitted any design requests yet</p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
+  // (Removed ViewRequestsView mock component)
 
   // Fetch project features when project changes
   useEffect(() => {
@@ -2601,152 +2352,143 @@ The more details you provide, the better I can help you plan it out!`
     fetchProjectFeatures();
   }, [effectiveSelectedProject?.id]);
 
+  // Fetch feature requests for the selected project
+  useEffect(() => {
+    const fetchFeatureRequests = async () => {
+      if (!effectiveSelectedProject?.id) {
+        setFeatureRequests([]);
+        return;
+      }
+      setFeatureRequestsLoading(true);
+      try {
+        // Read from top-level feature_requests allowed by rules, filtered by projectId
+        const featureRequestsRef = collection(db, 'feature_requests');
+        let snapshot;
+        try {
+          const q = query(
+            featureRequestsRef,
+            where('projectId', '==', effectiveSelectedProject.id),
+            orderBy('requestedAt', 'desc')
+          );
+          snapshot = await getDocs(q);
+        } catch (e) {
+          // Fallback without orderBy if index/rules cause issues
+          const q = query(
+            featureRequestsRef,
+            where('projectId', '==', effectiveSelectedProject.id)
+          );
+          snapshot = await getDocs(q);
+        }
+        const requests = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+        setFeatureRequests(requests);
+      } catch (err) {
+        console.error('Error fetching feature requests:', err);
+        setFeatureRequests([]);
+      } finally {
+        setFeatureRequestsLoading(false);
+      }
+    };
+
+    fetchFeatureRequests();
+
+    // Listen for feature request added events
+    const handleFeatureRequestAdded = (event: CustomEvent) => {
+      if (event.detail.projectId === effectiveSelectedProject?.id) {
+        console.log('Feature request added, refreshing list...');
+        fetchFeatureRequests();
+      }
+    };
+
+    window.addEventListener('featureRequestAdded', handleFeatureRequestAdded as EventListener);
+
+    return () => {
+      window.removeEventListener('featureRequestAdded', handleFeatureRequestAdded as EventListener);
+    };
+  }, [effectiveSelectedProject?.id]);
+
+  // UI Design Requests state and fetch
+  const [uiDesignRequests, setUiDesignRequests] = useState<any[]>([]);
+  const [uiDesignRequestsLoading, setUiDesignRequestsLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    const fetchUiDesignRequests = async () => {
+      if (!effectiveSelectedProject?.id) {
+        setUiDesignRequests([]);
+        return;
+      }
+      setUiDesignRequestsLoading(true);
+      try {
+        const uiReqRef = collection(db, 'ui_design_requests');
+        const q = query(
+          uiReqRef,
+          where('projectId', '==', effectiveSelectedProject.id),
+          orderBy('requestedAt', 'desc')
+        );
+        const snapshot = await getDocs(q);
+        const requests = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+        setUiDesignRequests(requests);
+      } catch (err) {
+        console.error('Error fetching UI design requests:', err);
+        setUiDesignRequests([]);
+      } finally {
+        setUiDesignRequestsLoading(false);
+      }
+    };
+
+    fetchUiDesignRequests();
+
+    // Listen for UI design request added events
+    const handleUiDesignRequestAdded = (event: CustomEvent) => {
+      if (event.detail.projectId === effectiveSelectedProject?.id) {
+        console.log('UI design request added, refreshing list...');
+        fetchUiDesignRequests();
+      }
+    };
+
+    window.addEventListener('uiDesignRequestAdded', handleUiDesignRequestAdded as EventListener);
+
+    return () => {
+      window.removeEventListener('uiDesignRequestAdded', handleUiDesignRequestAdded as EventListener);
+    };
+  }, [effectiveSelectedProject?.id]);
+
   // Payment Card Content Component
   const PaymentCardContent = ({ project }: { project: Project }) => {
     const [loading, setLoading] = useState(false);
     const [subscriptionData, setSubscriptionData] = useState<any>(null);
-    const lastLoadRef = useRef<number>(0);
+    const hasLoadedRef = useRef<boolean>(false);
+    const [showCancelModal, setShowCancelModal] = useState(false);
 
-    const loadSubscription = useCallback(async () => {
-      // Debounce rapid refreshes to avoid visual glitches
-      const now = Date.now();
-      if (now - (lastLoadRef.current || 0) < 5000) {
-        console.log('⏱️ Skipping subscription load (debounced)');
-        return;
-      }
-      lastLoadRef.current = now;
-      if (!currentUser?.uid || !project?.id) return;
-      
-      console.log('=== LOADING SUBSCRIPTION ===');
-      console.log('User ID:', currentUser.uid);
-      console.log('Project ID:', project.id);
-      console.log('Project name:', project.name || project.projectName);
-      
+    const loadSubscription = useCallback(() => {
+      if (!project?.id) return;
       setLoading(true);
       try {
-        // Check for existing subscription in Firestore
-        const subscriptionQuery = query(
-          collection(db, 'subscriptions'),
-          where('projectId', '==', project.id),
-          where('userId', '==', currentUser.uid),
-          where('status', '==', 'active')
-        );
-        
-        console.log('Querying Firestore with:', {
-          projectId: project.id,
-          userId: currentUser.uid,
-          status: 'active'
-        });
-        
-        const subscriptionSnapshot = await getDocs(subscriptionQuery);
-        console.log('Query result - documents found:', subscriptionSnapshot.size);
-        
-        if (!subscriptionSnapshot.empty) {
-          // Active subscription found
-          const subscriptionDoc = subscriptionSnapshot.docs[0];
-          const subscriptionData = subscriptionDoc.data();
-          
-          console.log('✅ Found active subscription:', {
-            id: subscriptionDoc.id,
-            data: subscriptionData
-          });
-          
-          setSubscriptionData({
-            id: subscriptionDoc.id,
-            amount: subscriptionData.amount || 60,
-            currency: subscriptionData.currency || 'USD',
-            projectId: project.id,
-            projectName: project.name || project.projectName || 'Unknown Project',
-            status: 'active',
-            createdAt: subscriptionData.createdAt || new Date(),
-            sessionId: subscriptionData.sessionId
-          });
-        } else {
-          // No active subscription, show setup pending
-          console.log('❌ No active subscription found, showing setup pending');
-          setSubscriptionData({
-            id: 'pending',
-            amount: 60,
-            currency: 'USD',
-            projectId: project.id,
-            projectName: project.name || project.projectName || 'Unknown Project',
-            status: 'setup_pending',
-            createdAt: new Date()
-          });
-        }
-      } catch (error) {
-        console.error('❌ Error loading subscription:', error);
-        console.error('Error code:', error.code);
-        console.error('Error message:', error.message);
-        
-        // Check if it's a permissions error and provide a fallback
-        if (error.code === 'permission-denied') {
-          console.log('Permissions error - using fallback subscription data');
-        }
-        
-        // Fallback to mock data for development/testing
+        const amount = (project as any).subscriptionAmount || 60;
+        const currency = (project as any).subscriptionCurrency || 'USD';
+        const status = (project as any).subscriptionStatus || 'setup_pending';
+        const sessionId = (project as any).subscriptionSessionId || undefined;
+
         setSubscriptionData({
-          id: 'sub_123',
-          amount: 60,
-          currency: 'USD',
+          id: 'project',
+          amount,
+          currency,
           projectId: project.id,
           projectName: project.name || project.projectName || 'Unknown Project',
-          status: 'setup_pending',
-          createdAt: new Date()
+          status,
+          createdAt: (project as any).subscriptionSetupAt || new Date(),
+          sessionId,
         });
       } finally {
         setLoading(false);
-        console.log('=== SUBSCRIPTION LOADING COMPLETE ===');
       }
-    }, [currentUser?.uid, project?.id]);
+    }, [project?.id, (project as any)?.subscriptionAmount, (project as any)?.subscriptionStatus]);
 
-    // Single useEffect to handle subscription loading
+    // Load subscription once when data is ready (no continual refresh)
     useEffect(() => {
-      if (project?.id && currentUser?.uid) {
-        console.log('=== INITIAL SUBSCRIPTION LOAD ===');
-        loadSubscription();
-      }
-    }, [project?.id, currentUser?.uid]); // Removed loadSubscription from dependencies
+      loadSubscription();
+    }, [loadSubscription]);
 
-    // Handle page focus events (for payment flow returns)
-    useEffect(() => {
-      const handlePageFocus = () => {
-        console.log('=== PAGE FOCUS DETECTED ===');
-        if (project?.id && currentUser?.uid) {
-          console.log('Refreshing subscription after page focus...');
-          setTimeout(() => {
-            loadSubscription();
-          }, 500);
-        }
-      };
-
-      window.addEventListener('focus', handlePageFocus);
-      
-      return () => {
-        window.removeEventListener('focus', handlePageFocus);
-      };
-    }, [project?.id, currentUser?.uid]); // Removed loadSubscription from dependencies
-
-    // Listen for subscription update events
-    useEffect(() => {
-      const handleSubscriptionUpdate = (event: CustomEvent) => {
-        console.log('=== SUBSCRIPTION UPDATE EVENT RECEIVED ===');
-        console.log('Event detail:', event.detail);
-        // Reload subscription data when we receive an update event
-        if (project?.id && currentUser?.uid) {
-          console.log('Reloading subscription after update event...');
-          setTimeout(() => {
-            loadSubscription();
-          }, 1000);
-        }
-      };
-
-      window.addEventListener('subscriptionUpdated', handleSubscriptionUpdate as EventListener);
-      
-      return () => {
-        window.removeEventListener('subscriptionUpdated', handleSubscriptionUpdate as EventListener);
-      };
-    }, [project?.id, currentUser?.uid]); // Removed loadSubscription from dependencies
+    // Removed page-focus and custom event auto-refresh to avoid CSS jitter
 
     const handleConnectCard = async () => {
       if (!subscriptionData || !currentUser?.uid) {
@@ -2850,7 +2592,8 @@ The more details you provide, the better I can help you plan it out!`
 
         if (responseData.success) {
           console.log('✅ Manual subscription created successfully');
-          // Reload subscription data
+          // Reload subscription data once, avoid cascading effects
+          hasLoadedRef.current = true;
           await loadSubscription();
         } else {
           throw new Error('Manual subscription creation failed');
@@ -2950,23 +2693,13 @@ The more details you provide, the better I can help you plan it out!`
 
     return (
       <div className="payment-card-content">
-        <div className="payment-amount">
-          <span className="amount-value">
-            {formatCurrency(subscriptionData.amount, subscriptionData.currency)}
-          </span>
-          <span className="amount-period">/month</span>
-        </div>
-        
-        <div className="payment-status">
+        {/* Move a compact status pill above the price */}
+        <div className="payment-status payment-status-top">
           {subscriptionData.status === 'active' ? (
-            <button
-              className="payment-status-button"
-              onClick={() => setShowPaymentHistoryModal(true)}
-              title="View payment history"
-            >
+            <div className="payment-status-indicator" title="Subscription is active">
               <span className="status-dot active" />
               <span className="status-label">Active</span>
-            </button>
+            </div>
           ) : (
             <div className="payment-status-indicator">
               <span className="status-dot pending" />
@@ -2974,14 +2707,19 @@ The more details you provide, the better I can help you plan it out!`
             </div>
           )}
         </div>
-        
 
-        
+        <div className="payment-amount">
+          <span className="amount-value">
+            {formatCurrency(subscriptionData.amount, subscriptionData.currency)}
+          </span>
+          <span className="amount-period">/month</span>
+        </div>
+
         {subscriptionData.status === 'setup_pending' && (
           <>
             <button 
               className="connect-card-btn"
-              onClick={handleConnectCard}
+              onClick={(e) => { e.stopPropagation(); handleConnectCard(); }}
               disabled={loading}
             >
               {loading ? (
@@ -3000,7 +2738,7 @@ The more details you provide, the better I can help you plan it out!`
             {/* Temporary manual subscription button for testing */}
             <button 
               className="manual-subscription-btn"
-              onClick={handleManualSubscription}
+              onClick={(e) => { e.stopPropagation(); handleManualSubscription(); }}
               disabled={loading}
               style={{
                 marginTop: '8px',
@@ -3028,23 +2766,20 @@ The more details you provide, the better I can help you plan it out!`
         )}
         
         {subscriptionData.status === 'active' && (
-          <button 
-            className="cancel-subscription-btn"
-            onClick={handleCancelSubscription}
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <RefreshCw className="spinning" size={14} />
-                Cancelling...
-              </>
-            ) : (
-              <>
-                <X size={14} />
-                Cancel Subscription
-              </>
-            )}
-          </button>
+          <>
+            {/* Cancel subscription confirmation modal (contains the destructive button) */}
+            <CancelSubscriptionModal
+              isOpen={showCancelModal}
+              onClose={() => setShowCancelModal(false)}
+              onConfirm={async () => {
+                setShowCancelModal(false);
+                await loadSubscription();
+              }}
+              subscriptionData={subscriptionData}
+              project={project}
+              currentUser={currentUser}
+            />
+          </>
         )}
       </div>
     );
@@ -3189,13 +2924,13 @@ The more details you provide, the better I can help you plan it out!`
             mode="actions"
             project={effectiveSelectedProject || undefined}
             isCollapsed={sidebarCollapsed}
-            onAddFeature={() => setActiveSection('feature')}
-            onViewRequests={() => setActiveSection('view-requests')}
+            onAddFeature={() => setShowSimpleFeatureModal(true)}
             onAddAPIKey={() => handleProtectedModal('apikey')}
-            onAddUIDesign={() => setActiveSection('design')}
+                            onAddUIDesign={() => setShowSimpleUIDesignModal(true)}
             onAddDNSRecords={() => handleProtectedModal('dns')}
             apiKeyRequestCount={requiredApiKeysCount}
             dnsRequestCount={requiredDNSRecordsCount}
+            uiDesignRequestCount={uiDesignRequestCount}
           />
 
 
@@ -3209,10 +2944,7 @@ The more details you provide, the better I can help you plan it out!`
                     <Plus size={20} />
                     Add Feature Request
                   </>}
-                  {activeSection === 'view-requests' && <>
-                    <FileText size={20} />
-                    View Requests
-                  </>}
+                  
                   {activeSection === 'api' && <>
                     <Key size={20} />
                     API Key Management
@@ -3236,10 +2968,10 @@ The more details you provide, the better I can help you plan it out!`
               </div>
               
               <div className="inline-section-content">
-                {activeSection === 'feature' && <AddFeatureView project={selectedProject} onClose={() => setActiveSection(null)} />}
-                {activeSection === 'view-requests' && <ViewRequestsView project={selectedProject} onClose={() => setActiveSection(null)} />}
+                {/* feature request now handled via modal */}
+                  {/* Removed ViewRequestsView in favor of inline Feature Requests section */}
                 {activeSection === 'api' && <AddAPIKeyView project={selectedProject} onClose={() => setActiveSection(null)} />}
-                {activeSection === 'design' && <AddUIDesignView project={selectedProject} onClose={() => setActiveSection(null)} />}
+    
                 {activeSection === 'dns' && <AddDNSRecordsView project={selectedProject} onClose={() => setActiveSection(null)} />}
               </div>
             </div>
@@ -3319,12 +3051,15 @@ The more details you provide, the better I can help you plan it out!`
                           </div>
                         </div>
 
-                        <div className="overview-card payment">
+                        <div 
+                          className="overview-card payment clickable"
+                          onClick={() => setShowPaymentHistoryModal(true)}
+                        >
                           <div className="card-header">
                             <CreditCard size={20} />
                             <span>Payment</span>
                           </div>
-                          <div className="card-content">
+                          <div className="card-content" style={{ minHeight: 180 }}>
                             <PaymentCardContent project={selectedProject} />
                           </div>
                         </div>
@@ -3398,7 +3133,234 @@ The more details you provide, the better I can help you plan it out!`
                     </div>
                   )}
                 </div>
-                
+                <div className="feature-requests-section">
+                  <h4 className="section-subtitle">Feature Requests</h4>
+                  {featureRequestsLoading ? (
+                    <div className="loading-state">
+                      <div className="spinning">
+                        <Loader size={20} />
+                      </div>
+                      <p>Loading feature requests...</p>
+                    </div>
+                  ) : featureRequests.length > 0 ? (
+                    <div className="requests-grid">
+                      {featureRequests.map((req) => {
+                        const cardId = `feature-${req.id}`;
+                        const isExpanded = expandedRequestId === cardId;
+                        const attachmentUrls: string[] = [];
+                        if (req.attachmentUrl) attachmentUrls.push(req.attachmentUrl);
+                        if (Array.isArray(req.attachments)) {
+                          req.attachments.forEach((u: string) => {
+                            if (u && !attachmentUrls.includes(u)) attachmentUrls.push(u);
+                          });
+                        }
+                        return (
+                          <div
+                            key={req.id}
+                            className={`request-card feature-request ${isExpanded ? 'expanded' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedFeatureRequestForEdit(req);
+                              setShowSimpleFeatureModal(true);
+                            }}
+                          >
+                            <div className="request-header" onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedRequestId(isExpanded ? null : cardId);
+                            }}>
+                              <div className="request-title-section">
+                                <h4>{req.title}</h4>
+                                <div className="request-badges">
+                                  <span className={`priority-badge ${String((req.priority || 'medium')).toLowerCase()}`}>
+                                    {String(req.priority || 'medium').toLowerCase()}
+                                  </span>
+                                  <span className={`status-badge status-${String(req.status || 'pending').toLowerCase()}`}>
+                                    {String(req.status || 'pending').replace('-', ' ')}
+                                  </span>
+                                </div>
+                              </div>
+                              <button
+                                className={`request-expand-toggle ${isExpanded ? 'expanded' : ''}`}
+                                aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedRequestId(isExpanded ? null : cardId);
+                                }}
+                              >
+                                <ChevronDown size={16} />
+                              </button>
+                            </div>
+                            <div className="request-content">
+                              <p className="request-description">
+                                {isExpanded ? (req.description || '') : (req.description && req.description.length > 140 ? `${req.description.slice(0, 140)}...` : req.description)}
+                              </p>
+                              <div className="request-meta">
+                                {req.category && (
+                                  <div className="meta-item">
+                                    <Target size={14} />
+                                    <span>{req.category}</span>
+                                  </div>
+                                )}
+                                {typeof req.estimatedHours === 'number' && (
+                                  <div className="meta-item">
+                                    <Clock size={14} />
+                                    <span>{req.estimatedHours}h estimated</span>
+                                  </div>
+                                )}
+                                {(req.requestedAt || req.createdAt) && (
+                                  <div className="meta-item">
+                                    <Calendar size={14} />
+                                    <span>
+                                      Requested {new Date((req.requestedAt?.seconds ? req.requestedAt.seconds * 1000 : req.requestedAt) || (req.createdAt?.seconds ? req.createdAt.seconds * 1000 : req.createdAt) || Date.now()).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              {isExpanded && attachmentUrls.length > 0 && (
+                                <div className="request-images">
+                                  {attachmentUrls.slice(0, 4).map((url, idx) => (
+                                    <img key={idx} src={url} alt={`Feature attachment ${idx + 1}`} className="request-image" />
+                                  ))}
+                                </div>
+                              )}
+                              {isExpanded && (
+                                <div className="request-actions-row">
+                                  <button
+                                    className="btn-secondary small"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedFeatureRequestForEdit(req);
+                                      setShowSimpleFeatureModal(true);
+                                    }}
+                                  >
+                                    Edit Request
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="empty-requests">
+                      <Plus size={48} />
+                      <h4>No Feature Requests</h4>
+                      <p>There are no feature requests for this project yet.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* UI Design Requests Section */}
+                <div className="feature-requests-section" style={{ marginTop: '1.5rem' }}>
+                  <h4 className="section-subtitle">UI Design Requests</h4>
+                  {uiDesignRequestsLoading ? (
+                    <div className="loading-state">
+                      <div className="spinning">
+                        <Loader size={20} />
+                      </div>
+                      <p>Loading design requests...</p>
+                    </div>
+                  ) : uiDesignRequests.length > 0 ? (
+                    <div className="requests-grid">
+                      {uiDesignRequests.map((req) => {
+                        const cardId = `ui-${req.id}`;
+                        const isExpanded = expandedRequestId === cardId;
+                        const imageUrls: string[] = [];
+                        if (req.attachmentUrl) imageUrls.push(req.attachmentUrl);
+                        if (req.referenceImageUrl && !imageUrls.includes(req.referenceImageUrl)) imageUrls.push(req.referenceImageUrl);
+                        if (req.imageUrl && !imageUrls.includes(req.imageUrl)) imageUrls.push(req.imageUrl);
+                        if (Array.isArray(req.attachments)) {
+                          req.attachments.forEach((u: string) => { if (u && !imageUrls.includes(u)) imageUrls.push(u); });
+                        }
+                        const description = req.description || req.stylePreferences || '';
+                        return (
+                          <div
+                            key={req.id}
+                            className={`request-card ui-design-request ${isExpanded ? 'expanded' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedUIDesignRequestForEdit(req);
+                              // Ensure the main UIDesignModal is closed so only one modal shows
+                              setShowSimpleUIDesignModal(false);
+                              setShowUIDesignEditModal(true);
+                            }}
+                          >
+                            <div className="request-header" onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedRequestId(isExpanded ? null : cardId);
+                            }}>
+                              <div className="request-title-section">
+                                <h4>{req.title || 'UI Design Request'}</h4>
+                                <div className="request-badges">
+                                  <span className={`priority-badge ${String((req.priority || 'medium')).toLowerCase()}`}>
+                                    {String(req.priority || 'medium').toLowerCase()}
+                                  </span>
+                                  <span className={`status-badge status-${String(req.status || 'pending').toLowerCase()}`}>
+                                    {String(req.status || 'pending').replace('-', ' ')}
+                                  </span>
+                                </div>
+                              </div>
+                              <button className={`request-expand-toggle ${isExpanded ? 'expanded' : ''}`} aria-label={isExpanded ? 'Collapse' : 'Expand'} onClick={(e) => e.stopPropagation()}>
+                                <ChevronDown size={16} />
+                              </button>
+                            </div>
+                            <div className="request-content">
+                              <p className="request-description">
+                                {isExpanded ? description : (description.length > 140 ? `${description.slice(0, 140)}...` : description)}
+                              </p>
+                              <div className="request-meta">
+                                {Array.isArray(req.targetDevices) && req.targetDevices.length > 0 && (
+                                  <div className="meta-item">
+                                    <Monitor size={14} />
+                                    <span>{req.targetDevices.join(', ')}</span>
+                                  </div>
+                                )}
+                                {req.requestedAt && (
+                                  <div className="meta-item">
+                                    <Calendar size={14} />
+                                    <span>
+                                      Requested {new Date((req.requestedAt?.seconds ? req.requestedAt.seconds * 1000 : req.requestedAt) || Date.now()).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              {isExpanded && imageUrls.length > 0 && (
+                                <div className="request-images">
+                                  {imageUrls.slice(0, 4).map((url: string, idx: number) => (
+                                    <img key={idx} src={url} alt={`UI reference ${idx + 1}`} className="request-image" />
+                                  ))}
+                                </div>
+                              )}
+                              {isExpanded && (
+                                <div className="request-actions-row">
+                                  <button
+                                    className="btn-secondary small"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedUIDesignRequestForEdit(req);
+                                      // Ensure the main UIDesignModal is closed so only one modal shows
+                                      setShowSimpleUIDesignModal(false);
+                                      setShowUIDesignEditModal(true);
+                                    }}
+                                  >
+                                    Edit Request
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="empty-requests">
+                      <Palette size={48} />
+                      <h4>No UI Design Requests</h4>
+                      <p>There are no UI design requests for this project yet.</p>
+                    </div>
+                  )}
+                </div>
 
               </div>
 
@@ -3407,6 +3369,39 @@ The more details you provide, the better I can help you plan it out!`
 
             </>
           )}
+
+          {/* Simple Feature Request Modal (replaces inline feature view) */}
+                <SimpleFeatureRequestModal
+        isOpen={showSimpleFeatureModal}
+        onClose={() => {
+          setShowSimpleFeatureModal(false);
+          setSelectedFeatureRequestForEdit(null);
+        }}
+        project={selectedProject}
+        currentUser={currentUser}
+        existingRequest={selectedFeatureRequestForEdit}
+      />
+
+      {/* Use full UIDesignModal for editing/management when a card is clicked */}
+      <UIDesignModal
+        isOpen={showSimpleUIDesignModal}
+        onClose={() => setShowSimpleUIDesignModal(false)}
+        currentUser={currentUser}
+        project={selectedProject}
+      />
+
+      {/* UI Design Edit Modal for editing existing requests */}
+      <UIDesignModal
+        isOpen={showUIDesignEditModal}
+        onClose={() => {
+          setShowUIDesignEditModal(false);
+          setSelectedUIDesignRequestForEdit(null);
+        }}
+        currentUser={currentUser}
+        project={selectedProject}
+        editingRequest={selectedUIDesignRequestForEdit}
+        editOnly
+      />
 
 
         </div>
@@ -3424,6 +3419,9 @@ The more details you provide, the better I can help you plan it out!`
 
       {/* Team Modal */}
       {showTeamModal && <TeamModal />}
+
+      {/* Payment History Modal mounted at root, outside payment card */}
+      {showPaymentHistoryModal && <PaymentHistoryModal />}
 
       {/* Timeline Modal */}
       {showTimelineModal && selectedProject && (
@@ -3558,6 +3556,37 @@ The more details you provide, the better I can help you plan it out!`
             </div>
           </div>
         </div>
+      )}
+
+      {/* Add API Key Modal (Portal-based) */}
+      {effectiveSelectedProject && (
+        <AddAPIKeyModal
+          isOpen={showAddAPIKeyModal}
+          onClose={() => setShowAddAPIKeyModal(false)}
+          onSubmit={async (apiKeyData: any) => {
+            try {
+              if (!effectiveSelectedProject?.id) return;
+              const payload = {
+                apiKeyData: {
+                  provider: apiKeyData.provider,
+                  keyName: apiKeyData.name,
+                  keyValue: apiKeyData.apiKey,
+                  environment: apiKeyData.environment || 'production',
+                  description: apiKeyData.description || ''
+                },
+                userId: currentUser?.uid
+              };
+              await fetch(`http://localhost:3002/api/projects/project/${effectiveSelectedProject.id}/api-key`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+            } catch (e) {
+              console.error('Failed to add API key:', e);
+            }
+          }}
+          project={effectiveSelectedProject}
+        />
       )}
     </div>
   );

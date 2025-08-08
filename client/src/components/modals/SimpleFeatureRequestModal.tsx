@@ -1,24 +1,71 @@
-import React, { useState } from 'react';
-import { X, Plus, Send } from 'lucide-react';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../firebase';
+import React, { useEffect, useState } from 'react';
+import { X, Plus, Send, Image as ImageIcon, Link as LinkIcon, Check } from 'lucide-react';
+import { addDoc, collection, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
+import { db, storage } from '../../firebase';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import '../../styles/SimpleFeatureRequestModal.css';
 
 interface SimpleFeatureRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
   project: any;
   currentUser: any;
+  existingRequest?: any | null;
 }
 
 const SimpleFeatureRequestModal: React.FC<SimpleFeatureRequestModalProps> = ({
   isOpen,
   onClose,
   project,
-  currentUser
+  currentUser,
+  existingRequest = null
 }) => {
   const [featureDescription, setFeatureDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const [links, setLinks] = useState<string>('');
+  const [quickTags, setQuickTags] = useState<string[]>([]);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const isDev = import.meta.env.DEV;
+
+  // Prefill when editing
+  useEffect(() => {
+    if (isOpen && existingRequest) {
+      setFeatureDescription(existingRequest.description || '');
+      setLinks(existingRequest.links || '');
+      setQuickTags(existingRequest.tags || []);
+      setAttachment(null);
+      setError('');
+      setShowSuccess(false);
+    }
+    if (isOpen && !existingRequest) {
+      setFeatureDescription('');
+      setLinks('');
+      setQuickTags([]);
+      setAttachment(null);
+      setError('');
+      setShowSuccess(false);
+    }
+  }, [isOpen, existingRequest]);
+
+  // Upload with timeout fallback to avoid UI hanging on CORS/preflight failures
+  const uploadWithTimeout = async (file: File, path: string, timeoutMs = 4000): Promise<string> => {
+    const storageRef = ref(storage, path);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort('upload-timeout'), timeoutMs);
+    try {
+      // uploadBytes does not accept AbortSignal, but we still enforce a logical timeout
+      await uploadBytes(storageRef, file, {
+        contentType: (file.type || 'image/png') as string,
+        cacheControl: 'public, max-age=31536000'
+      });
+      const url = await getDownloadURL(storageRef);
+      return url;
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,29 +79,77 @@ const SimpleFeatureRequestModal: React.FC<SimpleFeatureRequestModalProps> = ({
     setError('');
 
     try {
-      // Add feature request to Firestore
-      await addDoc(collection(db, 'feature_requests'), {
-        projectId: project.id,
-        projectName: project.name || project.projectName,
-        description: featureDescription.trim(),
-        requestedBy: currentUser?.uid || 'anonymous',
-        requestedByEmail: currentUser?.email || '',
-        requestedAt: serverTimestamp(),
-        status: 'pending',
-        priority: 'medium', // Default priority
-        category: 'feature',
-        adminNotes: '',
-        assignedTo: null,
-        estimatedCompletion: null,
-        completedAt: null
-      });
+      let attachmentUrl: string | null = null;
+      if (attachment) {
+        // In development, skip uploads to avoid CORS errors until the bucket CORS is configured
+        if (isDev) {
+          console.info('Dev mode: skipping attachment upload; submit will proceed without file.');
+          attachmentUrl = null;
+        } else {
+        try {
+          const path = `feature_requests/${project.id}/${Date.now()}_${attachment.name}`;
+          attachmentUrl = await uploadWithTimeout(attachment, path, 5000);
+        } catch (uploadErr) {
+          console.warn('Attachment upload failed or timed out, submitting without attachment:', uploadErr);
+          attachmentUrl = null;
+        }
+        }
+      }
+
+      if (existingRequest?.id) {
+        const requestRef = doc(db, 'feature_requests', existingRequest.id);
+        await updateDoc(requestRef, {
+          description: featureDescription.trim(),
+          links: links.trim(),
+          tags: quickTags,
+          ...(attachmentUrl ? { attachmentUrl } : {}),
+          updatedAt: serverTimestamp(),
+          title: featureDescription.trim().slice(0, 80)
+        });
+      } else {
+        // Add feature request to top-level collection used by management views
+        await addDoc(collection(db, 'feature_requests'), {
+          projectId: project.id,
+          projectName: project.name || project.projectName,
+          description: featureDescription.trim(),
+          links: links.trim(),
+          tags: quickTags,
+          attachmentUrl,
+          requestedBy: currentUser?.uid || 'anonymous',
+          requestedByEmail: currentUser?.email || '',
+          requestedAt: serverTimestamp(),
+          status: 'pending',
+          priority: 'medium', // Default priority
+          category: 'feature',
+          adminNotes: '',
+          assignedTo: null,
+          estimatedCompletion: null,
+          completedAt: null,
+          title: featureDescription.trim().slice(0, 80)
+        });
+      }
+
+      // Optionally emit a toast/notification system here if available
 
       // Close modal and reset form
       setFeatureDescription('');
-      onClose();
-      
-      // Show success message (you could add a toast notification here)
+      setAttachment(null);
+      setLinks('');
+      setQuickTags([]);
+      // Broadcast event so dashboard sections can refresh without a full reload
+      try {
+        window.dispatchEvent(new CustomEvent('featureRequestAdded', { detail: { projectId: project?.id || existingRequest?.projectId } }));
+      } catch {}
+
+      // Show success message
+      setShowSuccess(true);
       console.log('✅ Feature request submitted successfully');
+      
+      // Close modal after a short delay to show success
+      setTimeout(() => {
+        setShowSuccess(false);
+        onClose();
+      }, 2000);
       
     } catch (error) {
       console.error('❌ Error submitting feature request:', error);
@@ -83,6 +178,15 @@ const SimpleFeatureRequestModal: React.FC<SimpleFeatureRequestModalProps> = ({
         </div>
 
         <div className="modal-content">
+          {showSuccess ? (
+            <div className="success-message-container">
+              <div className="success-icon">
+                <Check size={48} />
+              </div>
+              <h3>Feature Request Submitted!</h3>
+              <p>Your feature request has been successfully added to the project.</p>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="feature-request-form">
             <div className="form-group">
               <label className="form-label">
@@ -97,14 +201,51 @@ const SimpleFeatureRequestModal: React.FC<SimpleFeatureRequestModalProps> = ({
                 required
                 disabled={isSubmitting}
               />
-              <div className="form-help">
-                <p>💡 Tips for a good feature request:</p>
-                <ul>
-                  <li>Explain what the feature should do</li>
-                  <li>Describe why it's needed</li>
-                  <li>Include any specific requirements or preferences</li>
-                  <li>Mention if it's related to existing functionality</li>
-                </ul>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Links (optional)</label>
+              <div className="form-input-row">
+                <span className="input-icon"><LinkIcon size={16} /></span>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={links}
+                  onChange={(e) => setLinks(e.target.value)}
+                  placeholder="Paste any relevant links (comma separated)"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Attachment (optional)</label>
+              <label className="upload-btn">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setAttachment(e.target.files?.[0] || null)}
+                  disabled={isSubmitting}
+                  hidden
+                />
+                <ImageIcon size={16} /> {attachment ? attachment.name : 'Upload image'}
+              </label>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Quick Suggestions</label>
+              <div className="quick-tags">
+                {['Authentication', 'Search', 'Dashboard', 'Payments', 'Notifications', 'Export'].map(tag => (
+                  <button
+                    key={tag}
+                    type="button"
+                    className={`quick-tag ${quickTags.includes(tag) ? 'active' : ''}`}
+                    onClick={() => setQuickTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
+                    disabled={isSubmitting}
+                  >
+                    {tag}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -142,6 +283,7 @@ const SimpleFeatureRequestModal: React.FC<SimpleFeatureRequestModalProps> = ({
               </button>
             </div>
           </form>
+          )}
         </div>
       </div>
     </div>

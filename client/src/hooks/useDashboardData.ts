@@ -54,8 +54,10 @@ export const useDashboardData = (currentUser: any) => {
 
   // Check admin status
   const checkAdminStatus = async () => {
-    console.log('🔍 checkAdminStatus called');
-    console.log('👤 Current user UID:', currentUser?.uid);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 checkAdminStatus called');
+      console.log('👤 Current user UID:', currentUser?.uid);
+    }
     
     if (!currentUser?.uid) {
       console.log('❌ No current user UID, returning early');
@@ -63,23 +65,31 @@ export const useDashboardData = (currentUser: any) => {
     }
     
     try {
-      console.log('📡 Checking/creating user admin status...');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📡 Checking/creating user admin status...');
+      }
       const isUserAdmin = await checkAndCreateUserAdmin(currentUser);
-      console.log('👑 User admin status:', isUserAdmin);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('👑 User admin status:', isUserAdmin);
+      }
       setIsAdmin(isUserAdmin);
     } catch (error) {
       console.error('❌ Error checking admin status:', error);
       setIsAdmin(false);
     } finally {
-      console.log('✅ Setting loading to false');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Setting loading to false');
+      }
       setLoading(false);
     }
   };
 
   // Load customer projects
   const loadCustomerProjects = async () => {
-    console.log('🔍 loadCustomerProjects called');
-    console.log('📋 Current user:', currentUser?.uid);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 loadCustomerProjects called');
+      console.log('📋 Current user:', currentUser?.uid);
+    }
     
     if (!currentUser?.uid) {
       console.log('❌ No current user UID, returning early');
@@ -87,30 +97,42 @@ export const useDashboardData = (currentUser: any) => {
     }
     
     setCustomerProjectsLoading(true);
-    console.log('⏳ Set customerProjectsLoading to true');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('⏳ Set customerProjectsLoading to true');
+    }
     
     try {
-      console.log('🔎 Creating Firestore query for projects collection');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔎 Creating Firestore query for projects collection');
+      }
       const projectsQuery = query(
         collection(db, 'projects'),
         where('userId', '==', currentUser.uid),
         orderBy('createdAt', 'desc')
       );
       
-      console.log('📡 Executing Firestore query...');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📡 Executing Firestore query...');
+      }
       const querySnapshot = await getDocs(projectsQuery);
-      console.log('📊 Query completed, docs found:', querySnapshot.docs.length);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📊 Query completed, docs found:', querySnapshot.docs.length);
+      }
       
       const projects = querySnapshot.docs.map(doc => {
         const data = doc.data();
-        console.log('📄 Project doc:', { id: doc.id, ...data });
+        if (process.env.NODE_ENV === 'development') {
+          console.log('📄 Project doc:', { id: doc.id, ...data });
+        }
         return {
           id: doc.id,
           ...data
         };
       }) as Project[];
       
-      console.log('✅ Final projects array:', projects);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Final projects array:', projects);
+      }
       setCustomerProjects(projects);
     } catch (error) {
       console.error('❌ Error loading customer projects:', error);
@@ -118,7 +140,9 @@ export const useDashboardData = (currentUser: any) => {
       setCustomerProjects([]);
     } finally {
       setCustomerProjectsLoading(false);
-      console.log('✅ Set customerProjectsLoading to false');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Set customerProjectsLoading to false');
+      }
     }
   };
 
@@ -249,8 +273,13 @@ export const useDashboardData = (currentUser: any) => {
         return;
       }
 
-      // Load both regular projects and user requests
-      const [projectsSnapshot, requestsSnapshot] = await Promise.all([
+      // Load admin active projects, regular projects, and user requests
+      const [adminProjectsSnapshot, projectsSnapshot, requestsSnapshot] = await Promise.all([
+        getDocs(query(
+          collection(db, 'admin_projects'),
+          where('userId', '==', userId),
+          orderBy('createdAt', 'desc')
+        )),
         getDocs(query(
           collection(db, 'projects'),
           where('userId', '==', userId),
@@ -262,6 +291,12 @@ export const useDashboardData = (currentUser: any) => {
           orderBy('createdAt', 'desc')
         ))
       ]);
+
+      const adminProjects = adminProjectsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        type: 'admin-active',
+        ...doc.data()
+      }));
 
       const projects = projectsSnapshot.docs.map(doc => ({
         id: doc.id,
@@ -280,13 +315,14 @@ export const useDashboardData = (currentUser: any) => {
       const validRequests = requests.filter(r => r.id && r.id.trim());
       
       console.log('✅ Loaded user projects:', {
+        totalAdminActive: adminProjects.length,
         totalProjects: validProjects.length,
         totalRequests: validRequests.length,
         filteredOutProjects: projects.length - validProjects.length,
         filteredOutRequests: requests.length - validRequests.length
       });
 
-      setUserProjects([...validProjects, ...validRequests] as Project[]);
+      setUserProjects([...(adminProjects as any), ...validProjects, ...validRequests] as Project[]);
     } catch (error) {
       console.error('❌ Error loading user projects:', error);
       // Set empty array on error

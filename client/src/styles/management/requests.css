@@ -1,0 +1,20 @@
+/* Requests views (projects/features) */
+.mgmt-requests-view, .requested-projects-view, .requested-features-view { padding:2rem; margin-top:80px; min-height:calc(100vh - 80px); background:#000; }
+.mgmt-requests-header, .requests-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:2rem; padding:2rem; background:#1a1a1a; border-radius:16px; box-shadow:0 1px 3px rgba(0,0,0,.3); border:1px solid #333; }
+.mgmt-requests-header h2, .requests-header h2 { margin:0; font-size:1.75rem; font-weight:700; color:#fff; }
+.mgmt-requests-header p, .requests-header p { margin:.5rem 0 0 0; color:#ccc; font-size:1rem; }
+.mgmt-refresh-btn, .refresh-btn { padding:.75rem 1.5rem; background: linear-gradient(135deg,#667eea 0%, #764ba2 100%); color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer; transition:.3s; display:flex; align-items:center; gap:.5rem; }
+.mgmt-refresh-btn:hover, .refresh-btn:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(102,126,234,.3); }
+.requests-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(400px,1fr)); gap:1.5rem; margin-top:2rem; }
+.request-card { background:#1a1a1a; border-radius:16px; padding:1.5rem; box-shadow:0 1px 3px rgba(0,0,0,.3); cursor:pointer; transition:.3s; border:2px solid #333; }
+.request-card:hover { transform:translateY(-4px); box-shadow:0 8px 25px rgba(0,0,0,.5); border-color:#667eea; }
+.request-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1rem; gap:1rem; }
+.request-header h3 { margin:0; font-size:1.25rem; font-weight:700; color:#fff; flex:1; }
+.request-description { color:#ccc; line-height:1.6; margin-bottom:1rem; }
+.features-preview strong { color:#fff; font-size:.875rem; display:block; margin-bottom:.5rem; }
+.features-list { display:flex; flex-direction:column; gap:.25rem; }
+.feature-item { color:#ccc; font-size:.875rem; padding:.25rem 0; position:relative; padding-left:1rem; }
+.feature-item::before { content:'•'; color:#667eea; font-weight:bold; position:absolute; left:0; }
+.request-meta { display:flex; justify-content:space-between; align-items:center; font-size:.875rem; color:#ccc; padding-top:1rem; border-top:1px solid #333; }
+.empty-requests { grid-column:1 / -1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4rem 2rem; text-align:center; color:#ccc; background:#1a1a1a; border-radius:16px; border:2px dashed #333; }
+.empty-requests h3 { margin:0 0 .5rem 0; color:#fff; font-size:1.5rem; }

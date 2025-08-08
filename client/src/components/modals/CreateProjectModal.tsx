@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { X, FolderPlus, Link, FileText, User, AlertCircle, Plus, GripVertical, Trash2, Settings, Clock, Bot, Sparkles, Send } from 'lucide-react';
+import { X, FolderPlus, Link, FileText, User, AlertCircle, Plus, GripVertical, Trash2, Settings, Clock } from 'lucide-react';
 import '../../styles/CreateProjectModal.css';
-import { analyzeProjectText } from '../../services/aiService';
 
 interface CreateProjectModalProps {
   isOpen: boolean;
@@ -42,10 +41,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   const [newFeatureText, setNewFeatureText] = useState('');
   const [newFeatureComplexity, setNewFeatureComplexity] = useState<'simple' | 'moderate' | 'complex'>('moderate');
   
-  // AI Analysis State
-  const [aiInput, setAiInput] = useState('');
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [aiAnalysisResults, setAiAnalysisResults] = useState<any>(null);
+  // Removed AI assistant from this modal per design update
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -136,46 +132,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     }
   };
 
-  const handleAIAnalysis = async () => {
-    if (!aiInput.trim()) return;
-    
-    setIsAnalyzing(true);
-    setError('');
-    
-    try {
-      const analysis = await analyzeProjectText(aiInput.trim());
-      setAiAnalysisResults(analysis);
-      
-      // Auto-populate form fields with AI results
-      setFormData(prev => ({
-        ...prev,
-        name: analysis.projectName || prev.name,
-        description: analysis.description || prev.description,
-        features: [
-          ...prev.features,
-          ...analysis.features.map(feature => ({
-            id: Date.now().toString() + Math.random().toString(),
-            text: feature.text,
-            complexity: feature.complexity,
-            estimatedHours: feature.estimatedHours
-          }))
-        ]
-      }));
-      
-      // Clear AI input after successful analysis
-      setAiInput('');
-      
-    } catch (error) {
-      console.error('AI Analysis Error:', error);
-      setError('Failed to analyze project description. Please try again.');
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  const clearAIResults = () => {
-    setAiAnalysisResults(null);
-  };
+  // AI helpers removed
 
   if (!isOpen) return null;
 
@@ -210,76 +167,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         )}
 
         <form onSubmit={handleSubmit}>
-          <div className="create-project-modal-content">
-            {/* AI Assistant Section */}
-            <div className="create-project-ai-section">
-              <div className="create-project-ai-header">
-                <div className="create-project-ai-title">
-                  <Bot size={18} />
-                  <Sparkles size={16} />
-                  AI Project Assistant
-                </div>
-                <span className="create-project-ai-subtitle">
-                  Paste your project description and let AI extract features automatically
-                </span>
-              </div>
-
-              <div className="create-project-ai-input-container">
-                <textarea
-                  value={aiInput}
-                  onChange={(e) => setAiInput(e.target.value)}
-                  placeholder="Paste your project description here... AI will analyze it and automatically populate project details and features with 15-minute estimates."
-                  className="create-project-ai-textarea"
-                  rows={4}
-                  disabled={isAnalyzing || isSubmitting}
-                />
-                <div className="create-project-ai-actions">
-                  <button
-                    type="button"
-                    onClick={handleAIAnalysis}
-                    disabled={!aiInput.trim() || isAnalyzing || isSubmitting}
-                    className="create-project-ai-analyze-btn"
-                  >
-                    {isAnalyzing ? (
-                      <>
-                        <div className="create-project-ai-spinner" />
-                        Analyzing...
-                      </>
-                    ) : (
-                      <>
-                        <Send size={16} />
-                        Analyze Project
-                      </>
-                    )}
-                  </button>
-                  {aiAnalysisResults && (
-                    <button
-                      type="button"
-                      onClick={clearAIResults}
-                      className="create-project-ai-clear-btn"
-                      disabled={isSubmitting}
-                    >
-                      Clear Results
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {aiAnalysisResults && (
-                <div className="create-project-ai-results">
-                  <div className="create-project-ai-results-header">
-                    <Sparkles size={16} />
-                    <span>AI Analysis Complete</span>
-                  </div>
-                  <div className="create-project-ai-results-content">
-                    <p>✅ Added {aiAnalysisResults.features.length} features with 15-minute estimates</p>
-                    <p>✅ {aiAnalysisResults.projectName ? 'Updated project name' : 'Enhanced project description'}</p>
-                    <p>🎯 All features optimized for AI-assisted development</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
+          <div className="create-project-modal-content no-ai">
             {/* Left Column */}
             <div className="create-project-modal-left">
               <div className="create-project-form-group">

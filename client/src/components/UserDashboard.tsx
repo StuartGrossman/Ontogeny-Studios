@@ -179,29 +179,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
             Overview
           </button>
           
-          <button 
-            className={`nav-item ${activeSection === 'active-projects' ? 'active' : ''}`}
-            onClick={() => handleSectionChange('active-projects')}
-          >
-            <TrendingUp size={20} />
-            Active Projects
-            {customerProjects?.filter(p => p.status === 'in-progress' || p.status === 'planning').length > 0 && (
-              <span className="nav-badge">
-                {customerProjects.filter(p => p.status === 'in-progress' || p.status === 'planning').length}
-              </span>
-            )}
-          </button>
-          
-          <button 
-            className="nav-item"
-            onClick={() => onOpenRequestedProjectsModal()}
-          >
-            <Clock size={20} />
-            Requested Projects
-            {requestedProjects?.length > 0 && (
-              <span className="nav-badge">{requestedProjects.length}</span>
-            )}
-          </button>
+          {/* Removed Active Projects and Requests buttons per product request */}
           
           <button 
             className={`nav-item ${activeSection === 'completed-projects' ? 'active' : ''}`}

@@ -1017,14 +1017,35 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, currentUse
                         </div>
                       </div>
 
-                      <button
-                        className="action-btn-compact primary"
-                        onClick={updateSecondaryPassword}
-                        disabled={loading || !newSecondaryPassword || !confirmSecondaryPassword}
-                      >
-                        {loading ? <Loader size={14} className="spinning" /> : <Key size={14} />}
-                        Set Secondary Password
-                      </button>
+                      {!isPhoneVerified ? (
+                        <div className="profile-notice-compact" style={{ marginTop: '0.5rem' }}>
+                          <AlertCircle size={16} />
+                          <div>
+                            <strong>Enable Two-Factor Authentication</strong>
+                            <p>For security, enable 2FA to set a secondary password. Add your phone in the Two-Factor Auth tab, then verify the SMS code.</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          className="action-btn-compact primary"
+                          onClick={async () => {
+                            // Send a one-time SMS verification before allowing the update
+                            try {
+                              setTwoFactorAction('change-password');
+                              await sendPhoneVerification();
+                              setSuccess('Verification code sent. Enter it in Two-Factor Auth to continue.');
+                            } catch (e) {
+                              console.error('Failed to initiate phone verification for password set:', e);
+                            }
+                          }}
+                          disabled={
+                            loading || !newSecondaryPassword || !confirmSecondaryPassword || newSecondaryPassword !== confirmSecondaryPassword
+                          }
+                        >
+                          {loading ? <Loader size={14} className="spinning" /> : <Key size={14} />}
+                          Send Verification Code
+                        </button>
+                      )}
                     </div>
                   </div>
                 ) : (

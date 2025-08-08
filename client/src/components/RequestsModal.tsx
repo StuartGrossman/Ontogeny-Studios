@@ -72,18 +72,28 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
       
       setProjectRequests(projects);
 
-      // Load feature requests
-      const featureRequestsQuery = query(
-        collection(db, 'feature_requests'),
-        where('status', '==', 'pending'),
-        orderBy('createdAt', 'desc')
-      );
-      
-      const featureRequestsSnapshot = await getDocs(featureRequestsQuery);
+      // Load feature requests for this user or their projects, ordered by requestedAt when available
+      let featureRequestsSnapshot;
+      try {
+        const featureRequestsQuery = query(
+          collection(db, 'feature_requests'),
+          where('requestedBy', '==', currentUser.uid),
+          orderBy('requestedAt', 'desc')
+        );
+        featureRequestsSnapshot = await getDocs(featureRequestsQuery);
+      } catch (e) {
+        // Fallback without orderBy if index/rules cause issues
+        const featureRequestsQuery = query(
+          collection(db, 'feature_requests'),
+          where('requestedBy', '==', currentUser.uid)
+        );
+        featureRequestsSnapshot = await getDocs(featureRequestsQuery);
+      }
       const features = featureRequestsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : doc.data().createdAt,
+        createdAt: (doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : doc.data().createdAt) ||
+                   (doc.data().requestedAt?.toDate ? doc.data().requestedAt.toDate() : doc.data().requestedAt),
         updatedAt: doc.data().updatedAt?.toDate ? doc.data().updatedAt.toDate() : doc.data().updatedAt
       })) as FeatureRequest[];
       

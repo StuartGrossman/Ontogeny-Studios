@@ -21,6 +21,7 @@ const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
+// Explicitly bind Storage to the correct bucket
+const storage = getStorage(app, 'gs://ontogeny-labs.firebasestorage.app');
 
 export { app, analytics, auth, db, storage }; 

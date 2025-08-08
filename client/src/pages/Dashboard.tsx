@@ -18,6 +18,7 @@ import SimpleFeatureRequestModal from '../components/modals/SimpleFeatureRequest
 import RequestsModal from '../components/RequestsModal';
 import RequestedProjectsModal from '../components/RequestedProjectsModal';
 import UIDesignModal from '../components/UIDesignModal';
+import SimpleProjectRequestModal from '../components/modals/SimpleProjectRequestModal';
 import PaymentSuccessModal from '../components/PaymentSuccessModal';
 import { modalEvents } from '../utils/modalEvents';
 
@@ -38,40 +39,27 @@ const Dashboard: React.FC = () => {
   const [showRequestsModal, setShowRequestsModal] = useState(false);
   const [showRequestedProjectsModal, setShowRequestedProjectsModal] = useState(false);
   const [showUIDesignModal, setShowUIDesignModal] = useState(false);
+  const [showSimpleProjectRequestModal, setShowSimpleProjectRequestModal] = useState(false);
   const [showPaymentSuccessModal, setShowPaymentSuccessModal] = useState(false);
   const [paymentSessionId, setPaymentSessionId] = useState<string>('');
 
   // Check authentication and mobile state
   useEffect(() => {
-    console.log('🔍 Dashboard mounted, checking authentication...');
-    console.log('👤 Current user:', currentUser);
-    console.log('📍 Current URL:', window.location.href);
-    
     if (!currentUser) {
-      console.log('❌ No current user, redirecting to home');
       navigate('/');
-    } else {
-      console.log('✅ User authenticated, staying on dashboard');
     }
   }, [currentUser, navigate]);
 
   // Handle payment success/cancel from Stripe Checkout
   useEffect(() => {
     const handlePaymentStatus = async () => {
-      console.log('🔍 Checking payment status from URL...');
+      // Quiet logs: parsing payment status from URL
       const urlParams = new URLSearchParams(window.location.search);
       const paymentStatus = urlParams.get('payment');
       const sessionId = urlParams.get('session_id');
 
-      console.log('📊 URL Parameters:', {
-        paymentStatus,
-        sessionId,
-        fullUrl: window.location.href
-      });
-
       if (paymentStatus === 'success' && sessionId) {
         // Payment was successful, update subscription status
-        console.log('✅ Payment successful, session ID:', sessionId);
         
         try {
           // Update subscription status in database
@@ -91,7 +79,6 @@ const Dashboard: React.FC = () => {
             detail: { sessionId, projectId: 'all' } 
           }));
           
-          console.log('✅ Payment processing completed successfully');
         } catch (error) {
           console.error('❌ Error processing payment:', error);
         }
@@ -99,13 +86,10 @@ const Dashboard: React.FC = () => {
         // Clean up the URL
         window.history.replaceState({}, document.title, '/dashboard');
       } else if (paymentStatus === 'cancelled') {
-        console.log('❌ Payment was cancelled');
         alert('Payment was cancelled. You can try again anytime.');
         
         // Clean up the URL
         window.history.replaceState({}, document.title, '/dashboard');
-      } else {
-        console.log('ℹ️ No payment status found in URL');
       }
     };
 
@@ -115,19 +99,15 @@ const Dashboard: React.FC = () => {
   // Update subscription status in database
   const updateSubscriptionStatus = async (sessionId: string) => {
     try {
-      console.log('🔄 Updating subscription status for session:', sessionId);
       
       if (!currentUser?.uid) {
         console.error('❌ No current user found');
         return;
       }
 
-      console.log('👤 Current user:', currentUser.uid);
-
       // First, verify the session with Stripe
       let sessionData = null;
       try {
-        console.log('🔍 Verifying session with Stripe...');
         const verifyResponse = await fetch(`http://localhost:3002/api/payments/verify-session/${sessionId}`, {
           method: 'GET',
           headers: {
@@ -137,7 +117,6 @@ const Dashboard: React.FC = () => {
 
         if (verifyResponse.ok) {
           sessionData = await verifyResponse.json();
-          console.log('✅ Session verified with Stripe:', sessionData);
         } else {
           console.warn('⚠️ Could not verify session with Stripe, continuing anyway...');
         }
@@ -163,13 +142,8 @@ const Dashboard: React.FC = () => {
         createdAt: new Date()
       };
 
-      console.log('📝 Writing subscription data with projectId:', projectId);
-
-      console.log('📝 Writing subscription data:', subscriptionData);
       
       await setDoc(subscriptionRef, subscriptionData, { merge: true });
-
-      console.log('✅ Subscription status updated to active');
       
       // Trigger a refresh of subscription data
       // The component will reload subscription data on next render
@@ -209,10 +183,15 @@ const Dashboard: React.FC = () => {
       setShowUIDesignModal(true);
     });
 
+    const unsubscribeNewProject = modalEvents.subscribe('newProjectRequest', () => {
+      setShowSimpleProjectRequestModal(true);
+    });
+
     return () => {
       unsubscribeRequests();
       unsubscribeRequestedProjects();
       unsubscribeUIDesign();
+      unsubscribeNewProject();
     };
   }, []);
 
@@ -383,6 +362,12 @@ const Dashboard: React.FC = () => {
       <UIDesignModal
         isOpen={showUIDesignModal}
         onClose={() => setShowUIDesignModal(false)}
+        currentUser={currentUser}
+      />
+
+      <SimpleProjectRequestModal
+        isOpen={showSimpleProjectRequestModal}
+        onClose={() => setShowSimpleProjectRequestModal(false)}
         currentUser={currentUser}
       />
 

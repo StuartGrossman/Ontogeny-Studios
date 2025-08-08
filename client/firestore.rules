@@ -122,11 +122,17 @@ service cloud.firestore {
     
     // Feature requests - users can read/write their own, admins can read/write all
     match /feature_requests/{requestId} {
-      allow read, write: if request.auth != null && 
+      allow read: if request.auth != null && 
+        (resource.data.requestedBy == request.auth.uid || 
+         isAdmin() ||
+         // Allow users to read feature requests for their projects
+         exists(/databases/$(database)/documents/projects/$(resource.data.projectId)) &&
+         get(/databases/$(database)/documents/projects/$(resource.data.projectId)).data.userId == request.auth.uid);
+      allow write: if request.auth != null && 
         (resource.data.requestedBy == request.auth.uid || isAdmin());
       allow create: if request.auth != null && 
         (request.resource.data.requestedBy == request.auth.uid || isAdmin());
-      allow list, read: if isAdmin();
+      allow list: if request.auth != null; // Allow authenticated users to list and filter
     }
     
     // Feature assignments - users can read/write their own, admins can read/write all
@@ -156,13 +162,27 @@ service cloud.firestore {
       allow list, read: if isAdmin();
     }
     
-    // UI design requests - users can read/write their own, admins can read/write all
+    // UI design requests - users can read their own or those for projects they own; admins can read/write all
     match /ui_design_requests/{requestId} {
-      allow read, write: if request.auth != null && 
-        (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if request.auth != null && 
-        (request.resource.data.userId == request.auth.uid || isAdmin());
-      allow list, read: if isAdmin();
+      allow read: if request.auth != null &&
+        (
+          // Request was created by the user
+          resource.data.requestedBy == request.auth.uid ||
+          // Admins can read all
+          isAdmin() ||
+          // Project owner can read requests for their project
+          (
+            resource.data.projectId != null &&
+            exists(/databases/$(database)/documents/projects/$(resource.data.projectId)) &&
+            get(/databases/$(database)/documents/projects/$(resource.data.projectId)).data.userId == request.auth.uid
+          )
+        );
+      allow write: if request.auth != null &&
+        (resource.data.requestedBy == request.auth.uid || isAdmin());
+      allow create: if request.auth != null &&
+        (request.resource.data.requestedBy == request.auth.uid || isAdmin());
+      // Allow authenticated users to run filtered list queries
+      allow list: if request.auth != null;
     }
     
     // Subscriptions - users can read/write their own subscriptions, admins can read/write all
@@ -170,6 +190,16 @@ service cloud.firestore {
       allow read, write, create, update: if request.auth != null && 
         (resource == null || resource.data.userId == request.auth.uid || isAdmin());
       allow list: if request.auth != null;
+    }
+    
+    // Payments - users can read their own payment records; admins can read/write all
+    match /payments/{paymentId} {
+      // Allow users to read only their own payment records; admins can read any
+      allow read: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+      
+      // Writes are performed by server via Admin SDK; restrict client writes to admins only
+      allow create, write, update: if isAdmin();
     }
     
     // Admin audit logs - admins can read/write, users cannot access

@@ -9,6 +9,7 @@ import {
   X,
   Activity,
   MessageCircle,
+  Bell,
   CheckCircle,
   Folder,
   Plus
@@ -19,6 +20,12 @@ import { getActiveProjects } from '../services/projectService';
 import ontogenyIcon from '../assets/otogeny-icon.png';
 import { db } from '../firebase';
 import { modalEvents } from '../utils/modalEvents';
+import {
+  getUnreadNotificationCount,
+  subscribeRecentNotifications,
+  markAllNotificationsAsRead,
+  AppNotification
+} from '../services/notificationService';
 
 import '../styles/Navbar.css';
 
@@ -32,6 +39,9 @@ const Navbar: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [recentNotifications, setRecentNotifications] = useState<AppNotification[]>([]);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [activeProjects, setActiveProjects] = useState<any[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
@@ -68,18 +78,26 @@ const Navbar: React.FC = () => {
 
   // Cleanup subscriptions when component unmounts
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
+    let unsubscribeMessages: (() => void) | undefined;
+    let unsubscribeNotifications: (() => void) | undefined;
 
     if (currentUser?.uid) {
-      unsubscribe = getUnreadMessageCount(currentUser.uid, (count) => {
+      unsubscribeMessages = getUnreadMessageCount(currentUser.uid, (count) => {
         setUnreadMessages(count);
       });
+      const unsubCount = getUnreadNotificationCount(currentUser.uid, (count) => {
+        setUnreadNotifications(count);
+      });
+      const unsubList = subscribeRecentNotifications(currentUser.uid, setRecentNotifications, 20);
+      unsubscribeNotifications = () => {
+        if (unsubCount) unsubCount();
+        if (unsubList) unsubList();
+      };
     }
 
     return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
+      if (unsubscribeMessages) unsubscribeMessages();
+      if (unsubscribeNotifications) unsubscribeNotifications();
     };
   }, [currentUser?.uid]);
 
@@ -103,6 +121,10 @@ const Navbar: React.FC = () => {
       // Close user menu if click is outside the menu and button
       if (!target.closest('.nav-user-profile')) {
         setShowUserMenu(false);
+      }
+      // Close notifications if clicked outside of notifications container
+      if (!target.closest('.nav-notifications')) {
+        setShowNotifications(false);
       }
     };
 
@@ -177,6 +199,15 @@ const Navbar: React.FC = () => {
         <div className="nav-center">
           {currentUser && (
             <>
+              {/* Plus Button - New Project Request */}
+              <button 
+                className="nav-button icon-only" 
+                title="Request New Project"
+                onClick={() => modalEvents.openModal('newProjectRequest')}
+              >
+                <Plus size={20} />
+              </button>
+
               {/* Dashboard/Management Button - Context Aware */}
               {location.pathname === '/management' ? (
                 <Link to="/dashboard" className="nav-button icon-only" title="Dashboard">
@@ -292,6 +323,67 @@ const Navbar: React.FC = () => {
         <div className="nav-right">
           {currentUser ? (
             <>
+              {/* Notifications Bell */}
+              <div className="nav-notifications" style={{ position: 'relative' }}>
+                <button
+                  className="nav-button messages-button"
+                  onClick={async () => {
+                    const newState = !showNotifications;
+                    setShowNotifications(newState);
+                    if (newState && currentUser?.uid) {
+                      try {
+                        await markAllNotificationsAsRead(currentUser.uid);
+                        setUnreadNotifications(0);
+                      } catch {}
+                    }
+                  }}
+                  title="Notifications"
+                >
+                  <Bell size={20} />
+                  {unreadNotifications > 0 && (
+                    <span className="messages-badge">{unreadNotifications}</span>
+                  )}
+                </button>
+                {showNotifications && (
+                  <div className="nav-dropdown-menu" style={{ right: 0, left: 'auto', minWidth: 320 }}>
+                    {recentNotifications.length === 0 ? (
+                      <div className="nav-dropdown-item">
+                        <span>No notifications</span>
+                      </div>
+                    ) : (
+                      <>
+                        {recentNotifications.map((n) => (
+                          <button
+                            key={n.id}
+                            className="nav-dropdown-item"
+                            onClick={() => {
+                              setShowNotifications(false);
+                              if (n.action === 'openRequestsModal') {
+                                modalEvents.openModal('requests');
+                              } else if (n.action === 'navigate' && n.actionRoute) {
+                                navigate(n.actionRoute);
+                              }
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              <span style={{ width: 8, height: 8, borderRadius: 4, background: n.read ? '#555' : '#667eea' }} />
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                                <span style={{ fontWeight: 600 }}>{n.title}</span>
+                                {n.projectName && (
+                                  <span style={{ fontSize: 12, opacity: 0.8 }}>Project: {n.projectName}</span>
+                                )}
+                                {n.description && (
+                                  <span style={{ fontSize: 12, opacity: 0.9 }}>{n.description}</span>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
               {/* Messages Alert */}
               <div className="nav-messages">
                 <Link to="/messages" className="nav-button messages-button">

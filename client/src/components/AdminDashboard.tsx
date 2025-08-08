@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { Users, RefreshCw, ArrowUp, ArrowDown, FolderPlus, CheckCircle, Edit3, MessageCircle, Folder, GitPullRequest, Star, Trash2, RotateCcw, Key, UserPlus } from 'lucide-react';
+import { Users, RefreshCw, FolderPlus, CheckCircle, Edit3, MessageCircle, GitPullRequest, Star, Trash2, RotateCcw, UserPlus } from 'lucide-react';
 import { UserAvatar } from '../utils/avatarGenerator';
-import APIKeysManagement from './APIKeysManagement';
 import SecureDeleteProjectModal from './modals/SecureDeleteProjectModal';
-import ProjectTeamModal from './modals/ProjectTeamModal';
-import '../styles/Dashboard.css';
+// import ProjectTeamModal from './modals/ProjectTeamModal';
 
 interface User {
   id: string;
@@ -64,10 +62,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   usersLoading,
   userProjectsLoading,
   userSearchQuery,
-  sortByAlerts,
+  // sortByAlerts,
   onUserSelect,
   onUserSearchChange,
-  onToggleAlertSort,
+  // onToggleAlertSort,
   onCreateProject,
   onOpenAdminProject,
   onDeleteProject,
@@ -76,7 +74,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onManageTeam,
   currentUser,
 }) => {
-  const [activeTab, setActiveTab] = useState<'active' | 'requested' | 'features' | 'api-keys'>('active');
+  const [activeTab, setActiveTab] = useState<'active' | 'requested' | 'features'>('active');
   const [showSecureDeleteModal, setShowSecureDeleteModal] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<{ id: string; name: string } | null>(null);
 
@@ -84,11 +82,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const getFilteredProjects = () => {
     switch (activeTab) {
       case 'active':
-        // For active projects, show only the selected user's projects
-        if (!userProjects) return [];
-        return userProjects.filter(project => 
-          project.type !== 'user-requested' && !project.deleted
-        );
+        // Active projects include admin-created and admin-active
+        return (userProjects || []).filter(p => (p.type === 'admin-created' || p.type === 'admin-active') && !p.deleted);
       case 'requested':
         // For requested projects, show ALL users' requested projects
         if (!allProjects) return [];
@@ -103,9 +98,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           project.features && 
           !project.deleted
         );
-      case 'api-keys':
-        // API keys don't have projects to filter
-        return [];
+      
       default:
         return userProjects || [];
     }
@@ -116,7 +109,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Count new/unread items for each tab
   const getTabCounts = () => {
     return {
-      active: userProjects ? userProjects.filter(p => p.type !== 'user-requested' && !p.deleted).length : 0,
+      active: (userProjects || []).filter(p => (p.type === 'admin-created' || p.type === 'admin-active') && !p.deleted).length,
       requested: allProjects ? allProjects.filter(p => p.type === 'user-requested' && !p.deleted).length : 0,
       features: allProjects ? allProjects.filter(p => p.type === 'user-requested' && p.features && !p.deleted).length : 0
     };
@@ -138,7 +131,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             )}
           </div>
           <div className="sidebar-controls">
-            <span className="user-count">{allUsers.length} users</span>
             <div className="user-controls">
               <div className="search-container">
                 <input
@@ -149,13 +141,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   className="user-search-input"
                 />
               </div>
-              <button 
-                className={`sort-btn ${sortByAlerts ? 'active' : ''}`}
-                onClick={onToggleAlertSort}
-                title={sortByAlerts ? 'Sort alphabetically' : 'Sort by most alerts'}
-              >
-                {sortByAlerts ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
-              </button>
+            
             </div>
           </div>
         </div>
@@ -229,11 +215,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   Create Project
                 </button>
                 <button 
-                  className="action-btn primary"
+                  className="action-btn primary dash-btn-with-badge"
                   onClick={() => onNavigateToMessages(selectedUser.id)}
                 >
                   <MessageCircle size={16} />
                   Messages
+                  {/* Unread messages badge if available on selectedUser */}
+                  {selectedUser?.uncompletedItems ? (
+                    <span className="dash-btn-badge">{selectedUser.uncompletedItems}</span>
+                  ) : null}
                 </button>
               </div>
             </div>
@@ -247,7 +237,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     className={`tab-btn ${activeTab === 'active' ? 'active' : ''}`}
                     onClick={() => setActiveTab('active')}
                   >
-                    <Folder size={16} />
+                    <CheckCircle size={16} />
                     Active Projects
                     {tabCounts.active > 0 && (
                       <span className="tab-badge">{tabCounts.active}</span>
@@ -273,13 +263,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <span className="tab-badge">{tabCounts.features}</span>
                     )}
                   </button>
-                  <button 
-                    className={`tab-btn ${activeTab === 'api-keys' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('api-keys')}
-                  >
-                    <Key size={16} />
-                    API Keys
-                  </button>
+                  
                 </div>
               </div>
               
@@ -288,13 +272,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <RefreshCw className="spinning" size={24} />
                   <p>Loading projects...</p>
                 </div>
-              ) : activeTab === 'api-keys' ? (
-                <APIKeysManagement 
-                  userId={selectedUser?.id}
-                  userName={selectedUser?.displayName}
-                  currentUser={currentUser}
-                />
-              ) : filteredProjects && filteredProjects.length > 0 ? (
+               ) : filteredProjects && filteredProjects.length > 0 ? (
                 <div className="projects-list">
                   {filteredProjects.map((project) => {
                     const isUserRequested = project.type === 'user-requested';
@@ -456,15 +434,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     );
                   })}
                 </div>
-              ) : (
+               ) : (
                 <div className="empty-state">
-                  {activeTab === 'active' && (
-                    <>
-                      <FolderPlus size={48} />
-                      <h4>No active projects</h4>
-                      <p>Use the "Create Project" button above to get started with {selectedUser.displayName}.</p>
-                    </>
-                  )}
                   {activeTab === 'requested' && (
                     <>
                       <GitPullRequest size={48} />

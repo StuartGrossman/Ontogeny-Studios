@@ -103,7 +103,7 @@
 
 .table-header {
   display: grid;
-  grid-template-columns: 1fr 2fr 1fr 1fr;
+  grid-template-columns: 1fr 2fr 1fr 1fr 0.8fr;
   gap: 1rem;
   padding: 1rem 1.5rem;
   background: var(--bg-secondary);
@@ -120,11 +120,28 @@
 
 .payment-row {
   display: grid;
-  grid-template-columns: 1fr 2fr 1fr 1fr;
+  grid-template-columns: 1fr 2fr 1fr 1fr 0.8fr;
   gap: 1rem;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--border-color);
   transition: background-color 0.2s ease;
+}
+/* Source badge for demo label */
+.source-cell {
+  justify-content: flex-start;
+}
+
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: #1f2937;
+  color: #10b981;
+  border: 1px solid #10b981;
 }
 
 .payment-row:hover {

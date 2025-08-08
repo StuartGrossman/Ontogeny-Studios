@@ -1,5 +1,5 @@
 // Global modal event system
-type ModalType = 'requests' | 'requestedProjects' | 'uiDesign';
+type ModalType = 'requests' | 'requestedProjects' | 'uiDesign' | 'newProjectRequest';
 
 let modalEventListeners: { [key in ModalType]?: (() => void)[] } = {};
 

@@ -65,16 +65,16 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: none;
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  border: 1px solid #000000;
+  background: #ffffff;
+  color: #000000;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .settings-close-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: #f3f4f6;
 }
 
 .settings-nav-compact {

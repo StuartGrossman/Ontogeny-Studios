@@ -1,10 +1,5 @@
-/* Management Page Styles */
-.mgmt-page {
-  min-height: 100vh;
-  background: #000000;
-  overflow: hidden;
-  padding-top: 80px; /* Account for fixed navbar */
-}
+/* DEPRECATED: This file is being phased out in favor of modular styles in styles/management/*.css
+   Keep existing rules for backward compatibility; new edits should go into the modular files. */
 
 /* Management Navigation Bar */
 .mgmt-navbar {
@@ -198,6 +193,31 @@
   width: 20px;
   height: 20px;
   flex-shrink: 0;
+}
+
+/* Button with Badge utility used in admin actions */
+.dash-btn-with-badge {
+  position: relative;
+}
+
+.dash-btn-with-badge .dash-btn-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  border: 2px solid #000000;
+  pointer-events: none;
 }
 
 /* Navigation Request Tabs */
@@ -786,12 +806,13 @@
   gap: 0.75rem;
   align-items: center;
   width: 100%;
+  flex-wrap: wrap;
 }
 
 .search-container {
   position: relative;
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 100%;
+  min-width: 100%;
   max-width: 100%;
 }
 
@@ -803,7 +824,7 @@
   border-radius: 8px;
   font-size: 0.875rem;
   width: 100%;
-  min-width: 120px;
+  min-width: 100%;
   transition: all 0.3s ease;
   box-sizing: border-box;
   text-align: center;
@@ -1027,6 +1048,11 @@
   align-items: center;
 }
 
+/* Ensure admin actions can flow to their own line without squeezing */
+.selected-user-header .admin-actions {
+  flex: 0 0 auto;
+}
+
 .action-btn {
   display: flex;
   align-items: center;
@@ -1043,14 +1069,14 @@
 }
 
 .action-btn.primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  background: #000000;
+  color: #ffffff;
+  box-shadow: none;
 }
 
 .action-btn.primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+  background: #111111;
+  color: #ffffff;
 }
 
 .action-btn.secondary {
@@ -1523,18 +1549,10 @@
     gap: 0.5rem;
   }
   
-  .user-controls {
-    gap: 0.375rem;
-    padding: 0.625rem;
-  }
+  .user-controls { gap: 0.5rem; padding: 0.625rem 0; flex-wrap: wrap; }
   
-  .user-search-input {
-    min-width: 100px;
-    max-width: 100%;
-    font-size: 0.7rem;
-    padding: 0.3125rem 0.625rem;
-    box-sizing: border-box;
-  }
+  .search-container { flex-basis: 100%; }
+  .user-search-input { min-width: 100%; max-width: 100%; font-size: 0.7rem; padding: 0.5rem 0.75rem; box-sizing: border-box; }
   
   .sort-btn {
     min-width: 28px;

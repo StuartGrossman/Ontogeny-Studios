@@ -1,0 +1,23 @@
+/* ========================================
+   MANAGEMENT CSS - MODULAR INDEX
+   Dedicated entry point for management/admin styles
+   ======================================== */
+
+/* Core Management Styles - hybrid during migration */
+/* Import legacy styles first for coverage */
+@import '../Management.css';
+
+/* Then import modular overrides */
+@import './layout.css';
+@import './navbar.css';
+@import './tabs.css';
+@import './requests.css';
+
+/* Modals used primarily in management flows */
+@import '../ProjectDetailsModal.css';
+@import '../MeetingSchedulerModal.css';
+@import '../FeatureRequestModal.css';
+@import '../FeatureAssignmentModal.css';
+/* EditProjectModal styles are now imported locally by the component to avoid global leakage */
+@import '../UserRequestedProjectModal.css';
+@import '../SimpleFeatureRequestModal.css';

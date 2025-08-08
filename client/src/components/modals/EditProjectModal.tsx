@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { doc, updateDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, updateDoc, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { 
   X, 
@@ -24,12 +24,18 @@ import {
   UserPlus,
   Settings,
   MessageCircle,
-  CreditCard
+  CreditCard,
+  Lightbulb,
+  Palette
 } from 'lucide-react';
 import ProjectAttributesView from '../ProjectAttributesView';
 import PaymentModal from '../PaymentModal';
 import SetupSubscriptionModal from './SetupSubscriptionModal';
+import SimpleFeatureRequestModal from './SimpleFeatureRequestModal';
+import { useAuth } from '../../contexts/AuthContext';
+import EditUIDesignRequestModal from './EditUIDesignRequestModal';
 import '../../styles/ProjectAttributesView.css';
+import '../../styles/EditProjectModal.css';
 
 interface Task {
   id: string;
@@ -339,7 +345,83 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'project' | 'client-attributes' | 'payment'>('project');
+  const [activeTab, setActiveTab] = useState<'project' | 'client-attributes' | 'feature-requests' | 'ui-design-requests' | 'payment'>('project');
+  const [featureRequests, setFeatureRequests] = useState<any[]>([]);
+  const [uiDesignRequests, setUiDesignRequests] = useState<any[]>([]);
+  const [selectedFeatureRequest, setSelectedFeatureRequest] = useState<any | null>(null);
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [selectedUiRequest, setSelectedUiRequest] = useState<any | null>(null);
+
+  useEffect(() => {
+    const loadFeatureRequests = async () => {
+      try {
+        const frRef = collection(db, 'feature_requests');
+        let frSnapshot;
+        try {
+          const qFr = query(
+            frRef,
+            where('projectId', '==', project.id),
+            orderBy('requestedAt', 'desc')
+          );
+          frSnapshot = await getDocs(qFr);
+        } catch (err) {
+          // Fallback without orderBy if index is missing
+          const qFrNoOrder = query(
+            frRef,
+            where('projectId', '==', project.id)
+          );
+          frSnapshot = await getDocs(qFrNoOrder);
+        }
+        const fromFirestore = frSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (fromFirestore.length > 0) {
+          setFeatureRequests(fromFirestore);
+          return;
+        }
+        // Fallback to server API attributes if needed
+        try {
+          const res = await fetch(`http://localhost:3002/api/projects/project/${project.id}/attributes`);
+          const data = await res.json();
+          if (data.success) {
+            setFeatureRequests(data.attributes?.featureRequests || []);
+          }
+        } catch {}
+      } catch (e) {
+        console.warn('Failed to load feature requests for modal', e);
+        setFeatureRequests([]);
+      }
+    };
+    loadFeatureRequests();
+  }, [project.id]);
+
+  useEffect(() => {
+    // Load UI design requests from Firestore for this project
+    const fetchUiDesign = async () => {
+      try {
+        const uiReqRef = collection(db, 'ui_design_requests');
+        let snapshot;
+        try {
+          const q = query(
+            uiReqRef,
+            where('projectId', '==', project.id),
+            orderBy('requestedAt', 'desc')
+          );
+          snapshot = await getDocs(q);
+        } catch (err) {
+          // Fallback without orderBy if index is missing
+          const qNoOrder = query(
+            uiReqRef,
+            where('projectId', '==', project.id)
+          );
+          snapshot = await getDocs(qNoOrder);
+        }
+        setUiDesignRequests(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch (e) {
+        console.warn('Failed to load UI design requests', e);
+        setUiDesignRequests([]);
+      }
+    };
+    fetchUiDesign();
+  }, [project.id]);
 
   // Feature addition state
   const [newFeatureText, setNewFeatureText] = useState('');
@@ -820,7 +902,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
   return (
     <>
       <div className="modal-overlay" onClick={onClose}>
-        <div className="feature-focused-modal-expanded" onClick={e => e.stopPropagation()}>
+        <div className="edit-project-modal feature-focused-modal-expanded" onClick={e => e.stopPropagation()}>
           {/* Simplified Header */}
           <div className="feature-modal-header-simplified">
             <h2 className="project-name-main">{formData.name}</h2>
@@ -867,6 +949,20 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
               <Settings size={16} />
               Client Attributes
             </button>
+            <button
+              className={`project-tab ${activeTab === 'feature-requests' ? 'active' : ''}`}
+              onClick={() => setActiveTab('feature-requests')}
+            >
+              <Lightbulb size={16} />
+              Feature Requests
+            </button>
+        <button
+          className={`project-tab ${activeTab === 'ui-design-requests' ? 'active' : ''}`}
+          onClick={() => setActiveTab('ui-design-requests')}
+        >
+          <Palette size={16} />
+          UI Design Requests
+        </button>
             <button
               className={`project-tab ${activeTab === 'payment' ? 'active' : ''}`}
               onClick={() => setActiveTab('payment')}
@@ -1282,7 +1378,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
                       onClick={() => setShowSubscriptionModal(true)}
                     >
                       <CreditCard size={16} />
-                      Set Up Subscription
+                      {project.subscriptionStatus === 'active' ? 'Edit Subscription' : 'Set Up Subscription'}
                     </button>
                   </div>
                 </div>
@@ -1290,8 +1386,8 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
 
               </div>
             </div>
-          </div>
-        ) : (
+            </div>
+          ) : activeTab === 'client-attributes' ? (
           /* Client Attributes View */
           <div className="client-attributes-container">
             <ProjectAttributesView 
@@ -1299,13 +1395,221 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
               projectId={project.id}
               projectName={formData.name}
               currentUser={(window as any).currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}')}
+              projectOwnerId={project.assignedTo}
               onAttributeUpdate={() => {
                 // Refresh project data if needed
                 onUpdate();
               }}
             />
           </div>
-        )}
+        ) : activeTab === 'feature-requests' ? (
+            <div className="client-attributes-container">
+              <div className="features-main-expanded">
+                <div className="features-header">
+                  <div className="features-header-content">
+                    <h3>Feature Requests</h3>
+                    <span className="features-count">{featureRequests.length} requests</span>
+                  </div>
+                </div>
+                {featureRequests.length > 0 ? (
+                  <div className="features-grid">
+                    {featureRequests.map((feature: any) => {
+                      return (
+                        <div 
+                          key={feature.id} 
+                          className="feature-card"
+                          onClick={() => setSelectedFeatureRequest(feature)}
+                        >
+                          <div className="feature-header">
+                            <h4>{feature.title || 'Feature Request'}</h4>
+                            <div className="feature-badges">
+                              <span className={`status-badge status-${feature.status || 'pending'}`}>{feature.status || 'pending'}</span>
+                              <span className={`priority-badge priority-${feature.priority || 'medium'}`}>{feature.priority || 'medium'}</span>
+                            </div>
+                          </div>
+                          <div className="feature-content">
+                            <p className="feature-description">
+                              {(feature.description && feature.description.length > 150) ?
+                                `${feature.description.substring(0, 150)}...` : (feature.description || '')}
+                            </p>
+                            {(feature.attachmentUrl || (Array.isArray(feature.attachments) && feature.attachments.length > 0)) && (
+                              <div className="ui-thumb-row">
+                                {feature.attachmentUrl && (
+                                  <img src={feature.attachmentUrl} alt="Feature attachment" className="ui-design-thumb" />
+                                )}
+                                {Array.isArray(feature.attachments) && feature.attachments.slice(0,3).map((url: string, idx: number) => (
+                                  <img key={idx} src={url} alt={`Attachment ${idx+1}`} className="ui-design-thumb" />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="empty-attributes">
+                    <Lightbulb size={48} />
+                    <h4>No Feature Requests</h4>
+                    <p>There are no client-submitted feature requests yet.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : activeTab === 'ui-design-requests' ? (
+            <div className="client-attributes-container">
+              <div className="features-main-expanded">
+                <div className="features-header">
+                  <div className="features-header-content">
+                    <h3>UI Design Requests</h3>
+                    {!selectedUiRequest && (
+                      <span className="features-count">{uiDesignRequests.length} requests</span>
+                    )}
+                  </div>
+                </div>
+                {selectedUiRequest ? (
+                  <div className="ui-design-detail">
+                    <div className="ui-detail-header">
+                      <button className="btn-secondary" onClick={() => setSelectedUiRequest(null)}>
+                        <X size={14} /> Back to requests
+                      </button>
+                      <div className="feature-badges">
+                        <span className={`status-badge status-${selectedUiRequest.status || 'pending'}`}>{selectedUiRequest.status || 'pending'}</span>
+                        <span className={`priority-badge priority-${selectedUiRequest.priority || 'medium'}`}>{selectedUiRequest.priority || 'medium'}</span>
+                      </div>
+                    </div>
+                    <h4 className="ui-detail-title">{selectedUiRequest.title || 'UI Design Request'}</h4>
+                    <div className="feature-content">
+                      <p className="feature-description">{selectedUiRequest.stylePreferences || selectedUiRequest.description || 'No description provided'}</p>
+                      {Array.isArray(selectedUiRequest.targetDevices) && selectedUiRequest.targetDevices.length > 0 && (
+                        <div className="feature-requirements">
+                          <strong>Target Devices:</strong>
+                          <ul>
+                            {selectedUiRequest.targetDevices.map((d: string, i: number) => <li key={i}>{d}</li>)}
+                          </ul>
+                        </div>
+                      )}
+                      {selectedUiRequest.requestedByEmail && (
+                        <div className="feature-requirements">
+                          <strong>Requested By:</strong>
+                          <p>{selectedUiRequest.requestedByEmail}</p>
+                        </div>
+                      )}
+                      {(selectedUiRequest.attachmentUrl || (Array.isArray(selectedUiRequest.attachments) && selectedUiRequest.attachments.length > 0)) && (
+                        <div className="ui-images">
+                          <strong>Reference Images</strong>
+                          <div className="ui-image-grid">
+                            {selectedUiRequest.attachmentUrl && (
+                              <img src={selectedUiRequest.attachmentUrl} alt="UI reference" className="ui-design-image" />
+                            )}
+                            {Array.isArray(selectedUiRequest.attachments) && selectedUiRequest.attachments.map((url: string, idx: number) => (
+                              <img key={idx} src={url} alt={`UI reference ${idx+1}`} className="ui-design-image" />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {selectedUiRequest.adminNotes && (
+                        <div className="feature-requirements">
+                          <strong>Admin Notes:</strong>
+                          <p>{selectedUiRequest.adminNotes}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : uiDesignRequests.length > 0 ? (
+                  <div className="features-grid">
+                    {uiDesignRequests.map((req: any) => {
+                      const description = req.stylePreferences || req.description || 'No description provided';
+                      return (
+                        <div 
+                          key={req.id} 
+                          className="feature-card"
+                          onClick={() => setSelectedUiRequest(req)}
+                        >
+                          <div className="feature-header">
+                            <h4>{req.title || 'UI Design Request'}</h4>
+                            <div className="feature-badges">
+                              <span className={`status-badge status-${req.status || 'pending'}`}>{req.status || 'pending'}</span>
+                              <span className={`priority-badge priority-${req.priority || 'medium'}`}>{req.priority || 'medium'}</span>
+                            </div>
+                          </div>
+                          <div className="feature-content">
+                            <p className="feature-description">
+                              {description.length > 150 ? `${description.substring(0, 150)}...` : description}
+                            </p>
+                            {(req.attachmentUrl || (Array.isArray(req.attachments) && req.attachments.length > 0)) && (
+                              <div className="ui-thumb-row">
+                                {req.attachmentUrl && (
+                                  <img src={req.attachmentUrl} alt="UI reference" className="ui-design-thumb" />
+                                )}
+                                {Array.isArray(req.attachments) && req.attachments.slice(0,3).map((url: string, idx: number) => (
+                                  <img key={idx} src={url} alt={`UI reference ${idx+1}`} className="ui-design-thumb" />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="empty-attributes">
+                    <Palette size={48} />
+                    <h4>No UI Design Requests</h4>
+                    <p>There are no UI design requests for this project yet.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
+
+        {/* Dedicated modal to edit/view a single UI design request */}
+         <EditUIDesignRequestModal 
+          isOpen={!!selectedUiRequest}
+          onClose={() => setSelectedUiRequest(null)}
+          request={selectedUiRequest}
+          onUpdated={() => {
+            // Refresh list after update
+            (async () => {
+              try {
+                const uiReqRef = collection(db, 'ui_design_requests');
+                const q = query(uiReqRef, where('projectId', '==', project.id), orderBy('requestedAt', 'desc'));
+                const snapshot = await getDocs(q);
+                setUiDesignRequests(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+              } catch (e) {
+                console.warn('Failed to refresh UI design requests', e);
+              }
+            })();
+          }}
+         />
+        <SimpleFeatureRequestModal
+          isOpen={!!selectedFeatureRequest}
+          onClose={async () => {
+            setSelectedFeatureRequest(null);
+            try {
+              const frRef = collection(db, 'feature_requests');
+              let frSnapshot;
+              try {
+                const qFr = query(
+                  frRef,
+                  where('projectId', '==', project.id),
+                  orderBy('requestedAt', 'desc')
+                );
+                frSnapshot = await getDocs(qFr);
+              } catch (err) {
+                const qFrNoOrder = query(
+                  frRef,
+                  where('projectId', '==', project.id)
+                );
+                frSnapshot = await getDocs(qFrNoOrder);
+              }
+              setFeatureRequests(frSnapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+            } catch {}
+          }}
+          project={project}
+          currentUser={(window as any).currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}')}
+          existingRequest={selectedFeatureRequest}
+        />
         </div>
       </div>
 
@@ -1339,6 +1643,8 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
         onClose={() => setShowSubscriptionModal(false)}
         projectId={project.id}
         projectName={formData.name}
+        currentAmount={project.subscriptionAmount}
+        isEdit={project.subscriptionStatus === 'active'}
         onSuccess={() => {
           // Refresh project data to show updated subscription amount
           onUpdate();

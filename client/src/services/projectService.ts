@@ -180,7 +180,9 @@ class ProjectService {
   // Get active projects (in-progress and approved)
   async getActiveProjects(userId: string): Promise<ProjectData[]> {
     try {
-      console.log('getActiveProjects called with userId:', userId);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('getActiveProjects called with userId:', userId);
+      }
       
       if (!userId) {
         console.error('getActiveProjects: userId is required');
@@ -193,7 +195,9 @@ class ProjectService {
       // - Projects where user is the owner (userId matches)
       // - Projects where user is the admin who created them (createdBy matches)
       try {
-        console.log('Fetching from projects collection...');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Fetching from projects collection...');
+        }
         
         // First, get projects where user is the owner
         const userProjectsQuery = query(
@@ -203,11 +207,15 @@ class ProjectService {
         );
         
         const userProjectsSnapshot = await getDocs(userProjectsQuery);
-        console.log('User-owned projects: found', userProjectsSnapshot.size, 'documents');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('User-owned projects: found', userProjectsSnapshot.size, 'documents');
+        }
         
         userProjectsSnapshot.forEach((doc) => {
           const data = doc.data();
-          console.log('Processing user-owned project:', { id: doc.id, name: data.name, status: data.status });
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Processing user-owned project:', { id: doc.id, name: data.name, status: data.status });
+          }
           allProjects.push({
             id: doc.id,
             ...data,
@@ -229,11 +237,15 @@ class ProjectService {
         );
         
         const adminProjectsSnapshot = await getDocs(adminProjectsQuery);
-        console.log('Admin-created projects: found', adminProjectsSnapshot.size, 'documents');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Admin-created projects: found', adminProjectsSnapshot.size, 'documents');
+        }
         
         adminProjectsSnapshot.forEach((doc) => {
           const data = doc.data();
-          console.log('Processing admin-created project:', { id: doc.id, name: data.name, status: data.status, userId: data.userId, userEmail: data.userEmail });
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Processing admin-created project:', { id: doc.id, name: data.name, status: data.status, userId: data.userId, userEmail: data.userEmail });
+          }
           allProjects.push({
             id: doc.id,
             ...data,

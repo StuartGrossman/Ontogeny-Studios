@@ -752,6 +752,21 @@
   border-left: 4px solid #ffffff;
 }
 
+.overview-card.payment.clickable {
+  cursor: pointer;
+}
+
+/* Stabilize payment card height to prevent layout shift on modal toggles */
+.overview-card.payment .card-content {
+  min-height: 180px;
+}
+
+.overview-card.payment.clickable:hover {
+  border-color: #22c55e;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(34, 197, 94, 0.2);
+}
+
 .overview-card.timeline.clickable {
   cursor: pointer;
   transition: all 0.3s ease;
@@ -1868,6 +1883,7 @@
 
 .password-prompt-content {
   padding: 2rem;
+  color: #ffffff;
 }
 
 .password-input-group {
@@ -1878,24 +1894,29 @@
 
 .password-input-group label {
   font-weight: 600;
-  color: #1e293b;
+  color: #ffffff;
   font-size: 0.875rem;
 }
 
 .password-input {
   padding: 0.875rem 1rem;
-  border: 2px solid #e2e8f0;
+  border: 2px solid #333333;
   border-radius: 8px;
   font-size: 1rem;
   transition: all 0.2s ease;
-  background: white;
-  color: #1e293b;
+  background: #111111;
+  color: #ffffff;
 }
 
 .password-input:focus {
   outline: none;
   border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+/* Placeholder color on dark background */
+.password-input::placeholder {
+  color: #9ca3af;
 }
 
 /* API Key Modal */
@@ -3822,7 +3843,7 @@
 .requests-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 .request-card {
@@ -3850,7 +3871,13 @@
 }
 
 .request-header {
-  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .request-title-section {
@@ -3862,7 +3889,7 @@
 
 .request-title-section h4 {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: 1.05rem;
   font-weight: 600;
   color: #1e293b;
   line-height: 1.4;
@@ -3931,10 +3958,11 @@
 
 .request-content {
   flex: 1;
+  margin-top: 0.5rem;
 }
 
 .request-description {
-  margin: 0 0 1.5rem 0;
+  margin: 0 0 0.75rem 0;
   color: #475569;
   line-height: 1.6;
   font-size: 0.9375rem;
@@ -3991,8 +4019,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
   border-top: 1px solid #f1f5f9;
 }
 
@@ -4006,6 +4034,57 @@
   gap: 0.375rem;
   color: #64748b;
   font-size: 0.8125rem;
+}
+
+/* Expanded card visuals */
+.request-card.expanded {
+  border-color: #cbd5e1;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* Expand toggle button (light theme section) */
+.request-expand-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.request-expand-toggle:hover {
+  background: #f8fafc;
+}
+
+.request-expand-toggle.expanded svg {
+  transform: rotate(180deg);
+}
+
+/* Image grid inside expanded cards */
+.request-images {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.request-image {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.request-actions-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
 }
 
 .meta-item svg {
@@ -5615,6 +5694,7 @@
   padding: 8px 0;
   background: #000000 !important;
   color: #ffffff !important;
+  min-height: 120px;
 }
 
 .payment-amount {
@@ -5638,10 +5718,10 @@
 .payment-status-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start; /* keep status pill compact on the left */
   gap: 8px;
   background: #000000 !important;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .payment-status {
@@ -5656,10 +5736,10 @@
 .payment-status-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   background: transparent;
   border: 1px solid #333333;
-  padding: 6px 10px;
+  padding: 2px 8px; /* extra compact pill */
   border-radius: 9999px;
 }
 
@@ -5674,8 +5754,8 @@
 }
 
 .status-dot {
-  width: 10px;
-  height: 10px;
+  width: 6px;  /* smaller dot */
+  height: 6px;
   border-radius: 50%;
   display: inline-block;
 }
@@ -5692,7 +5772,7 @@
 
 .status-label {
   color: #ffffff;
-  font-size: 12px;
+  font-size: 11px; /* smaller text */
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.4px;
@@ -5887,6 +5967,7 @@
   gap: 8px;
   color: #888888;
   font-size: 14px;
+  min-height: 120px;
 }
 
 .payment-no-subscription {
@@ -5897,6 +5978,7 @@
   font-size: 14px;
   font-style: italic;
   padding: 16px 0;
+  min-height: 120px;
 }
 
 /* Responsive adjustments for payment card */
@@ -5944,8 +6026,8 @@
   border: 1px solid var(--dash-border-primary, #333333);
   border-radius: var(--dash-radius-2xl, 24px);
   box-shadow: var(--dash-shadow-2xl, 0 25px 50px rgba(0, 0, 0, 0.25));
-  width: 95vw; /* Use viewport width instead of percentage */
-  max-width: 2200px; /* Significantly increased from 1800px */
+  width: 98vw; /* Expand to nearly full viewport width */
+  max-width: 2560px; /* Allow ultra-wide displays */
   max-height: 90vh;
   overflow: hidden;
   display: flex;

@@ -1,9 +1,10 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { CreditCard, Save, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscriptionForm } from '../../hooks/useSubscriptionForm';
 import '../Modal.css';
 import '../../styles/SetupSubscriptionModal.css';
+import CancelSubscriptionModal from './CancelSubscriptionModal';
 import '../../styles/dashboard/variables.css';
 
 interface SetupSubscriptionModalProps {
@@ -11,6 +12,8 @@ interface SetupSubscriptionModalProps {
   onClose: () => void;
   projectId?: string;
   projectName?: string;
+  currentAmount?: number;
+  isEdit?: boolean;
   onSuccess?: () => void;
 }
 
@@ -112,9 +115,12 @@ const SetupSubscriptionModal: React.FC<SetupSubscriptionModalProps> = ({
   onClose,
   projectId,
   projectName,
+  currentAmount,
+  isEdit = false,
   onSuccess
 }) => {
   const { currentUser } = useAuth();
+  const [showCancelModal, setShowCancelModal] = useState(false);
   
   const {
     subscriptionAmount,
@@ -133,6 +139,8 @@ const SetupSubscriptionModal: React.FC<SetupSubscriptionModalProps> = ({
     projectId,
     projectName,
     userId: currentUser?.uid,
+    initialAmount: currentAmount,
+    isEdit,
     onSuccess: () => {
       onSuccess?.(); // Call the parent's onSuccess callback
       onClose(); // Close the modal
@@ -156,8 +164,8 @@ const SetupSubscriptionModal: React.FC<SetupSubscriptionModalProps> = ({
           <div className="modal-title-section">
             <CreditCard size={24} aria-hidden="true" />
             <div>
-              <h2 id="subscription-modal-title">Setup Subscription Amount</h2>
-              <p>Set the monthly subscription amount for this project</p>
+              <h2 id="subscription-modal-title">{isEdit ? 'Edit' : 'Setup'} Subscription Amount</h2>
+              <p>{isEdit ? 'Update' : 'Set'} the monthly subscription amount for this project</p>
             </div>
           </div>
           <button 
@@ -173,6 +181,15 @@ const SetupSubscriptionModal: React.FC<SetupSubscriptionModalProps> = ({
           {projectName && (
             <div className="project-info">
               <h3>Project: {projectName}</h3>
+            </div>
+          )}
+
+          {isEdit && currentAmount && (
+            <div className="info-message" style={{ marginBottom: '1rem', padding: '1rem', background: '#f0f9ff', borderRadius: '8px', border: '1px solid #3b82f6' }}>
+              <AlertCircle size={16} style={{ color: '#3b82f6', marginRight: '0.5rem', display: 'inline' }} />
+              <span style={{ color: '#1e40af' }}>
+                Current subscription: ${currentAmount}/month. Changes will require user confirmation.
+              </span>
             </div>
           )}
 
@@ -197,7 +214,7 @@ const SetupSubscriptionModal: React.FC<SetupSubscriptionModalProps> = ({
           )}
         </div>
 
-        <div className="modal-actions">
+        <div className="modal-actions" style={{ gap: '0.5rem' }}>
           {!showConfirmation ? (
             <>
               <button 
@@ -223,6 +240,17 @@ const SetupSubscriptionModal: React.FC<SetupSubscriptionModalProps> = ({
                   </>
                 )}
               </button>
+              {isEdit && (
+                <button
+                  className="button button-danger"
+                  onClick={() => setShowCancelModal(true)}
+                  disabled={isLoading}
+                  aria-label="Cancel subscription"
+                  style={{ marginLeft: 'auto' }}
+                >
+                  Cancel Subscription
+                </button>
+              )}
             </>
           ) : (
             <>
@@ -245,13 +273,32 @@ const SetupSubscriptionModal: React.FC<SetupSubscriptionModalProps> = ({
                 ) : (
                   <>
                     <CheckCircle size={16} aria-hidden="true" />
-                    Confirm & Set Amount
+                    {isEdit ? 'Update Amount' : 'Confirm & Set Amount'}
                   </>
                 )}
               </button>
             </>
           )}
         </div>
+
+        {/* Confirm Cancellation Modal (Demo) */}
+        <CancelSubscriptionModal
+          isOpen={showCancelModal}
+          onClose={() => setShowCancelModal(false)}
+          onConfirm={() => {
+            setShowCancelModal(false);
+            handleClose();
+          }}
+          subscriptionData={{
+            id: projectId || 'demo-sub',
+            amount: confirmedAmount || parseFloat(subscriptionAmount) || 0,
+            currency: 'USD',
+            paymentMethod: 'Card **** 4242',
+            nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+          }}
+          project={{ id: projectId, name: projectName }}
+          currentUser={currentUser}
+        />
       </div>
     </div>
   );

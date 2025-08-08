@@ -206,14 +206,15 @@ const PaymentHistory: React.FC = () => {
           </div>
         ) : (
           <div className="payments-table">
-            <div className="table-header">
+              <div className="table-header">
               <div className="header-cell">Date</div>
               <div className="header-cell">Description</div>
               <div className="header-cell">Amount</div>
-              <div className="header-cell">Status</div>
+                <div className="header-cell">Status</div>
+                <div className="header-cell">Source</div>
             </div>
             
-            {filteredPayments.map(payment => (
+              {filteredPayments.map(payment => (
               <div key={payment.id} className="payment-row">
                 <div className="payment-cell date-cell">
                   <Calendar size={14} />
@@ -242,6 +243,10 @@ const PaymentHistory: React.FC = () => {
                     <span>{getStatusText(payment.status)}</span>
                   </div>
                 </div>
+
+                  <div className="payment-cell source-cell">
+                    <span className="source-badge">Demo</span>
+                  </div>
               </div>
             ))}
           </div>

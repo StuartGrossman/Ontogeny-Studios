@@ -11,6 +11,8 @@
   font-family: var(--dash-font-family);
   font-size: var(--dash-font-size-md);
   line-height: var(--dash-line-height-normal);
+  /* Keep layout stable when scrollbar appears/disappears */
+  scrollbar-gutter: stable both-edges;
 }
 
 .dashboard-container {

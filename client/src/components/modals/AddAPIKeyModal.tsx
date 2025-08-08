@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { X, Key, Shield, Eye, EyeOff, Plus, Check, AlertCircle } from 'lucide-react';
+import { createNotification } from '../../services/notificationService';
+import '../../styles/AddAPIKeyModal.css';
 
 interface AddAPIKeyModalProps {
   isOpen: boolean;
@@ -157,6 +158,17 @@ const AddAPIKeyModal: React.FC<AddAPIKeyModalProps> = ({
       };
 
       await onSubmit(apiKeyData);
+      try {
+        await createNotification({
+          userId: project?.userId || 'unknown',
+          title: 'API key connected',
+          description: `${formData.name} (${formData.provider})`,
+          type: 'api_key_added',
+          projectId: project?.id,
+          projectName: project?.name,
+          action: 'openRequestsModal'
+        });
+      } catch {}
       handleClose();
     } catch (error) {
       console.error('Error adding API key:', error);

@@ -6,6 +6,8 @@ interface UseSubscriptionFormProps {
   projectId?: string;
   projectName?: string;
   userId?: string;
+  initialAmount?: number;
+  isEdit?: boolean;
   onSuccess?: () => void;
   onError?: (error: string) => void;
 }
@@ -41,10 +43,12 @@ export const useSubscriptionForm = ({
   projectId,
   projectName,
   userId,
+  initialAmount,
+  isEdit,
   onSuccess,
   onError
 }: UseSubscriptionFormProps) => {
-  const [subscriptionAmount, setSubscriptionAmount] = useState('');
+  const [subscriptionAmount, setSubscriptionAmount] = useState(initialAmount ? initialAmount.toString() : '');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -133,12 +137,12 @@ export const useSubscriptionForm = ({
   }, []);
 
   const resetForm = useCallback(() => {
-    setSubscriptionAmount('');
+    setSubscriptionAmount(initialAmount ? initialAmount.toString() : '');
     setError(null);
     setShowConfirmation(false);
     setConfirmedAmount(null);
     setHasInteracted(false);
-  }, []);
+  }, [initialAmount]);
 
   return {
     // State

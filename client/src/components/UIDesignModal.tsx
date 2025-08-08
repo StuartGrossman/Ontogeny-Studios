@@ -1,14 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { X, Palette, Monitor, Tablet, Smartphone, Image, Calendar, FileText, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { collection, query, where, getDocs, orderBy, addDoc, doc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, storage } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import '../styles/UIDesignModal.css';
+
+const sanitizeFileName = (name: string): string => {
+  const base = name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+  return base
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 120);
+};
 
 interface UIDesignModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser: any;
   project?: any;
+  editingRequest?: any;
+  editOnly?: boolean;
 }
 
 interface UIDesignRequest {
@@ -32,7 +44,9 @@ const UIDesignModal: React.FC<UIDesignModalProps> = ({
   isOpen,
   onClose,
   currentUser,
-  project
+  project,
+  editingRequest: initialEditingRequest,
+  editOnly
 }) => {
   const [activeTab, setActiveTab] = useState<'requests' | 'create'>('requests');
   const [designRequests, setDesignRequests] = useState<UIDesignRequest[]>([]);
@@ -62,11 +76,56 @@ const UIDesignModal: React.FC<UIDesignModalProps> = ({
     referenceImage: null as File | null
   });
 
+  // Local preview URLs for newly selected images
+  const [newRequestPreviewUrl, setNewRequestPreviewUrl] = useState<string | null>(null);
+  const [editRequestPreviewUrl, setEditRequestPreviewUrl] = useState<string | null>(null);
+
   useEffect(() => {
     if (isOpen) {
       loadDesignRequests();
     }
   }, [isOpen, project?.id]);
+
+  // Handle editing request prop
+  useEffect(() => {
+    if (initialEditingRequest && isOpen) {
+      setEditingRequest(initialEditingRequest);
+      setEditRequest({
+        title: initialEditingRequest.title || '',
+        description: initialEditingRequest.description || '',
+        targetDevices: initialEditingRequest.targetDevices || [],
+        stylePreferences: initialEditingRequest.stylePreferences || '',
+        priority: initialEditingRequest.priority || 'medium',
+        hasReferenceImage: initialEditingRequest.hasReferenceImage || false,
+        referenceImage: null
+      });
+      setShowEditModal(true);
+      setActiveTab('create');
+    } else if (!isOpen) {
+      // Reset editing state when modal closes
+      setEditingRequest(null);
+      setShowEditModal(false);
+      setActiveTab('requests');
+      setEditRequest({
+        title: '',
+        description: '',
+        targetDevices: [],
+        stylePreferences: '',
+        priority: 'medium',
+        hasReferenceImage: false,
+        referenceImage: null
+      });
+      setEditRequestPreviewUrl(null);
+    }
+  }, [initialEditingRequest, isOpen]);
+
+  const closeEdit = () => {
+    if (editOnly) {
+      onClose();
+    } else {
+      setShowEditModal(false);
+    }
+  };
 
   const loadDesignRequests = async () => {
     setLoading(true);
@@ -121,6 +180,13 @@ const UIDesignModal: React.FC<UIDesignModalProps> = ({
         referenceImage: file,
         hasReferenceImage: true
       }));
+      try {
+        const url = URL.createObjectURL(file);
+        setNewRequestPreviewUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return url;
+        });
+      } catch {}
     }
   };
 
@@ -132,6 +198,13 @@ const UIDesignModal: React.FC<UIDesignModalProps> = ({
         referenceImage: file,
         hasReferenceImage: true
       }));
+      try {
+        const url = URL.createObjectURL(file);
+        setEditRequestPreviewUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return url;
+        });
+      } catch {}
     }
   };
 
@@ -175,13 +248,29 @@ const UIDesignModal: React.FC<UIDesignModalProps> = ({
 
     try {
       const requestRef = doc(db, 'ui_design_requests', editingRequest.id);
+
+      // If a new reference image was selected, upload it and set the URL
+      let referenceImageUrl = editingRequest.referenceImageUrl || null;
+      if (editRequest.referenceImage) {
+        const file = editRequest.referenceImage as File;
+        const safeName = sanitizeFileName(file.name);
+        const path = `ui_design_requests/${project?.id || editingRequest.projectId || 'unassigned'}/${Date.now()}_${safeName}`;
+        const storageRef = ref(storage, path);
+        await uploadBytes(storageRef, file, {
+          contentType: file.type || 'image/png',
+          cacheControl: 'public, max-age=31536000'
+        });
+        referenceImageUrl = await getDownloadURL(storageRef);
+      }
+
       await updateDoc(requestRef, {
         title: editRequest.title,
         description: editRequest.description,
         targetDevices: editRequest.targetDevices,
         stylePreferences: editRequest.stylePreferences,
         priority: editRequest.priority,
-        hasReferenceImage: editRequest.hasReferenceImage,
+        hasReferenceImage: !!referenceImageUrl,
+        ...(referenceImageUrl ? { referenceImageUrl, attachmentUrl: referenceImageUrl } : {}),
         updatedAt: new Date()
       });
       
@@ -221,6 +310,20 @@ const UIDesignModal: React.FC<UIDesignModalProps> = ({
     }
 
     try {
+      // Upload reference image if provided
+      let referenceImageUrl: string | null = null;
+      if (newRequest.referenceImage) {
+        const file = newRequest.referenceImage as File;
+        const safeName = sanitizeFileName(file.name);
+        const path = `ui_design_requests/${project?.id || 'unassigned'}/${Date.now()}_${safeName}`;
+        const storageRef = ref(storage, path);
+        await uploadBytes(storageRef, file, {
+          contentType: file.type || 'image/png',
+          cacheControl: 'public, max-age=31536000'
+        });
+        referenceImageUrl = await getDownloadURL(storageRef);
+      }
+
       const designRequest = {
         title: newRequest.title,
         description: newRequest.description,
@@ -232,7 +335,8 @@ const UIDesignModal: React.FC<UIDesignModalProps> = ({
         requestedByName: currentUser?.displayName || currentUser?.email,
         requestedByEmail: currentUser?.email,
         requestedAt: new Date(),
-        hasReferenceImage: newRequest.hasReferenceImage,
+        hasReferenceImage: !!referenceImageUrl,
+        ...(referenceImageUrl ? { referenceImageUrl, attachmentUrl: referenceImageUrl } : {}),
         projectId: project?.id || null
       };
 
@@ -248,6 +352,7 @@ const UIDesignModal: React.FC<UIDesignModalProps> = ({
         hasReferenceImage: false,
         referenceImage: null
       });
+      setNewRequestPreviewUrl(null);
       
       // Switch to requests tab and reload
       setActiveTab('requests');
@@ -300,6 +405,144 @@ const UIDesignModal: React.FC<UIDesignModalProps> = ({
   };
 
   if (!isOpen) return null;
+
+  // Render only the edit overlay when editOnly is true
+  if (editOnly) {
+    if (!editingRequest) return null;
+    return (
+      <div className="ui-design-edit-modal-overlay" onClick={closeEdit}>
+        <div className="ui-design-edit-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="ui-design-edit-modal-header">
+            <div className="ui-design-edit-modal-title">
+              <Palette size={24} />
+              <div>
+                <h2>Edit Design Request</h2>
+                <p>Update your design request details</p>
+              </div>
+            </div>
+            <button className="ui-design-edit-modal-close-btn" onClick={closeEdit}>
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="ui-design-edit-modal-content">
+            <form onSubmit={handleUpdateRequest} className="ui-design-form">
+              <div className="form-columns">
+                <div className="form-column-left">
+                  <div className="form-group">
+                    <label htmlFor="edit-title">Design Title *</label>
+                    <input
+                      type="text"
+                      id="edit-title"
+                      value={editRequest.title}
+                      onChange={(e) => setEditRequest(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="e.g., Dashboard Redesign, Mobile App Interface"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="edit-description">Description *</label>
+                    <textarea
+                      id="edit-description"
+                      value={editRequest.description}
+                      onChange={(e) => setEditRequest(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Describe your design requirements, goals, and any specific features you want to include..."
+                      rows={4}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Target Devices *</label>
+                    <div className="device-selection">
+                      {['desktop', 'tablet', 'mobile'].map((device) => (
+                        <button
+                          key={device}
+                          type="button"
+                          className={`device-select-btn ${editRequest.targetDevices.includes(device) ? 'selected' : ''}`}
+                          onClick={() => handleEditDeviceToggle(device)}
+                        >
+                          {device === 'desktop' && <Monitor size={16} />}
+                          {device === 'tablet' && <Tablet size={16} />}
+                          {device === 'mobile' && <Smartphone size={16} />}
+                          {device.charAt(0).toUpperCase() + device.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-column-right">
+                  <div className="form-group">
+                    <label htmlFor="edit-stylePreferences">Style Preferences</label>
+                    <textarea
+                      id="edit-stylePreferences"
+                      value={editRequest.stylePreferences}
+                      onChange={(e) => setEditRequest(prev => ({ ...prev, stylePreferences: e.target.value }))}
+                      placeholder="Describe your preferred design style, colors, themes, or any specific design inspiration..."
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="edit-priority">Priority</label>
+                    <select
+                      id="edit-priority"
+                      value={editRequest.priority}
+                      onChange={(e) => setEditRequest(prev => ({ ...prev, priority: e.target.value as 'high' | 'medium' | 'low' }))}
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="edit-referenceImage">Reference Image (Optional)</label>
+                    <input
+                      type="file"
+                      id="edit-referenceImage"
+                      accept="image/*"
+                      onChange={handleEditImageUpload}
+                    />
+                    <p className="form-help">Upload a reference image to help illustrate your design vision</p>
+                    {editRequestPreviewUrl && (
+                      <div className="reference-image-preview" style={{ marginTop: '0.75rem' }}>
+                        <img src={editRequestPreviewUrl} alt="Selected preview" className="reference-image" />
+                      </div>
+                    )}
+
+                    {editingRequest.hasReferenceImage && editingRequest.referenceImageUrl && !editRequestPreviewUrl && (
+                      <div className="form-group">
+                        <label>Current Reference Image</label>
+                        <div className="reference-image-preview">
+                          <img 
+                            src={editingRequest.referenceImageUrl} 
+                            alt="Reference" 
+                            className="reference-image"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-actions">
+                <button type="button" className="cancel-btn" onClick={closeEdit}>
+                  Cancel
+                </button>
+                <button type="submit" className="submit-btn">
+                  Update Design Request
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="ui-design-modal-overlay" onClick={onClose}>
@@ -507,6 +750,11 @@ const UIDesignModal: React.FC<UIDesignModalProps> = ({
                         onChange={handleImageUpload}
                       />
                       <p className="form-help">Upload a reference image to help illustrate your design vision</p>
+                      {newRequestPreviewUrl && (
+                        <div className="reference-image-preview" style={{ marginTop: '0.75rem' }}>
+                          <img src={newRequestPreviewUrl} alt="Selected preview" className="reference-image" />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -622,10 +870,15 @@ const UIDesignModal: React.FC<UIDesignModalProps> = ({
                             onChange={handleEditImageUpload}
                           />
                           <p className="form-help">Upload a reference image to help illustrate your design vision</p>
+                         {editRequestPreviewUrl && (
+                           <div className="reference-image-preview" style={{ marginTop: '0.75rem' }}>
+                             <img src={editRequestPreviewUrl} alt="Selected preview" className="reference-image" />
+                           </div>
+                         )}
                         </div>
 
                         {/* Show existing reference image if available */}
-                        {editingRequest.hasReferenceImage && editingRequest.referenceImageUrl && (
+                        {editingRequest.hasReferenceImage && editingRequest.referenceImageUrl && !editRequestPreviewUrl && (
                           <div className="form-group">
                             <label>Current Reference Image</label>
                             <div className="reference-image-preview">

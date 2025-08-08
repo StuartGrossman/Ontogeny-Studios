@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Globe, Shield, Check, AlertCircle, Copy, ExternalLink, Server, Zap, Settings, Plus, Eye, Trash2 } from 'lucide-react';
+import { createNotification } from '../../services/notificationService';
+import '../../styles/AddDNSRecordsModal.css';
 
 interface AddDNSRecordsModalProps {
   isOpen: boolean;
@@ -204,6 +206,17 @@ const AddDNSRecordsModal: React.FC<AddDNSRecordsModalProps> = ({
       };
 
       await onSubmit(dnsData);
+      try {
+        await createNotification({
+          userId: project?.userId || 'unknown',
+          title: 'DNS record added',
+          description: `${dnsData.recordType} ${dnsData.name} -> ${dnsData.value}`,
+          type: 'dns_record_added',
+          projectId: project?.id,
+          projectName: project?.name,
+          action: 'openRequestsModal'
+        });
+      } catch {}
       handleClose();
     } catch (error) {
       console.error('Error adding DNS record:', error);

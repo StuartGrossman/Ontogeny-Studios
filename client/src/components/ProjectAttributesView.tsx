@@ -5,12 +5,15 @@ import {
   Calendar, Target, Server, Shield, Image, Settings, Bell, Copy, Download
 } from 'lucide-react';
 import { AddRequiredAPIKeyModal, AddRequiredDNSRecordModal } from './modals';
+import { createNotification } from '../services/notificationService';
 
 interface ProjectAttributesViewProps {
   projectId: string;
   projectName?: string;
   currentUser?: any;
   onAttributeUpdate?: (attributeType: string, attributeId: string, status: string, adminNotes?: string) => void;
+  initialTab?: 'features' | 'api-keys' | 'dns-records' | 'ui-designs';
+  projectOwnerId?: string;
 }
 
 interface ProjectAttribute {
@@ -62,11 +65,13 @@ const ProjectAttributesView: React.FC<ProjectAttributesViewProps> = ({
   projectId,
   projectName,
   currentUser,
-  onAttributeUpdate
+  onAttributeUpdate,
+  initialTab,
+  projectOwnerId
 }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'features' | 'api-keys' | 'dns-records' | 'ui-designs'>('features');
+  const [activeTab, setActiveTab] = useState<'features' | 'api-keys' | 'dns-records' | 'ui-designs'>(initialTab || 'features');
   
   // Attribute data
   const [featureRequests, setFeatureRequests] = useState<FeatureRequest[]>([]);
@@ -280,6 +285,20 @@ const ProjectAttributesView: React.FC<ProjectAttributesViewProps> = ({
         setShowRequiredAPIKeyModal(false);
         // Reload attributes to show updated data
         await loadProjectAttributes();
+        // Notify project owner
+        if (projectOwnerId) {
+          try {
+            await createNotification({
+              userId: projectOwnerId,
+              title: 'API key requested',
+              description: `${requiredAPIKeyData.keyName} (${requiredAPIKeyData.provider || 'Custom'})`,
+              type: 'admin_action',
+              projectId,
+              projectName,
+              action: 'openRequestsModal'
+            });
+          } catch {}
+        }
       } else {
         throw new Error(result.error || 'Failed to create required API key request');
       }
@@ -310,6 +329,20 @@ const ProjectAttributesView: React.FC<ProjectAttributesViewProps> = ({
         setShowRequiredDNSModal(false);
         // Reload attributes to show updated data
         await loadProjectAttributes();
+        // Notify project owner
+        if (projectOwnerId) {
+          try {
+            await createNotification({
+              userId: projectOwnerId,
+              title: 'DNS record requested',
+              description: `${requiredDNSData.recordType} ${requiredDNSData.recordName}`,
+              type: 'admin_action',
+              projectId,
+              projectName,
+              action: 'openRequestsModal'
+            });
+          } catch {}
+        }
       } else {
         throw new Error(result.error || 'Failed to create required DNS record request');
       }
@@ -362,6 +395,20 @@ const ProjectAttributesView: React.FC<ProjectAttributesViewProps> = ({
         setShowAPIKeyForm(false);
         // Reload attributes to show updated data
         await loadProjectAttributes();
+        // Notify project owner
+        if (projectOwnerId) {
+          try {
+            await createNotification({
+              userId: projectOwnerId,
+              title: 'API key requested',
+              description: `${requiredAPIKeyData.keyName} (${requiredAPIKeyData.provider})`,
+              type: 'admin_action',
+              projectId,
+              projectName,
+              action: 'openRequestsModal'
+            });
+          } catch {}
+        }
       } else {
         throw new Error(result.error || 'Failed to create required API key request');
       }

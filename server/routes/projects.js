@@ -807,27 +807,67 @@ router.get('/project/:projectId/attributes', async (req, res) => {
       });
     }
 
-    const projectRef = getDb().collection('admin_projects').doc(projectId);
+    const db = getDb();
+    const projectRef = db.collection('admin_projects').doc(projectId);
     
     // Get all sub-collections in parallel
     const [
-      featureRequests,
+      adminFeatureRequestsSnap,
       apiKeys,
       dnsRecords,
       uiDesigns,
       requiredAPIKeys,
-      requiredDNSRecords
+      requiredDNSRecords,
+      topLevelFeatureRequestsSnap
     ] = await Promise.all([
+      // Admin subcollection
       projectRef.collection('feature_requests').orderBy('requestedAt', 'desc').get(),
       projectRef.collection('api_keys').orderBy('addedAt', 'desc').get(),
       projectRef.collection('dns_records').orderBy('addedAt', 'desc').get(),
       projectRef.collection('ui_designs').orderBy('addedAt', 'desc').get(),
       projectRef.collection('required_api_keys').orderBy('requestedAt', 'desc').get(),
-      projectRef.collection('required_dns_records').orderBy('requestedAt', 'desc').get()
+      projectRef.collection('required_dns_records').orderBy('requestedAt', 'desc').get(),
+      // Top-level collection filtered by projectId (sorted in code to avoid index requirements)
+      db.collection('feature_requests').where('projectId', '==', projectId).get()
     ]);
 
+    // Map and normalize feature requests from both sources
+    const adminFeatureRequests = adminFeatureRequestsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const topLevelFeatureRequests = topLevelFeatureRequestsSnap.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        title: data.title || (typeof data.description === 'string' ? data.description.slice(0, 80) : 'Feature Request'),
+        description: data.description || data.title || 'Feature request',
+        requirements: Array.isArray(data.requirements) ? data.requirements : [],
+        category: data.category || 'Feature',
+        priority: data.priority || 'medium',
+        requestedBy: data.requestedBy || data.requestedByEmail || null,
+        requestedAt: data.requestedAt || data.createdAt || null,
+        status: data.status || 'pending',
+        adminNotes: data.adminNotes || '',
+        projectId: data.projectId,
+        projectName: data.projectName || null,
+        attachmentUrl: data.attachmentUrl || null,
+        tags: Array.isArray(data.tags) ? data.tags : []
+      };
+    });
+
+    // Merge and sort by requestedAt desc
+    const mergedFeatureRequests = [...adminFeatureRequests, ...topLevelFeatureRequests].sort((a, b) => {
+      const toDate = (ts) => {
+        if (!ts) return 0;
+        // Firestore Timestamp support
+        if (ts.toDate) return ts.toDate().getTime();
+        if (typeof ts === 'number') return ts;
+        const parsed = new Date(ts);
+        return isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+      };
+      return toDate(b.requestedAt) - toDate(a.requestedAt);
+    });
+
     const attributes = {
-      featureRequests: featureRequests.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+      featureRequests: mergedFeatureRequests,
       apiKeys: apiKeys.docs.map(doc => ({ id: doc.id, ...doc.data() })),
       dnsRecords: dnsRecords.docs.map(doc => ({ id: doc.id, ...doc.data() })),
       uiDesigns: uiDesigns.docs.map(doc => ({ id: doc.id, ...doc.data() })),

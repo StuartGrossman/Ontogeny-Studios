@@ -248,7 +248,7 @@
   position: absolute;
   top: -6px;
   right: -6px;
-  background: var(--dash-status-error);
+  background: var(--dash-status-error, #ef4444);
   color: var(--dash-text-primary);
   font-size: var(--dash-font-size-xs);
   font-weight: var(--dash-font-weight-bold);
@@ -260,7 +260,7 @@
   align-items: center;
   justify-content: center;
   line-height: 1;
-  border: 2px solid var(--dash-bg-primary);
+  border: 2px solid var(--dash-bg-primary, #000);
 }
 
 /* ===== FLOATING ACTION BUTTON ===== */

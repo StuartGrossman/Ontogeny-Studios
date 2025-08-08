@@ -627,7 +627,7 @@
   margin-top: 2rem;
   padding: 1.5rem 2rem 2rem 2rem;
   border-top: 1px solid #f1f5f9;
-  background: black;
+  background: #ffffff;
 }
 
 .create-project-btn-primary,
@@ -743,7 +743,7 @@
   .create-project-modal-actions {
     flex-direction: column;
     padding: 1rem;
-    background: black;
+    background: #ffffff;
   }
 
   .create-project-btn-primary,
@@ -752,3 +752,59 @@
     justify-content: center;
   }
 } 
+
+/* ===== Dashboard Dark Theme Overrides ===== */
+/* These overrides align the modal with the unified dashboard styling without
+   disrupting existing structure. Placed at end for precedence. */
+
+.create-project-modal-container {
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+.create-project-modal-header { border-bottom: 1px solid var(--dash-border-primary, #333333); }
+.create-project-modal-title { color: var(--dash-text-primary, #ffffff); }
+.create-project-modal-title h2 { color: var(--dash-text-primary, #ffffff); }
+.create-project-modal-subtitle { color: var(--dash-text-secondary, #cccccc); }
+.create-project-modal-subtitle strong { color: var(--dash-text-accent, #8b5cf6); }
+
+/* Hide AI assistant block entirely */
+.create-project-ai-section { display: none !important; }
+
+/* Inputs and labels */
+.create-project-form-label { color: var(--dash-text-secondary, #cccccc); }
+.create-project-form-input,
+.create-project-form-textarea {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #0f172a;
+}
+.create-project-form-input:focus,
+.create-project-form-textarea:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+  background: #ffffff;
+}
+
+/* Features panel */
+.create-project-features-section {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+.create-project-features-section:hover { background: #f1f5f9; border-color: #e2e8f0; }
+.create-project-features-title { color: #0f172a; }
+.create-project-features-count { background: #667eea; }
+.create-project-add-feature-form { background: #ffffff; border-color: #e2e8f0; }
+.create-project-feature-input { background: #ffffff; border-color: #e2e8f0; color: #0f172a; }
+.create-project-complexity-select { background: #ffffff; border-color: #e2e8f0; color: #0f172a; }
+.create-project-feature-item { background: #ffffff; border-color: #e2e8f0; }
+.create-project-feature-text { color: #334155; }
+.create-project-feature-complexity.simple { background: rgba(16,185,129,0.15); color: #10b981; }
+.create-project-feature-complexity.moderate { background: rgba(245,158,11,0.15); color: #f59e0b; }
+.create-project-feature-complexity.complex { background: rgba(239,68,68,0.15); color: #ef4444; }
+.create-project-total-estimate { background: #f0f9ff; color: #0c4a6e; }
+
+/* Footer buttons */
+.create-project-modal-actions { border-top: 1px solid #f1f5f9; background: #ffffff; }
+.create-project-btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); box-shadow: 0 4px 12px rgba(102,126,234,0.3); }

@@ -216,6 +216,25 @@ router.post('/create-subscription-manual', async (req, res) => {
       const subscriptionRef = await db.collection('subscriptions').add(subscriptionData);
       console.log('✅ Manual subscription created with ID:', subscriptionRef.id);
       
+      // Also create a payment record for the payment history
+      const paymentData = {
+        projectId: projectId,
+        userId: userId,
+        projectName: projectName || 'Manual Test Project',
+        userEmail: userEmail || 'test@example.com',
+        amount: 60,
+        currency: 'USD',
+        status: 'succeeded',
+        sessionId: sessionId || 'manual-session-' + Date.now(),
+        paymentMethod: 'Credit Card',
+        description: `Manual subscription payment for ${projectName || 'project'}`,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+      
+      const paymentRef = await db.collection('payments').add(paymentData);
+      console.log('✅ Manual payment record created with ID:', paymentRef.id);
+      
       // Verify the subscription was created
       const createdDoc = await subscriptionRef.get();
       console.log('✅ Created subscription data:', createdDoc.data());
@@ -300,6 +319,25 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
           
           const subscriptionRef = await db.collection('subscriptions').add(subscriptionData);
           console.log('✅ Subscription created successfully with ID:', subscriptionRef.id);
+          
+          // Also create a payment record for the payment history
+          const paymentData = {
+            projectId: projectId,
+            userId: userId,
+            projectName: projectName || 'Unknown Project',
+            userEmail: userEmail || '',
+            amount: session.amount_total / 100, // Convert from cents
+            currency: session.currency,
+            status: 'succeeded',
+            sessionId: session.id,
+            paymentMethod: 'Credit Card',
+            description: `Subscription payment for ${projectName || 'project'}`,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          };
+          
+          const paymentRef = await db.collection('payments').add(paymentData);
+          console.log('✅ Payment record created successfully with ID:', paymentRef.id);
           
           // Verify the subscription was created
           const createdDoc = await subscriptionRef.get();
@@ -398,10 +436,30 @@ router.post('/create-test-subscription', async (req, res) => {
       const subscriptionRef = await db.collection('subscriptions').add(subscriptionData);
       console.log('Test subscription created with ID:', subscriptionRef.id);
       
+      // Also create a payment record for the payment history
+      const paymentData = {
+        projectId: projectId,
+        userId: userId,
+        projectName: projectName || 'Test Project',
+        userEmail: userEmail || 'test@example.com',
+        amount: 60,
+        currency: 'USD',
+        status: 'succeeded',
+        sessionId: 'test-session-' + Date.now(),
+        paymentMethod: 'Credit Card',
+        description: `Test subscription payment for ${projectName || 'project'}`,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+      
+      const paymentRef = await db.collection('payments').add(paymentData);
+      console.log('Test payment record created with ID:', paymentRef.id);
+      
       res.json({
         success: true,
         subscriptionId: subscriptionRef.id,
-        message: 'Test subscription created successfully'
+        paymentId: paymentRef.id,
+        message: 'Test subscription and payment created successfully'
       });
     } else {
       res.status(500).json({ error: 'Firebase Admin not available' });
@@ -410,6 +468,54 @@ router.post('/create-test-subscription', async (req, res) => {
     console.error('Error creating test subscription:', error);
     res.status(500).json({ 
       error: 'Failed to create test subscription',
+      details: error.message 
+    });
+  }
+});
+
+// Create test payment record (for debugging)
+router.post('/create-test-payment', async (req, res) => {
+  try {
+    const { projectId, userId, projectName, userEmail, amount = 60 } = req.body;
+    
+    if (!projectId || !userId) {
+      return res.status(400).json({ error: 'Project ID and User ID are required' });
+    }
+    
+    if (admin) {
+      const db = admin.firestore();
+      const paymentData = {
+        projectId: projectId,
+        userId: userId,
+        projectName: projectName || 'Test Project',
+        userEmail: userEmail || 'test@example.com',
+        amount: amount,
+        currency: 'USD',
+        status: 'succeeded',
+        sessionId: 'test-payment-' + Date.now(),
+        paymentMethod: 'Credit Card',
+        description: `Test payment for ${projectName || 'project'}`,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+      
+      console.log('Creating test payment:', paymentData);
+      
+      const paymentRef = await db.collection('payments').add(paymentData);
+      console.log('Test payment created with ID:', paymentRef.id);
+      
+      res.json({
+        success: true,
+        paymentId: paymentRef.id,
+        message: 'Test payment created successfully'
+      });
+    } else {
+      res.status(500).json({ error: 'Firebase Admin not available' });
+    }
+  } catch (error) {
+    console.error('Error creating test payment:', error);
+    res.status(500).json({ 
+      error: 'Failed to create test payment',
       details: error.message 
     });
   }
